@@ -237,9 +237,10 @@ Values run 1z to 40,000z, median 1,640z, p95 14,000z.
 
 ## Revive economy
 
-Click a struck-through cell on the board to buy that loadout back. Cost climbs in flat
-steps — `REVIVE_BASE + REVIVE_STEP * revivesUsed`, currently 5,000z each — and tuning
-the curve means editing those two constants.
+Click a struck-through cell on the board to buy that combo back. The Nth buy-back of a
+run costs `N × cfg.revivePrice`, and **the price is itself a lever** — the options and
+what charging them is worth live in `REVIVE_PRICE_WEIGHT`. A cheap safety net makes the
+run easier and scores lower; a dear one barely helps and scores higher.
 
 `reviveOptions()` returns three distinct bundles of 1-3 materials totalling within
 `REVIVE_TOLERANCE` of the target, seeded on (combo, revive number) so closing and

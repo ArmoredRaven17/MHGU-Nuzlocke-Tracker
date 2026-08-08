@@ -72,6 +72,7 @@
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
+    revivePrice: 5000,                   // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
   };
   let cfg = Object.assign({}, DEFAULT_CFG);
 
@@ -112,6 +113,11 @@
   // tight cap pays. 3 is the reference and costs nothing.
   const STYLE_CAP_WEIGHT = { 1: 3, 2: 2, 3: 1, 4: 0.75, 5: 0.5, 6: 0.25 };
 
+  // What the first buy-back costs, and what charging that is worth. A cheap
+  // safety net makes the run easier, a dear one barely helps. 5,000z is the
+  // reference and costs nothing. Only applies when revives are switched on.
+  const REVIVE_PRICE_WEIGHT = { 2500: 0.75, 5000: 1, 10000: 1.25, 20000: 1.5 };
+
   // The total is deliberately unbounded below. This is a bonus multiplier, so a
   // run soft enough to net out at zero earns nothing, and one softer still is
   // penalised — both are legitimate outcomes rather than something to clamp.
@@ -128,6 +134,8 @@
     if (c.reviveEnabled) {
       d.push(L.reviveAllowed);
       if (c.reviveOnce) d.push(L.reviveOnce);
+      const price = REVIVE_PRICE_WEIGHT[c.revivePrice];
+      if (price != null && price !== 1) d.push(price);
     }
     return d;
   };
@@ -140,15 +148,13 @@
   const fmtMult = (m) => "×" + m.toFixed(2).replace("-", "−");
 
   // ── Revive economy ───────────────────────────────────────────────────────
-  // Cost climbs in flat steps: the Nth revive of a run costs BASE + STEP*(N-1).
-  // Tuning the curve means editing these two numbers and nothing else.
-  const REVIVE_BASE = 5000;
-  const REVIVE_STEP = 5000;
+  // Cost climbs in flat steps of the chosen price: the Nth buy-back of a run
+  // costs N x price. The price itself is a lever — see REVIVE_PRICE_WEIGHT.
   const REVIVE_TOLERANCE = 0.06;      // an option may miss the target by this much
   const REVIVE_OPTIONS = 3;
   const MATERIALS = (window.MHGU_MATERIALS || []).filter(m => m.v > 0);
 
-  const reviveCost = (used) => REVIVE_BASE + REVIVE_STEP * Math.max(0, used);
+  const reviveCost = (used) => cfg.revivePrice * (Math.max(0, used) + 1);
 
   const MAT_MAX = MATERIALS.reduce((m, x) => Math.max(m, x.v), 0);
   const SOFT_QTY = 3;                 // quantities stay small while the maths allows
@@ -331,6 +337,7 @@
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
+    revivePrice: { 2500: "p_2500", 5000: "p_5000", 10000: "p_10000", 20000: "p_20000" },
     assign: { roll: "a_roll", pick: "a_pick" },
   };
 
@@ -343,7 +350,7 @@
     });
     applyCfgLockState();
   }
-  const RADIO_NUMERIC = { stylesPerWeapon: true };
+  const RADIO_NUMERIC = { stylesPerWeapon: true, revivePrice: true };
   function readCfgFromDom() {
     if (cfgLocked()) return;                    // settings are frozen for the run
     Object.entries(CFG_BOXES).forEach(([k, id]) => { cfg[k] = $(id).checked; });
@@ -370,7 +377,10 @@
   }
   // Sub-options only mean something when their parent is on.
   function syncDependentBoxes() {
-    $("r_once").disabled = !cfg.reviveEnabled;
+    // Everything under Revive is meaningless until revives are switched on.
+    const off = !cfg.reviveEnabled;
+    $("r_once").disabled = off;
+    Object.values(CFG_RADIOS.revivePrice).forEach(id => { $(id).disabled = off; });
   }
 
   // ── Kill / revive ────────────────────────────────────────────────────────
