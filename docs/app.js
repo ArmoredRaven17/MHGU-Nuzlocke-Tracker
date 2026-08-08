@@ -762,21 +762,21 @@
   // Four are hand-picked rather than sampled: Dreadqueen takes Bloodbath's
   // purple left stop, Bloodbath takes the old Nightcloak navy, and Dreadking and
   // Nightcloak are deepened into a matched dark red / dark blue pair.
+  //
+  // These are tuned to look like the monster, not to spread evenly. Some
+  // Deviants really are close to each other in game, and two similar plates is
+  // the correct outcome when that's true — don't "fix" it by pushing them
+  // apart. The one hard constraint is readability: white text must clear 4.5:1
+  // on --bg, --bg2 and --hover, so re-check contrast after changing a hex.
   const COLORS = [
     ["Redhelm",     "#96231C", "Redhelm Arzuros"],
     ["Snowbaron",   "#8E6BC4", "Snowbaron Lagombi"],
     ["Stonefist",   "#E8776E", "Stonefist Hermitaur"],
-    // Darkened from #7A4A9E, which sat 21 from Snowbaron's plate. Going darker
-    // trades Snowbaron for Bloodbath's navy, so this is the balance point:
-    // nearest neighbour 30, better than the 21 it started at.
     ["Dreadqueen",  "#4A2A66", "Dreadqueen Rathian"],
     ["Drilltusk",   "#D07A20", "Drilltusk Tetsucabra"],
     ["Silverwind",  "#7A858E", "Silverwind Nargacuga"],
     ["Crystalbeard","#CFAE44", "Crystalbeard Uragaan"],
     ["Deadeye",     "#3F7A2E", "Deadeye Yian Garuga"],
-    // Deepened well past the sampled value: at #7E1E0E its background rendered
-    // 9 away from Redhelm's, effectively the same plate. The palette's own
-    // tightest legitimate pair is Redhelm/Hellblade at 18, so this clears that.
     ["Dreadking",   "#3E0C05", "Dreadking Rathalos"],
     ["Thunderlord", "#C79A1C", "Thunderlord Zinogre"],
     ["Grimclaw",    "#2C4A96", "Grimclaw Tigrex"],

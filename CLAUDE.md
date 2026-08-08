@@ -93,9 +93,14 @@ into a range** rather than multiplying and clamping — a plain multiply-then-cl
 lightness with only a faint hue to tell them apart. Remapping keeps the pale Deviants
 pale relative to the dark ones while still bounding the top.
 
-**If you add or retune a color, re-check contrast** — that's the failure mode here, not
-the hue. All 18 currently clear the 4.5:1 floor for white text; worst case is
-Crystalbeard's `--hover` at 6.8:1.
+**The hexes are tuned to look like the monster, not to spread evenly across the
+palette.** Some Deviants really are close to each other in game, so two similar plates
+is a correct outcome — don't push them apart to "fix" it. Colour choices are the
+owner's call.
+
+**The one hard constraint is readability: re-check contrast after changing a hex.**
+White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 18 currently do;
+worst case is Crystalbeard's `--hover` at 6.8:1.
 
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
