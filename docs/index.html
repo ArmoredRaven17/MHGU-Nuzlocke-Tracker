@@ -85,15 +85,20 @@
             things easier, but it comes with a penalty that can be reduced.</p>
           <label class="chk"><input type="checkbox" id="r_enabled">Allow revives<span class="w">&minus;0.25</span></label>
           <label class="chk"><input type="checkbox" id="r_once" checked>One Revive per combo only<span class="w">+0.10</span></label>
+          <p class="hint" style="margin-top:8px">Revives allowed for the whole run.</p>
+          <label class="chk"><input type="radio" name="rcap" id="rc_1">1<span class="w">+0.10</span></label>
+          <label class="chk"><input type="radio" name="rcap" id="rc_3">3<span class="w">+0.03</span></label>
+          <label class="chk"><input type="radio" name="rcap" id="rc_5" checked>5<span class="w">&plusmn;0</span></label>
+          <label class="chk"><input type="radio" name="rcap" id="rc_10">10<span class="w">&minus;0.05</span></label>
+          <label class="chk"><input type="radio" name="rcap" id="rc_20">20<span class="w">&minus;0.12</span></label>
           <p class="hint" style="margin-top:8px">Value for a buyback of a Weapon/Style
             combo.</p>
           <label class="chk"><input type="radio" name="price" id="p_5000">5,000z<span class="w">&minus;0.15</span></label>
           <label class="chk"><input type="radio" name="price" id="p_10000" checked>10,000z<span class="w">&plusmn;0</span></label>
           <label class="chk"><input type="radio" name="price" id="p_20000">20,000z<span class="w">+0.05</span></label>
           <label class="chk"><input type="radio" name="price" id="p_30000">30,000z<span class="w">+0.10</span></label>
-          <p class="hint" id="reviveNote" style="margin-top:8px">Paid for by selling
-            specified monster materials, or deducted from your earned zenny at double
-            the value. You are given three material options for flexibility.</p>
+          <p class="hint" id="reviveNote" style="margin-top:8px">Deducted from your
+            earned zenny. Click a fallen combo on the board to buy it back.</p>
         </div>
       </section>
 
@@ -255,7 +260,7 @@
     <h2 id="reviveTitle">Buy back a combo</h2>
     <p class="hint" id="reviveSub"></p>
     <div id="reviveOptions" class="revive-options"></div>
-    <p class="hint">Sell the materials in game, then take the option you paid.</p>
+    <p class="hint">The cost comes off your earned zenny.</p>
     <div class="row end"><button id="reviveCancel" class="btn tiny">Cancel</button></div>
   </div>
 </div>
@@ -272,7 +277,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="materials.js?v=1"></script>
-<script src="app.js?v=39"></script>
+<script src="app.js?v=41"></script>
 </body>
 </html>
