@@ -71,6 +71,7 @@
     lockLoadout: true,
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
+    huntLimit: 100,                      // hunts before the run closes; 0 = no limit
     reviveEnabled: false, reviveOnce: true,
     reviveCap: 5,                        // buy-backs allowed per run; see REVIVE_CAP_WEIGHT
     revivePrice: 10000,                  // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
@@ -221,6 +222,8 @@
     combo: null,           // the loadout for the hunt in progress
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
+    hunts: 0,              // resolved hunts; carts don't end one so don't count
+    huntLimit: 0,          // snapshotted at Start Run, like mult and maxLosses
     cleared: 0, failed: 0, carts: 0, revives: 0, rerolls: 0,
     revived: {},           // comboKey -> times bought back (survives the death being removed)
     reviveLog: [],         // {weapon, style, cost} for the summary
@@ -352,7 +355,22 @@
 
   // Run-over is derived, not latched, so it recomputes after every death and
   // after any revive.
-  const runOver = () => run.active && (run.finished || legalCombos().length === 0);
+  // A run closes on exhaustion, on the hunt limit, or when you end it manually.
+  //
+  // The limit is a BOUND, not a scored lever, and that is deliberate. Every
+  // other restriction pays a bonus, but a hunt limit cannot: it only binds when
+  // a run would otherwise outlast it, so on a short configuration you could
+  // pick the tightest limit, never reach it, and collect the bonus for free.
+  // Its job is to stop a run being absurd — simulation put "same quest twice"
+  // at a median 1,384 hunts against 102 for the default — not to be a
+  // difficulty choice.
+  // Snapshotted at Start Run like mult and maxLosses, so a finished run keeps
+  // the limit it was played under even after the rules unlock.
+  const runHuntLimit = () => (run.huntLimit != null ? run.huntLimit : cfg.huntLimit);
+  const huntsUsed = () => run.hunts || 0;
+  const huntCapHit = () => runHuntLimit() > 0 && huntsUsed() >= runHuntLimit();
+  const runOver = () => run.active &&
+    (run.finished || huntCapHit() || legalCombos().length === 0);
 
   // ── Persistence ──────────────────────────────────────────────────────────
   const STORE_KEY = "mhgu-nuzlocke";
@@ -387,6 +405,7 @@
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
+    huntLimit: { 50: "h_50", 100: "h_100", 200: "h_200", 0: "h_0" },
     revivePrice: { 5000: "p_5000", 10000: "p_10000", 20000: "p_20000", 30000: "p_30000" },
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
@@ -403,7 +422,7 @@
     applyCfgLockState();
   }
   const RADIO_NUMERIC = { stylesPerWeapon: true, revivePrice: true, rerollPrice: true,
-    reviveCap: true };
+    reviveCap: true, huntLimit: true };
   function readCfgFromDom() {
     if (cfgLocked()) return;                    // settings are frozen for the run
     Object.entries(CFG_BOXES).forEach(([k, id]) => { cfg[k] = $(id).checked; });
@@ -480,6 +499,10 @@
     const wasRetry = !!run.lockQuest && questKey(run.lockQuest) === questKey(run.quest);
     run.lockQuest = null;
 
+    // One hunt = one resolution. Carting doesn't end the attempt, so it isn't
+    // one; an Arena hunt still is, since it consumed real playing time.
+    run.hunts = huntsUsed() + 1;
+
     if (outcome === "clear") {
       run.cleared++;
       if (counts) {
@@ -524,6 +547,7 @@
     run.startedAt = Date.now();
     run.mult = multiplier(cfg);
     run.maxLosses = maxLosses();
+    run.huntLimit = cfg.huntLimit;
     rebuildDeadKeys();
     save(); renderAll();
   }
@@ -621,6 +645,9 @@
     let html =
       `<span class="stat dead">Lost <b>${lost}/${runMax()}</b></span>` +
       `<span class="stat">Available <b>${alive}</b></span>` +
+      (runHuntLimit() > 0
+        ? `<span class="stat">Hunts <b>${huntsUsed()}/${runHuntLimit()}</b></span>`
+        : `<span class="stat">Hunts <b>${huntsUsed()}</b></span>`) +
       `<span class="stat">Cleared <b>${run.cleared}</b></span>` +
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
       `<span class="stat">Carts <b>${run.carts}</b></span>` +
@@ -754,17 +781,24 @@
     el.classList.remove("hidden");
 
     const exhausted = legalCombos().length === 0;
+    const standing = legalCombos().length;
     const mins = Math.max(1, Math.round(((run.endedAt || Date.now()) - run.startedAt) / 60000));
+    // Three ways to finish now, and which one it was is the headline.
+    const why = exhausted
+      ? "Every available combo has fallen."
+      : huntCapHit()
+        ? `You went the distance — ${runHuntLimit()} hunts, with ${standing} combo${
+            standing === 1 ? "" : "s"} still standing.`
+        : `Ended manually with ${standing} still standing.`;
     el.innerHTML =
       `<h2>Run Over</h2>` +
-      `<p class="sub">${exhausted
-        ? "Every available combo has fallen."
-        : "Ended manually with " + legalCombos().length + " still standing."}</p>` +
+      `<p class="sub">${escapeHtml(why)}</p>` +
       `<div class="sum-stats">` +
         [
           [String(run.cleared), "Cleared"],
           [String(run.failed), "Failed"],
           [String(run.carts), "Carts"],
+          [runHuntLimit() > 0 ? huntsUsed() + "/" + runHuntLimit() : String(huntsUsed()), "Hunts"],
           [run.deaths.length + "/" + runMax(), "Lost"],
           [mins + "m", "Duration"],
           [zennyShort(run.earned), "Earned", "earned", zenny(run.earned)],
