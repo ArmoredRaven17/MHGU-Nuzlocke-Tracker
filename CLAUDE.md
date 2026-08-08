@@ -32,6 +32,18 @@ The unit of loss is a **weapon + style combo**, stored as `{weapon, style}` and 
 `"weapon|style"`. **Prowler is a weapon whose 8 biases occupy the style slot**, so the
 store is uniform and Prowler needs no special case. 14 × 6 + 8 = **92**.
 
+**`cfg.stylesPerWeapon` caps how many styles a weapon may lose before the whole weapon
+retires**, taking its surviving styles out of the pool. This is the main control on run
+length: 92 loadouts is a long run, so the default cap of 3 brings it to 45 (cap 1 = 15,
+cap 6 = 90). A retired weapon's live styles render `.retired` — faded and dotted,
+visibly distinct from `.dead`, because they were never lost.
+
+`stylesLost()` counts from `run.deaths`, so a revive (which *removes* a death) can
+un-retire a weapon. That falls out of the design rather than needing special handling.
+
+Note cap 6 gives 90, not 92: Prowler has 8 biases and the cap applies uniformly, so it
+retires two short. Uniformity is worth more than the two loadouts.
+
 ## Architecture
 
 **`cfg`** holds the rule toggles and outlives individual runs. **`run`** holds the
@@ -100,6 +112,9 @@ difficulty curve means editing those and nothing else**:
 - `KILL_WEIGHT` — the chosen condition sets the base. Quest-failed is the 1× anchor;
   carts-and-failures 3×, cart 2×, two-in-a-row 0.75×, same-quest-twice 0.5×.
 - `LEVER_WEIGHT` — every other lever, written as the multiplier it reads as.
+- `STYLE_CAP_WEIGHT` — the styles-per-weapon cap. 3 is the reference and costs nothing;
+  1 is ×3 (+2.00) and 6 is ×0.25 (−0.75). It swings hardest of any lever because it
+  decides how many hunts the run gets at all.
 
 **Levers combine additively, not multiplicatively.** Each is written as e.g. `0.75`
 and contributes its *distance from 1×* — so a 0.75 lever is −0.25 off the total, not

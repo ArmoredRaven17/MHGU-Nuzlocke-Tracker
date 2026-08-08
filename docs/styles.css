@@ -206,6 +206,8 @@ body{
 .cell.dead{background:#ff2a2a10;border-color:#7a2020;opacity:.4;
   text-decoration:line-through;color:var(--dead)}
 .cell.revived{border-color:#c9a227;background:#c9a2271a}
+/* Alive, but its weapon spent its style allowance — out of the pool, not lost */
+.cell.retired{opacity:.22;border-style:dotted}
 /* A fallen combo you can still buy back */
 .cell.dead.revivable{cursor:pointer;opacity:.65;border-style:dashed;border-color:#c9a227}
 .cell.dead.revivable:hover{opacity:1;background:#c9a2272e;

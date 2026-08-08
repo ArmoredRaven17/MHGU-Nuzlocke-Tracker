@@ -70,6 +70,7 @@
     assign: "roll",                      // "roll" | "pick"
     lockLoadout: true,
     lockQuest: true,
+    stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
   };
   let cfg = Object.assign({}, DEFAULT_CFG);
@@ -106,12 +107,19 @@
     reviveAllowed:    0.75,   // a safety net at all                   -0.25
     reviveOnce:       1.10,   // ...but only one each, so some of it back  +0.10
   };
+  // How many styles a weapon may lose before the whole weapon retires. Fewer
+  // styles means fewer loadouts, a shorter run and fewer chances to hunt, so a
+  // tight cap pays. 3 is the reference and costs nothing.
+  const STYLE_CAP_WEIGHT = { 1: 3, 2: 2, 3: 1, 4: 0.75, 5: 0.5, 6: 0.25 };
+
   // The discounts can total -1.00, which the two gentle conditions can't absorb
   // (0.5 base - 1.00 = -0.50), so the sum is floored rather than going negative.
   const MULT_FLOOR = 0.1;
 
   const leverDeltas = (c) => {
     const L = LEVER_WEIGHT, d = [];
+    const cap = STYLE_CAP_WEIGHT[c.stylesPerWeapon];
+    if (cap != null && cap !== 1) d.push(cap);
     if (c.assign === "pick") d.push(L.pickOwnLoadout);
     if (!c.lockLoadout)      d.push(L.loadoutUnlocked);
     if (!c.lockQuest)        d.push(L.questUnlocked);
@@ -252,13 +260,22 @@
   const isArena = (q) => !!q && q.t === "Arena";
   const isAlive = (w, s) => !deadKeys.has(comboKey(w, s));
 
-  const legalStyles  = (w) => stylesFor(w).filter(s => isAlive(w, s));
+  // A weapon only gets so many styles before the whole thing retires, taking
+  // its surviving styles out of the pool with it. Counted from run.deaths, so a
+  // revive (which removes a death) can bring a retired weapon back.
+  const stylesLost = (w) => run.deaths.reduce((n, d) => n + (d.weapon === w ? 1 : 0), 0);
+  const isRetired  = (w) => stylesLost(w) >= cfg.stylesPerWeapon;
+
+  const legalStyles  = (w) => isRetired(w) ? [] : stylesFor(w).filter(s => isAlive(w, s));
   const legalWeapons = () => ALL_WEAPONS.filter(w => legalStyles(w).length > 0);
   function legalCombos() {
     const out = [];
     legalWeapons().forEach(w => legalStyles(w).forEach(s => out.push({ weapon: w, style: s })));
     return out;
   }
+  // Longest a run can possibly last: every weapon spends its full allowance.
+  const maxLosses = () => ALL_WEAPONS.reduce(
+    (n, w) => n + Math.min(cfg.stylesPerWeapon, stylesFor(w).length), 0);
 
   // Weapon-first: uniform among surviving weapons, then uniform among that
   // weapon's surviving styles. Preserves the Randomizer's distribution rather
@@ -308,22 +325,26 @@
   // Radio groups: cfg key -> value -> element id.
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
+    stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
     assign: { roll: "a_roll", pick: "a_pick" },
   };
 
   function writeCfgToDom() {
     Object.entries(CFG_BOXES).forEach(([k, id]) => { $(id).checked = !!cfg[k]; });
+    // Object keys are strings, but some cfg values are numbers (stylesPerWeapon),
+    // so compare as strings and convert back on the way in.
     Object.entries(CFG_RADIOS).forEach(([k, maping]) => {
-      Object.entries(maping).forEach(([val, id]) => { $(id).checked = cfg[k] === val; });
+      Object.entries(maping).forEach(([val, id]) => { $(id).checked = String(cfg[k]) === val; });
     });
     applyCfgLockState();
   }
+  const RADIO_NUMERIC = { stylesPerWeapon: true };
   function readCfgFromDom() {
     if (cfgLocked()) return;                    // settings are frozen for the run
     Object.entries(CFG_BOXES).forEach(([k, id]) => { cfg[k] = $(id).checked; });
     Object.entries(CFG_RADIOS).forEach(([k, maping]) => {
       const hit = Object.entries(maping).find(([, id]) => $(id).checked);
-      if (hit) cfg[k] = hit[0];
+      if (hit) cfg[k] = RADIO_NUMERIC[k] ? +hit[0] : hit[0];
     });
     applyCfgLockState();
   }
@@ -477,6 +498,9 @@
       if (!isAlive(w, s)) {
         return "cell dead" + (canRevive(w, s) ? " revivable" : "");
       }
+      // Alive, but its weapon spent its style allowance — out of the pool
+      // without ever having been lost. A different thing from fallen.
+      if (isRetired(w)) return "cell retired";
       // Back from the dead — worth marking, it cost something.
       const back = (run.revived[comboKey(w, s)] || 0) > 0;
       return "cell alive" + (back ? " revived" : "") + (isCurrent(w, s) ? " current" : "");
@@ -508,6 +532,7 @@
 
     html += '<div class="board-legend"><span>Solid = available</span>' +
             '<span style="color:var(--dead)">Struck through = fallen</span>' +
+            '<span>Faded = weapon retired, allowance spent</span>' +
             '<span>Outlined = current loadout</span></div>';
     board.innerHTML = html;
   }
@@ -520,7 +545,7 @@
     const lost = run.deaths.length;
     const alive = legalCombos().length;
     let html =
-      `<span class="stat dead">Lost <b>${lost}</b></span>` +
+      `<span class="stat dead">Lost <b>${lost}/${maxLosses()}</b></span>` +
       `<span class="stat">Available <b>${alive}</b></span>` +
       `<span class="stat">Cleared <b>${run.cleared}</b></span>` +
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
@@ -707,6 +732,12 @@
     $("multSum").textContent = cfgLocked() ? "" : deltas.length
       ? killBase(cfg) + deltas.map(w => (w <= 1 ? " − " : " + ") + Math.abs(1 - w).toFixed(2)).join("") +
         " = " + raw.toFixed(2) + (raw < MULT_FLOOR ? " → floored at " + MULT_FLOOR.toFixed(2) : "")
+      : "";
+
+    // Counts are on the labels now; this only explains the one number that
+    // looks wrong — Prowler has 8 biases, so a cap of 6 retires it two short.
+    $("poolNote").textContent = cfg.stylesPerWeapon === 6
+      ? `Not quite all ${TOTAL_COMBOS}: Prowler has 8 biases, so it retires two short.`
       : "";
 
     applyCfgLockState();

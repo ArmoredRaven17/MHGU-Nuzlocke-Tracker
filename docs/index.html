@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
 <div id="app">
@@ -58,7 +58,18 @@
       <section class="panel" data-open="false">
         <button class="panel-head">Loadout <span class="chev">&#9662;</span></button>
         <div class="panel-body">
-          <p class="hint">Where your next weapon and style come from.</p>
+          <p class="hint">How many styles a weapon may lose before the whole weapon
+            retires and its remaining styles leave the pool. Fewer styles means a
+            shorter run and fewer chances to hunt, so it pays more.</p>
+          <label class="chk"><input type="radio" name="cap" id="c_1">1 style &mdash; 15 loadouts<span class="w">&times;3</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles &mdash; 30 loadouts<span class="w">&times;2</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles &mdash; 45 loadouts<span class="w">&times;1</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; 60 loadouts<span class="w">&minus;0.25</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; 75 loadouts<span class="w">&minus;0.50</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; 90 loadouts<span class="w">&minus;0.75</span></label>
+          <p class="hint" id="poolNote"></p>
+
+          <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>The app rolls one for me<span class="w">&plusmn;0</span></label>
           <label class="chk"><input type="radio" name="assign" id="a_pick">I pick from what's left<span class="w">&minus;0.25</span></label>
           <p class="hint" style="margin-top:8px">Locks &mdash; both are &times;1 and cost nothing.
@@ -205,6 +216,6 @@
 
 <script src="data.js?v=2"></script>
 <script src="materials.js?v=1"></script>
-<script src="app.js?v=22"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

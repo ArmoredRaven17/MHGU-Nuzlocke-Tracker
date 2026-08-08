@@ -47,6 +47,19 @@ nothing to gain from stacking them.
 | Two quest failures in a row | The first is forgiven; a clear resets the streak | ×0.75 |
 | Same quest failed twice | Cumulative, not necessarily consecutive | ×0.5 |
 
+**Styles per weapon** — how many styles a weapon may lose before the whole weapon
+retires and its surviving styles leave the pool. This is what sets run length, and it
+pays the most of any lever: fewer styles means fewer hunts and fewer chances.
+
+| Styles | Loadouts in the run | Difficulty |
+|---|---|---|
+| 1 | 15 | ×3 |
+| 2 | 30 | ×2 |
+| 3 *(default)* | 45 | ×1 |
+| 4 | 60 | −0.25 |
+| 5 | 75 | −0.50 |
+| 6 | 90 | −0.75 |
+
 **Other levers:**
 
 - **Loadout** — the app rolls one, or you pick from what's left
