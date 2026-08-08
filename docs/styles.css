@@ -170,8 +170,8 @@ body{
 .mult-box{display:flex;flex-direction:column;gap:2px;
   padding:7px 10px;border:1px solid var(--accent);border-radius:7px;
   background:#ffffff0d}
-.mult-sum{font-size:11px;opacity:.55;font-variant-numeric:tabular-nums}
-.mult-sum:empty{display:none}
+.mult-box.negative{border-color:var(--dead)}
+.mult-box.negative .mult-value{color:var(--dead)}
 .mult-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.65}
 .mult-value{font-size:19px;font-weight:700}
 .mult-box.locked .mult-value{opacity:.75}

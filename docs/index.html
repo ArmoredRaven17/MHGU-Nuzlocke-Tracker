@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
 <div id="app">
@@ -27,10 +27,9 @@
       <button id="endBtn" class="btn block hidden">End Run</button>
       <div id="multBox" class="mult-box">
         <div class="row" style="justify-content:space-between">
-          <span class="mult-label">Difficulty</span>
+          <span class="mult-label" id="multLabel">Difficulty Bonus</span>
           <span id="multValue" class="mult-value">&times;1.00</span>
         </div>
-        <span id="multSum" class="mult-sum"></span>
       </div>
       <p id="cfgLockNote" class="hint lock-note hidden"><img class="lock-icon"
         src="assets/ItemIcons/MH4G-Book_Icon_Red.webp" alt=""> Rules are locked for
@@ -215,6 +214,6 @@
 
 <script src="data.js?v=2"></script>
 <script src="materials.js?v=1"></script>
-<script src="app.js?v=28"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>

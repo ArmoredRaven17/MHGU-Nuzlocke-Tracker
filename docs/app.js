@@ -112,9 +112,9 @@
   // tight cap pays. 3 is the reference and costs nothing.
   const STYLE_CAP_WEIGHT = { 1: 3, 2: 2, 3: 1, 4: 0.75, 5: 0.5, 6: 0.25 };
 
-  // The discounts can total -1.00, which the two gentle conditions can't absorb
-  // (0.5 base - 1.00 = -0.50), so the sum is floored rather than going negative.
-  const MULT_FLOOR = 0.1;
+  // The total is deliberately unbounded below. This is a bonus multiplier, so a
+  // run soft enough to net out at zero earns nothing, and one softer still is
+  // penalised — both are legitimate outcomes rather than something to clamp.
 
   const leverDeltas = (c) => {
     const L = LEVER_WEIGHT, d = [];
@@ -133,12 +133,11 @@
   };
 
   function multiplier(c) {
-    const base = killBase(c);
-    if (!base) return 0;                                // unreachable via the radio
-    const m = leverDeltas(c).reduce((sum, w) => sum - (1 - w), base);
-    return Math.max(MULT_FLOOR, Math.round(m * 100) / 100);
+    const m = leverDeltas(c).reduce((sum, w) => sum - (1 - w), killBase(c));
+    return Math.round(m * 100) / 100;
   }
-  const fmtMult = (m) => "×" + m.toFixed(2);
+  // Typographic minus, not a hyphen — "×-0.75" reads as a typo.
+  const fmtMult = (m) => "×" + m.toFixed(2).replace("-", "−");
 
   // ── Revive economy ───────────────────────────────────────────────────────
   // Cost climbs in flat steps: the Nth revive of a run costs BASE + STEP*(N-1).
@@ -245,7 +244,8 @@
   }
 
   // ── Pool ─────────────────────────────────────────────────────────────────
-  const zenny = (n) => n.toLocaleString("en-US") + "z";
+  // Typographic minus so a negative total matches the multiplier's formatting.
+  const zenny = (n) => n.toLocaleString("en-US").replace("-", "−") + "z";
   // A long run can earn seven figures, which will not fit a summary tile at
   // full width. Abbreviate past a million; the tile keeps the exact figure in
   // its tooltip.
@@ -551,7 +551,8 @@
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
       `<span class="stat">Carts <b>${run.carts}</b></span>` +
       `<span class="stat earned">Earned <b>${zenny(run.earned)}</b></span>` +
-      `<span class="stat">Difficulty <b>${fmtMult(run.mult)}</b></span>` +
+      `<span class="stat${run.mult < 0 ? " dead" : ""}">` +
+      `${run.mult < 0 ? "Penalty" : "Bonus"} <b>${fmtMult(run.mult)}</b></span>` +
       (cfg.reviveEnabled
         ? `<span class="stat">Next revive <b>${zenny(reviveCost(run.revives))}</b></span>` : "");
     if (cfg.kill === "streak") html += `<span class="stat">Streak <b>${run.failStreak}</b></span>`;
@@ -690,7 +691,7 @@
           [run.deaths.length + "/" + TOTAL_COMBOS, "Lost"],
           [mins + "m", "Duration"],
           [zennyShort(run.earned), "Earned", "earned", zenny(run.earned)],
-          [fmtMult(run.mult), "Difficulty"],
+          [fmtMult(run.mult), run.mult < 0 ? "Penalty" : "Bonus"],
         ].concat(run.revives
           ? [[String(run.revives), "Revived", "", run.reviveLog
               .map(r => (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style +
@@ -718,21 +719,14 @@
     $("startBtn").textContent = run.deaths.length || run.active ? "Start New Run" : "Start Run";
 
     // Live while you're tuning; frozen to the run's snapshot once it starts.
+    // May legitimately be zero or negative, so format it unconditionally.
     const m = cfgLocked() ? run.mult : multiplier(cfg);
-    $("multValue").textContent = m ? fmtMult(m) : "—";
+    $("multValue").textContent = fmtMult(m);
+    // A soft enough run nets out below zero, at which point it stops being a
+    // bonus and starts costing you.
+    $("multLabel").textContent = m < 0 ? "Difficulty Penalty" : "Difficulty Bonus";
+    $("multBox").classList.toggle("negative", m < 0);
     $("multBox").classList.toggle("locked", cfgLocked());
-    // Spell out the arithmetic — base, then each discount — so the number in the
-    // box is never a mystery.
-    const deltas = leverDeltas(cfg);
-    const raw = deltas.reduce((s, w) => s - (1 - w), killBase(cfg));
-    // Deltas can be negative (a discount) or positive (giving some back), so
-    // the sum line has to carry its own signs. While the rules are frozen the
-    // headline is the run's snapshot, so recomputing a sum from live config
-    // here would be able to contradict it — show nothing instead.
-    $("multSum").textContent = cfgLocked() ? "" : deltas.length
-      ? killBase(cfg) + deltas.map(w => (w <= 1 ? " − " : " + ") + Math.abs(1 - w).toFixed(2)).join("") +
-        " = " + raw.toFixed(2) + (raw < MULT_FLOOR ? " → floored at " + MULT_FLOOR.toFixed(2) : "")
-      : "";
 
     // Counts are on the labels now; this only explains the one number that
     // looks wrong — Prowler has 8 biases, so a cap of 6 retires it two short.

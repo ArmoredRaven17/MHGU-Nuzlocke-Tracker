@@ -127,11 +127,14 @@ the total × 0.75. The 1× reference run is: app rolls your loadout, both locks 
 revives; each of those is exactly 1× and costs nothing. The sidebar spells the
 arithmetic out (`3 − 0.25 − 0.25 = 2.50`).
 
-**Known rough edge:** the discounts total −1.00, which the two gentle conditions
-cannot absorb — `twice` (0.5) with everything unlocked lands at −0.50, and `streak`
-(0.75) at −0.25. `MULT_FLOOR` catches these at 0.1 and the sidebar says so, but the
-real fix is either raising the lenient base weights or shrinking the deltas. That's a
-balance decision, not a code one.
+**The total is deliberately unbounded below.** This is a bonus multiplier, so a run
+soft enough to net out at zero earns nothing and one softer still is penalised —
+clearing quests then *subtracts* from the total. Both are intended, so don't add a
+floor. The sidebar label flips from "Difficulty Bonus" to "Difficulty Penalty" below
+zero, and the status strip and summary tile follow.
+
+Negative numbers use a typographic minus (−) rather than a hyphen in both `fmtMult`
+and `zenny`, so the multiplier and the earnings figure match.
 
 **The kill conditions are a radio group, not checkboxes** — `cfg.kill` is one of
 `both | cart | fail | streak | twice`.
