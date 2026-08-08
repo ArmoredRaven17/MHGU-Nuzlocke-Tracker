@@ -916,7 +916,7 @@
   // apart. The one hard constraint is readability: white text must clear 4.5:1
   // on --bg, --bg2 and --hover, so re-check contrast after changing a hex.
   const COLORS = [
-    ["Redhelm",     "#96231C", "Redhelm Arzuros"],
+    ["Redhelm",     "#CE2A20", "Redhelm Arzuros"],
     ["Snowbaron",   "#8E6BC4", "Snowbaron Lagombi"],
     ["Stonefist",   "#E8776E", "Stonefist Hermitaur"],
     ["Dreadqueen",  "#4A2A66", "Dreadqueen Rathian"],
@@ -926,12 +926,12 @@
     ["Deadeye",     "#3F7A2E", "Deadeye Yian Garuga"],
     ["Dreadking",   "#3E0C05", "Dreadking Rathalos"],
     ["Thunderlord", "#C79A1C", "Thunderlord Zinogre"],
-    ["Grimclaw",    "#2C4A96", "Grimclaw Tigrex"],
-    ["Hellblade",   "#B03414", "Hellblade Glavenus"],
-    ["Nightcloak",  "#152D75", "Nightcloak Malfestio"],
+    ["Grimclaw",    "#3070D0", "Grimclaw Tigrex"],
+    ["Hellblade",   "#D25A18", "Hellblade Glavenus"],
+    ["Nightcloak",  "#07143C", "Nightcloak Malfestio"],
     ["Rustrazor",   "#5E9CC8", "Rustrazor Ceanataur"],
     ["Soulseer",    "#DC6F9E", "Soulseer Mizutsune"],
-    ["Boltreaver",  "#3070D0", "Boltreaver Astalos"],
+    ["Boltreaver",  "#22D3DB", "Boltreaver Astalos"],
     ["Elderfrost",  "#B8C6CE", "Elderfrost Gammoth"],
     ["Bloodbath",   "#1E2440", "Bloodbath Diablos"],
   ];
@@ -1192,7 +1192,7 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   buildSwatches();
-  const DEFAULT_THEME = "#152D75";            // Nightcloak Malfestio
+  const DEFAULT_THEME = "#07143C";            // Nightcloak Malfestio
   let savedTheme = DEFAULT_THEME;
   try { savedTheme = localStorage.getItem("mhgu-nuzlocke-theme") || savedTheme; } catch (e) {}
   // A stored hex that's no longer in the palette would leave no tile selected and
