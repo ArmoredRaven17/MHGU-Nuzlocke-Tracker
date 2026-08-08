@@ -71,7 +71,7 @@
     lockLoadout: true,
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
-    huntLimit: 100,                      // hunts before the run closes; 0 = no limit
+    huntLimit: 100,                      // hunts before the run closes; always set
     reviveEnabled: false, reviveOnce: true,
     reviveCap: 5,                        // buy-backs allowed per run; see REVIVE_CAP_WEIGHT
     revivePrice: 10000,                  // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
@@ -127,6 +127,19 @@
   // ~17% on top so that restriction is high risk, high reward rather than
   // merely break-even. Simulation over 4,000 runs per configuration.
   const STYLE_CAP_MULT = { 1: 3.5, 2: 1.75, 3: 1, 4: 0.75, 5: 0.6, 6: 0.5 };
+
+  // A completed run is its hunt limit, and finishing with combos still in hand
+  // is the point — so surviving pays.
+  //
+  // Awarded as a share of what you earned, not a flat pot per combo. A flat pot
+  // pays most to the loosest settings, which finish with 46 of 90 standing
+  // simply because they had 90 and gentle rules; as a proportion, keeping 5 of
+  // 15 scores exactly like keeping 15 of 45. Simulation also showed survival
+  // tracks play quality at a fixed setting — 0/45 at a 55% win rate against
+  // 16/45 at 95% — so it measures something real.
+  //
+  // At 1.0 a flawless run doubles and a wipe adds nothing.
+  const SURVIVOR_BONUS = 1.0;
 
   // What the first buy-back costs, and what charging that is worth. A cheap
   // safety net makes the run easier; a dear one barely helps. 10,000z is the
@@ -361,13 +374,29 @@
   // other restriction pays a bonus, but a hunt limit cannot: it only binds when
   // a run would otherwise outlast it, so on a short configuration you could
   // pick the tightest limit, never reach it, and collect the bonus for free.
-  // Its job is to stop a run being absurd — simulation put "same quest twice"
-  // at a median 1,384 hunts against 102 for the default — not to be a
-  // difficulty choice.
+  //
+  // It is also why there is no "no limit" option. Its job is to stop the gentle
+  // kill conditions winning on sheer length — simulation put "same quest twice"
+  // at a median 1,384 hunts against 102 for the default, which inverted the
+  // whole difficulty ordering. An unweighted opt-out would have handed that
+  // back for free. Choosing among 50/100/200 is a session-length preference;
+  // the ceiling is what keeps the ordering honest.
   // Snapshotted at Start Run like mult and maxLosses, so a finished run keeps
   // the limit it was played under even after the rules unlock.
   const runHuntLimit = () => (run.huntLimit != null ? run.huntLimit : cfg.huntLimit);
   const huntsUsed = () => run.hunts || 0;
+
+  // What you finished holding, as a share of what this run could have lost.
+  const survivorRate = () => {
+    const ceiling = runMax();
+    if (!ceiling) return 0;
+    return Math.max(0, Math.min(1, (ceiling - run.deaths.length) / ceiling));
+  };
+  // Only ever a bonus. Scaling a negative total by survival would punish
+  // keeping combos, which is the opposite of the intent.
+  const survivorBonus = () =>
+    run.earned > 0 ? Math.round(run.earned * survivorRate() * SURVIVOR_BONUS) : 0;
+  const finalScore = () => run.earned + survivorBonus();
   const huntCapHit = () => runHuntLimit() > 0 && huntsUsed() >= runHuntLimit();
   const runOver = () => run.active &&
     (run.finished || huntCapHit() || legalCombos().length === 0);
@@ -405,7 +434,7 @@
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
-    huntLimit: { 50: "h_50", 100: "h_100", 200: "h_200", 0: "h_0" },
+    huntLimit: { 50: "h_50", 100: "h_100", 200: "h_200" },
     revivePrice: { 5000: "p_5000", 10000: "p_10000", 20000: "p_20000", 30000: "p_30000" },
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
@@ -781,7 +810,10 @@
     el.classList.remove("hidden");
 
     const exhausted = legalCombos().length === 0;
-    const standing = legalCombos().length;
+    // Report the same quantity the survivor bonus is paid on — unspent
+    // allowance — not the raw board count, which includes combos belonging to
+    // retired weapons and so reads higher.
+    const standing = runMax() - run.deaths.length;
     const mins = Math.max(1, Math.round(((run.endedAt || Date.now()) - run.startedAt) / 60000));
     // Three ways to finish now, and which one it was is the headline.
     const why = exhausted
@@ -801,8 +833,12 @@
           [runHuntLimit() > 0 ? huntsUsed() + "/" + runHuntLimit() : String(huntsUsed()), "Hunts"],
           [run.deaths.length + "/" + runMax(), "Lost"],
           [mins + "m", "Duration"],
-          [zennyShort(run.earned), "Earned", "earned", zenny(run.earned)],
-          [fmtMult(run.mult), run.mult < 0 ? "Penalty" : "Bonus"],
+          [zennyShort(run.earned), "Earned", "", zenny(run.earned)],
+          [(runMax() - run.deaths.length) + "/" + runMax(), "Survived", "",
+            Math.round(survivorRate() * 100) + "% of the run's combos still standing"],
+          [zennyShort(survivorBonus()), "Survivor", "", zenny(survivorBonus())],
+          [zennyShort(finalScore()), "Final", "earned", zenny(finalScore())],
+          [fmtMult(run.mult), "Difficulty"],
         ].concat(run.revives
           ? [[String(run.revives), "Revived", "", run.reviveLog
               .map(r => (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style +
