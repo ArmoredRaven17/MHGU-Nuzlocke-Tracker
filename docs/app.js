@@ -442,9 +442,11 @@
       return;
     }
 
-    // The quest lock is a single-retry obligation: reaching any resolution on
-    // it discharges the debt. A fresh failure immediately re-owes it, so
-    // consecutive failures still pin you to the quest.
+    // The quest lock is a single-retry obligation. Reaching any resolution on
+    // the locked quest discharges it — win or lose, the retry was served, so
+    // failing it again must NOT re-lock you or the debt could never be paid.
+    // Only a failure on a quest you weren't already locked to owes a new one.
+    const wasRetry = !!run.lockQuest && questKey(run.lockQuest) === questKey(run.quest);
     run.lockQuest = null;
 
     if (outcome === "clear") {
@@ -466,7 +468,7 @@
         else if (cfg.kill === "streak" && run.failStreak >= 2)        kill(combo, "Two failures in a row");
         else if (cfg.kill === "twice"  && run.questFails[qk] >= 2)    kill(combo, "Quest failed twice");
 
-        if (cfg.lockQuest) run.lockQuest = run.quest;
+        if (cfg.lockQuest && !wasRetry) run.lockQuest = run.quest;
       }
     }
 
