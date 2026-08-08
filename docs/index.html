@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 <div id="app">
@@ -91,7 +91,24 @@
           <label class="chk"><input type="radio" name="price" id="p_20000">20,000z<span class="w">+0.05</span></label>
           <label class="chk"><input type="radio" name="price" id="p_30000">30,000z<span class="w">+0.10</span></label>
           <p class="hint" id="reviveNote" style="margin-top:8px">Paid for by selling
-            specified monster materials, you are given three options for flexibility.</p>
+            specified monster materials, or deducted from your earned zenny at double
+            the value. You are given three material options for flexibility.</p>
+        </div>
+      </section>
+
+      <section class="panel" data-open="false">
+        <button class="panel-head">Reroll <span class="chev">&#9662;</span></button>
+        <div class="panel-body">
+          <p class="hint">You may pay to refuse a Weapon/Style combo you were handed and
+            draw another. The refused combo goes back in the pool.</p>
+          <label class="chk"><input type="checkbox" id="rr_enabled">Allow rerolls<span class="w">&minus;0.20</span></label>
+          <p class="hint" style="margin-top:8px">Value for a reroll.</p>
+          <label class="chk"><input type="radio" name="rrprice" id="rp_2500">2,500z<span class="w">&minus;0.10</span></label>
+          <label class="chk"><input type="radio" name="rrprice" id="rp_5000" checked>5,000z<span class="w">&plusmn;0</span></label>
+          <label class="chk"><input type="radio" name="rrprice" id="rp_10000">10,000z<span class="w">+0.05</span></label>
+          <label class="chk"><input type="radio" name="rrprice" id="rp_20000">20,000z<span class="w">+0.10</span></label>
+          <p class="hint" style="margin-top:8px">Only applies when the app is rolling
+            for you &mdash; there is nothing to refuse on Hunter's choice.</p>
         </div>
       </section>
 
@@ -122,6 +139,7 @@
             <select id="pickStyle"></select>
           </div>
           <button id="rollBtn" class="btn tiny">Roll Combo</button>
+          <button id="rerollBtn" class="btn tiny hidden">Reroll&hellip;</button>
         </div>
 
         <div class="hunt-quest">
@@ -254,6 +272,6 @@
 
 <script src="data.js?v=2"></script>
 <script src="materials.js?v=1"></script>
-<script src="app.js?v=36"></script>
+<script src="app.js?v=37"></script>
 </body>
 </html>

@@ -73,6 +73,8 @@
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
     revivePrice: 10000,                  // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
+    rerollEnabled: false,
+    rerollPrice: 5000,                   // zenny for the first reroll; see REROLL_PRICE_WEIGHT
   };
   let cfg = Object.assign({}, DEFAULT_CFG);
 
@@ -125,6 +127,13 @@
   // intent, so check REVIVE_NEVER_BEATS_OFF if you retune these.
   const REVIVE_PRICE_WEIGHT = { 5000: 0.85, 10000: 1, 20000: 1.05, 30000: 1.10 };
 
+  // Rerolling lets you refuse a combo you were handed, so allowing it is a
+  // discount for the same reason revives are. Same shape: charging more for it
+  // claws some back, capped so that forbidding rerolls always beats allowing
+  // them at any price. Placeholder values pending balance.
+  const REROLL_ALLOWED_WEIGHT = 0.80;   // -0.20 for having the escape hatch at all
+  const REROLL_PRICE_WEIGHT = { 2500: 0.90, 5000: 1, 10000: 1.05, 20000: 1.10 };
+
   // The total is deliberately unbounded below. This is a bonus multiplier, so a
   // run soft enough to net out at zero earns nothing, and one softer still is
   // penalised — both are legitimate outcomes rather than something to clamp.
@@ -142,6 +151,11 @@
       d.push(L.reviveAllowed);
       if (c.reviveOnce) d.push(L.reviveOnce);
       const price = REVIVE_PRICE_WEIGHT[c.revivePrice];
+      if (price != null && price !== 1) d.push(price);
+    }
+    if (c.rerollEnabled) {
+      d.push(REROLL_ALLOWED_WEIGHT);
+      const price = REROLL_PRICE_WEIGHT[c.rerollPrice];
       if (price != null && price !== 1) d.push(price);
     }
     return d;
@@ -242,9 +256,11 @@
     combo: null,           // the loadout for the hunt in progress
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
-    cleared: 0, failed: 0, carts: 0, revives: 0,
+    cleared: 0, failed: 0, carts: 0, revives: 0, rerolls: 0,
     revived: {},           // comboKey -> times bought back (survives the death being removed)
-    reviveLog: [],         // {weapon, style, cost, paid:[{n,qty}]} for the summary
+    reviveLog: [],         // {weapon, style, cost, method, paid:[{n,qty}]} for the summary
+    rerollLog: [],         // {weapon, style, cost, method}
+    zennySpent: 0,         // paid out of score rather than materials
     earned: 0,             // zenny rewards of quests cleared, x the run's multiplier
     mult: 1,               // snapshotted at Start Run; rules are frozen anyway
     maxLosses: 0,          // likewise — the rules unlock again once the run ends,
@@ -264,15 +280,49 @@
     cfg.reviveEnabled && run.active && !run.finished && deadKeys.has(comboKey(w, s)) &&
     !(cfg.reviveOnce && (run.revived[comboKey(w, s)] || 0) >= 1);
 
-  function doRevive(w, s, option) {
+  // Settling by zenny comes straight off the score. It may take the total
+  // negative — that's allowed, same as a negative multiplier.
+  function settle(method, option) {
+    if (method !== "zenny") return;
+    run.earned -= option.total;
+    run.zennySpent += option.total;
+  }
+
+  function doRevive(w, s, option, method) {
     const key = comboKey(w, s);
     if (!canRevive(w, s)) return;
     run.deaths = run.deaths.filter(d => comboKey(d.weapon, d.style) !== key);
     run.revived[key] = (run.revived[key] || 0) + 1;
-    run.reviveLog.push({ weapon: w, style: s, cost: option.total,
+    run.reviveLog.push({ weapon: w, style: s, cost: option.total, method,
       paid: option.bundle.map(x => ({ n: x.n, qty: x.qty })) });
     run.revives++;
+    settle(method, option);
     rebuildDeadKeys();
+    save(); renderAll();
+  }
+
+  // Refuse the combo you were handed and draw another. The refused one is not
+  // lost — it goes back in the pool — you have simply paid to not take it now.
+  const canReroll = () => cfg.rerollEnabled && cfg.assign === "roll" &&
+    run.active && !run.finished && !!run.combo &&
+    isAlive(run.combo.weapon, run.combo.style) && legalCombos().length > 1;
+
+  const rerollCost = (used) => cfg.rerollPrice * (Math.max(0, used) + 1);
+
+  function doReroll(option, method) {
+    if (!canReroll()) return;
+    const from = run.combo;
+    // Draw a genuinely different combo rather than possibly the same one back.
+    let next = null;
+    for (let i = 0; i < 50 && !next; i++) {
+      const c = rollCombo();
+      if (c && comboKey(c.weapon, c.style) !== comboKey(from.weapon, from.style)) next = c;
+    }
+    if (!next) return;
+    run.rerollLog.push({ weapon: from.weapon, style: from.style, cost: option.total, method });
+    run.rerolls++;
+    run.combo = next;
+    settle(method, option);
     save(); renderAll();
   }
 
@@ -357,12 +407,14 @@
     lockLoadout: "l_loadout",
     lockQuest: "l_quest",
     reviveEnabled: "r_enabled", reviveOnce: "r_once",
+    rerollEnabled: "rr_enabled",
   };
   // Radio groups: cfg key -> value -> element id.
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
     revivePrice: { 5000: "p_5000", 10000: "p_10000", 20000: "p_20000", 30000: "p_30000" },
+    rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
     assign: { roll: "a_roll", pick: "a_pick" },
   };
 
@@ -375,7 +427,7 @@
     });
     applyCfgLockState();
   }
-  const RADIO_NUMERIC = { stylesPerWeapon: true, revivePrice: true };
+  const RADIO_NUMERIC = { stylesPerWeapon: true, revivePrice: true, rerollPrice: true };
   function readCfgFromDom() {
     if (cfgLocked()) return;                    // settings are frozen for the run
     Object.entries(CFG_BOXES).forEach(([k, id]) => { cfg[k] = $(id).checked; });
@@ -406,6 +458,8 @@
     const off = !cfg.reviveEnabled;
     $("r_once").disabled = off;
     Object.values(CFG_RADIOS.revivePrice).forEach(id => { $(id).disabled = off; });
+    const rrOff = !cfg.rerollEnabled;
+    Object.values(CFG_RADIOS.rerollPrice).forEach(id => { $(id).disabled = rrOff; });
   }
 
   // ── Kill / revive ────────────────────────────────────────────────────────
@@ -664,6 +718,9 @@
       // roll and the locks mean nothing.
       $("rollBtn").disabled = !!run.combo;
       $("rollBtn").textContent = run.combo ? "Combo set" : "Roll Combo";
+      const rr = canReroll();
+      $("rerollBtn").classList.toggle("hidden", !rr);
+      if (rr) $("rerollBtn").textContent = "Reroll — " + zenny(rerollCost(run.rerolls));
     }
 
     const q = run.quest;
@@ -902,7 +959,51 @@
     });
   }
 
-  // ── Revive modal ─────────────────────────────────────────────────────────
+  // ── Payment ──────────────────────────────────────────────────────────────
+  // One modal serves both revives and rerolls. Two ways to settle a cost:
+  //
+  //   materials — three bundles near the target, cost paid out of game
+  //   zenny     — deducted from what the run has earned, at PAY_ZENNY_MULT
+  //
+  // You can't drop zenny in game, so paying that way costs nothing in
+  // materials — it just eats the score. That's the easier route, hence the
+  // multiplier: convenience is bought with points.
+  const PAY_ZENNY_MULT = 2;
+
+  // Opens the payment modal. `onPaid(method, detail)` runs once settled.
+  function askPayment({ title, sub, target, seed, onPaid }) {
+    const opts = reviveOptions(target, seed);
+    const zennyCost = target * PAY_ZENNY_MULT;
+
+    $("reviveTitle").textContent = title;
+    $("reviveSub").textContent = sub;
+
+    $("reviveOptions").innerHTML =
+      opts.map((o, i) =>
+        `<button type="button" class="revive-opt" data-mat="${i}">` +
+        o.bundle.map(x =>
+          `<span class="ro-line"><span class="ro-qty">${x.qty}&times;</span>` +
+          `<span class="ro-name">${escapeHtml(x.n)}</span>` +
+          `<span class="ro-val">${zenny(x.v * x.qty)}</span></span>`).join("") +
+        `<span class="ro-total">${zenny(o.total)}</span></button>`).join("") +
+      `<button type="button" class="revive-opt pay-zenny" data-zenny="1">` +
+      `<span class="ro-line"><span class="ro-name">Deduct from earned zenny</span></span>` +
+      `<span class="ro-note">Keeps your materials, costs double</span>` +
+      `<span class="ro-total">&minus;${zenny(zennyCost)}</span></button>`;
+
+    $("reviveOptions").querySelectorAll("[data-mat]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        $("reviveModal").classList.add("hidden");
+        onPaid("materials", opts[+btn.dataset.mat]);
+      });
+    });
+    $("reviveOptions").querySelector("[data-zenny]").addEventListener("click", () => {
+      $("reviveModal").classList.add("hidden");
+      onPaid("zenny", { total: zennyCost, bundle: [] });
+    });
+    $("reviveModal").classList.remove("hidden");
+  }
+
   function openRevive(w, s) {
     if (!canRevive(w, s)) return;
     const target = reviveCost(run.revives);
@@ -910,28 +1011,26 @@
     // the modal is closed and reopened rather than rerolling the price.
     const seed = (run.revives + 1) * 7919 + comboKey(w, s).split("")
       .reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
-    const opts = reviveOptions(target, seed);
-
-    $("reviveTitle").textContent = (WEAPON_ABBREV[w] || w) + " + " + s;
-    $("reviveSub").textContent = opts.length
-      ? `Revive #${run.revives + 1} — around ${zenny(target)} in materials. Pick a way to pay.`
-      : `Revive #${run.revives + 1} — around ${zenny(target)}, but no combination of materials lands close enough.`;
-
-    $("reviveOptions").innerHTML = opts.map((o, i) =>
-      `<button type="button" class="revive-opt" data-i="${i}">` +
-      o.bundle.map(x =>
-        `<span class="ro-line"><span class="ro-qty">${x.qty}&times;</span>` +
-        `<span class="ro-name">${escapeHtml(x.n)}</span>` +
-        `<span class="ro-val">${zenny(x.v * x.qty)}</span></span>`).join("") +
-      `<span class="ro-total">${zenny(o.total)}</span></button>`).join("");
-
-    $("reviveOptions").querySelectorAll(".revive-opt").forEach(btn => {
-      btn.addEventListener("click", () => {
-        $("reviveModal").classList.add("hidden");
-        doRevive(w, s, opts[+btn.dataset.i]);
-      });
+    askPayment({
+      title: (WEAPON_ABBREV[w] || w) + " + " + s,
+      sub: `Revive #${run.revives + 1} — around ${zenny(target)}. Pick a way to pay.`,
+      target, seed,
+      onPaid: (method, option) => doRevive(w, s, option, method),
     });
-    $("reviveModal").classList.remove("hidden");
+  }
+
+  function openReroll() {
+    if (!canReroll()) return;
+    const target = rerollCost(run.rerolls);
+    const c = run.combo;
+    const seed = (run.rerolls + 1) * 6271 + comboKey(c.weapon, c.style).split("")
+      .reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 11);
+    askPayment({
+      title: "Reroll " + (WEAPON_ABBREV[c.weapon] || c.weapon) + " + " + c.style,
+      sub: `Reroll #${run.rerolls + 1} — around ${zenny(target)}. Pick a way to pay.`,
+      target, seed,
+      onPaid: (method, option) => doReroll(option, method),
+    });
   }
 
   // ── Confirm modal ────────────────────────────────────────────────────────
@@ -1047,6 +1146,7 @@
     const cell = e.target.closest(".cell.revivable");
     if (cell) openRevive(cell.dataset.w, cell.dataset.s);
   });
+  $("rerollBtn").addEventListener("click", openReroll);
   $("reviveCancel").addEventListener("click", () => $("reviveModal").classList.add("hidden"));
   $("reviveModal").addEventListener("click", (e) => {
     if (e.target.id === "reviveModal") $("reviveModal").classList.add("hidden");

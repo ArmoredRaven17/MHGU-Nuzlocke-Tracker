@@ -224,6 +224,11 @@ body{
 .ro-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ro-val{opacity:.55;font-size:11px;font-variant-numeric:tabular-nums}
 .ro-total{align-self:flex-end;font-weight:700;color:#c9a227;font-variant-numeric:tabular-nums}
+/* Paying out of score rather than materials — visually the odd one out */
+.revive-opt.pay-zenny{border-style:dashed}
+.revive-opt.pay-zenny:hover,.revive-opt.pay-zenny:focus-visible{border-color:var(--dead);background:#ff2a2a14}
+.revive-opt.pay-zenny .ro-total{color:var(--dead)}
+.ro-note{font-size:11px;opacity:.6}
 .cell.current{border-color:var(--accent-hover);background:#ffffff26;
   box-shadow:0 0 0 1px var(--accent-hover) inset;font-weight:700}
 .board-legend{display:flex;gap:16px;font-size:11px;opacity:.6;flex-wrap:wrap}
