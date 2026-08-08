@@ -822,32 +822,38 @@
         ? `You went the distance — ${CLEAR_LIMIT} successful hunts, with ${standing} combo${
             standing === 1 ? "" : "s"} still standing.`
         : `Ended manually with ${standing} still standing.`;
+    const tile = ([val, label, cls, exact]) =>
+      `<div class="sum-stat${cls ? " " + cls : ""}"${exact ? ` title="${escapeHtml(exact)}"` : ""}>` +
+      `<b class="fit${fitClass(val)}">${escapeHtml(val)}</b><span>${label}</span></div>`;
+    // Two rows, and the order is the point: the score is the headline, what
+    // built it comes next, and the tally of how the run went comes last.
+    // "Lost" is absent deliberately — Survived carries the same information.
+    const scoring = [
+      [fmtMult(run.mult), "Difficulty"],
+      [zennyShort(run.earned), "Earned", "", zenny(run.earned)],
+      [(runMax() - run.deaths.length) + "/" + runMax(), "Survived", "",
+        Math.round(survivorRate() * 100) + "% of the run's combos still standing"],
+      [zennyShort(survivorBonus()), "Survivor", "", zenny(survivorBonus())],
+    ];
+    const tally = [
+      [String(run.hunts || 0), "Hunts"],
+      [clearsUsed() + "/" + CLEAR_LIMIT, "Cleared"],
+      [String(run.failed), "Failed"],
+      [String(run.carts), "Carts"],
+      [mins + "m", "Duration"],
+    ].concat(run.revives
+      ? [[String(run.revives), "Revived", "", run.reviveLog
+          .map(r => (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style +
+                    " — " + zenny(r.cost)).join("\n")]]
+      : []);
+    const final = zennyShort(finalScore());
     el.innerHTML =
       `<h2>Run Over</h2>` +
       `<p class="sub">${escapeHtml(why)}</p>` +
-      `<div class="sum-stats">` +
-        [
-          [clearsUsed() + "/" + CLEAR_LIMIT, "Cleared"],
-          [String(run.failed), "Failed"],
-          [String(run.carts), "Carts"],
-          [String(run.hunts || 0), "Hunts"],
-          [run.deaths.length + "/" + runMax(), "Lost"],
-          [mins + "m", "Duration"],
-          [zennyShort(run.earned), "Earned", "", zenny(run.earned)],
-          [(runMax() - run.deaths.length) + "/" + runMax(), "Survived", "",
-            Math.round(survivorRate() * 100) + "% of the run's combos still standing"],
-          [zennyShort(survivorBonus()), "Survivor", "", zenny(survivorBonus())],
-          [zennyShort(finalScore()), "Final", "earned", zenny(finalScore())],
-          [fmtMult(run.mult), "Difficulty"],
-        ].concat(run.revives
-          ? [[String(run.revives), "Revived", "", run.reviveLog
-              .map(r => (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style +
-                        " — " + zenny(r.cost)).join("\n")]]
-          : []).map(([val, label, cls, exact]) =>
-          `<div class="sum-stat${cls ? " " + cls : ""}"${exact ? ` title="${escapeHtml(exact)}"` : ""}>` +
-          `<b class="fit${fitClass(val)}">${escapeHtml(val)}</b><span>${label}</span></div>`
-        ).join("") +
-      `</div>` +
+      `<div class="sum-hero" title="${escapeHtml(zenny(finalScore()))}">` +
+        `<b class="fit${fitClass(final)}">${escapeHtml(final)}</b><span>Final</span></div>` +
+      `<div class="sum-stats cols-4">` + scoring.map(tile).join("") + `</div>` +
+      `<div class="sum-stats cols-5">` + tally.map(tile).join("") + `</div>` +
       `<div class="sum-roll">` + run.deaths.map(d =>
         `<div class="bl-tag nuz-tag"><span class="sr-n">#${d.n}</span>` +
         `<span class="nuz-combo">${escapeHtml(WEAPON_ABBREV[d.weapon] || d.weapon)} + ${escapeHtml(d.style)}</span>` +

@@ -177,7 +177,6 @@ body{
 .mult-box.locked .mult-value{opacity:.75}
 
 .stat.earned b{color:var(--accent-hover)}
-.sum-stat.earned b{color:var(--accent-hover)}
 
 /* Rules frozen for the duration of a run */
 .lock-note{border:1px solid var(--accent);border-radius:6px;padding:6px 8px;
@@ -238,12 +237,34 @@ body{
 .placeholder h2{font-size:26px;margin:0 0 12px}
 .placeholder p{line-height:1.6;margin:8px 0}
 
+/* Queried as a container, not against the viewport: the sidebar takes 300px, so
+   this card is narrow long before the window is. */
 .summary{max-width:640px;margin:20px auto;padding:20px;border:1px solid var(--line);
-  border-radius:10px;background:var(--card)}
+  border-radius:10px;background:var(--card);container-type:inline-size}
 .summary h2{margin:0 0 4px;font-size:26px}
 .summary .sub{opacity:.7;margin:0 0 18px;font-size:13px}
-.sum-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
-  gap:10px;margin-bottom:18px}
+/* The score is the whole point of the screen, so it gets the top and the size. */
+.sum-hero{text-align:center;padding:16px 12px;margin-bottom:10px;border:1px solid var(--line);
+  border-radius:10px;background:#ffffff0a}
+.sum-hero b{display:block;line-height:1.1;font-variant-numeric:tabular-nums;
+  color:var(--accent-hover);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Sized off the card rather than stepped, so a long total shrinks to fit instead
+   of being clipped. The fit classes only set how fast it gives ground. */
+.sum-hero b{font-size:clamp(26px,26cqw,52px)}
+.sum-hero b.fit-s{font-size:clamp(22px,16cqw,46px)}
+.sum-hero b.fit-xs{font-size:clamp(19px,12cqw,40px)}
+.sum-hero b.fit-xxs{font-size:clamp(16px,9cqw,32px)}
+.sum-hero span{font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:.08em}
+
+.sum-stats{display:grid;gap:10px;margin-bottom:10px}
+/* Fixed counts rather than auto-fit: the two rows carry different kinds of
+   number and reflowing them into one another would lose that split. */
+.sum-stats.cols-4{grid-template-columns:repeat(4,1fr)}
+.sum-stats.cols-5{grid-template-columns:repeat(5,1fr);margin-bottom:18px}
+@container (max-width:420px){
+  .sum-stats.cols-4{grid-template-columns:repeat(2,1fr)}
+  .sum-stats.cols-5{grid-template-columns:repeat(3,1fr)}
+}
 .sum-stat{text-align:center;padding:10px 6px;border:1px solid var(--line);
   border-radius:8px;background:#ffffff0a}
 .sum-stat b{display:block;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums;
