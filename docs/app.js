@@ -1,0 +1,1006 @@
+"use strict";
+(function () {
+  const QUESTS = window.MHGU_QUESTS || [];
+  const $ = (id) => document.getElementById(id);
+  const rand = (n) => Math.floor(Math.random() * n);
+  const pick = (arr) => arr[rand(arr.length)];
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // ── Static config (carried over from the Randomizer) ─────────────────────
+  const WEAPONS = ["Great Sword","Long Sword","Sword & Shield","Dual Blades",
+    "Hammer","Hunting Horn","Lance","Gunlance","Switch Axe","Charge Blade",
+    "Insect Glaive","Light Bowgun","Heavy Bowgun","Bow"];
+
+  const WEAPON_COLORS = {
+    "Great Sword":"#ff505b","Long Sword":"#9beaf1","Sword & Shield":"#dfd65f",
+    "Dual Blades":"#6ac083","Hammer":"#c3a3d2","Hunting Horn":"#f89a64",
+    "Lance":"#9fbcff","Gunlance":"#f4baf5","Switch Axe":"#aaaaaa",
+    "Charge Blade":"#fc5800","Insect Glaive":"#f5f5f5","Light Bowgun":"#acd56b",
+    "Heavy Bowgun":"#f8899c","Bow":"#55edc4","Prowler":"#c29930",
+  };
+
+  const STYLES = ["Guild","Striker","Adept","Aerial","Valor","Alchemy"];
+
+  const WEAPON_ABBREV = {
+    "Great Sword":"GS","Long Sword":"LS","Sword & Shield":"SnS","Dual Blades":"DB",
+    "Hammer":"Hammer","Hunting Horn":"HH","Lance":"Lance","Gunlance":"GL",
+    "Switch Axe":"SA","Charge Blade":"CB","Insect Glaive":"IG",
+    "Light Bowgun":"LBG","Heavy Bowgun":"HBG","Bow":"Bow",
+  };
+
+  const BIASES = [
+    ["Charisma",  "FourthGen-Palico_Icon_Blue.webp"],
+    ["Fighting",  "Palico_Weapon_Cutting_Icon_Red.webp"],
+    ["Protection","FourthGen-Down_Arrow_Icon_Blue.webp"],
+    ["Assisting", "MH4G-Trap_Icon_Purple.webp"],
+    ["Healing",   "MH4G-Horn_Icon_Green.webp"],
+    ["Bombing",   "MH4G-Barrel_Icon_Brown.webp"],
+    ["Gathering", "MH4G-Boomerang_Icon_Blue.webp"],
+    ["Beast",     "FourthGen-Claw_Icon_Dark_Red.webp"],
+  ];
+  const BIAS_FILE = Object.fromEntries(BIASES);
+  const BIAS_NAMES = BIASES.map(b => b[0]);
+
+  // Prowler is a weapon whose biases occupy the style slot: 8 lives against a
+  // normal weapon's 6. 14 x 6 + 8 = 92.
+  const ALL_WEAPONS = WEAPONS.concat(["Prowler"]);
+  const stylesFor = (w) => (w === "Prowler" ? BIAS_NAMES : STYLES);
+  const TOTAL_COMBOS = WEAPONS.length * STYLES.length + BIAS_NAMES.length;
+
+  // ── Icon path helpers ────────────────────────────────────────────────────
+  const FALLBACK_ICON = "assets/MonsterIcons/MHGU-Question_Mark_Icon.webp";
+  const monsterIcon = (name) => name
+    ? "assets/MonsterIcons/MHGU-" + name.replace(/ /g, "_") + "_Icon.webp"
+    : FALLBACK_ICON;
+  const weaponIcon = (w) => "assets/WeaponIcons/icon_" +
+    w.toLowerCase().replace(/ & /g, "_and_").replace(/ /g, "_") + "_tinted.png";
+  const prowlerIcon = (f) => "assets/ProwlerIcons/" + f;
+  // Training Codex — stands in for a padlock on anything the run has locked.
+  const LOCK_ICON = '<img class="lock-icon" src="assets/ItemIcons/MH4G-Book_Icon_Red.png" alt="Locked">';
+  const comboIcon = (w, s) => (w === "Prowler" ? prowlerIcon(BIAS_FILE[s] || "") : weaponIcon(w));
+
+  // ── State ────────────────────────────────────────────────────────────────
+  // cfg outlives individual runs, so starting a new one doesn't mean re-ticking
+  // every box. run is wiped by Start Run.
+  // Both locks default on: locked is the 1x reference run, unlocking is the
+  // discount. See LEVER_WEIGHT.
+  const DEFAULT_CFG = {
+    kill: "both",                        // "both" | "cart" | "fail" | "streak" | "twice"
+    assign: "roll",                      // "roll" | "pick"
+    lockLoadout: true,
+    lockQuest: true,
+    reviveEnabled: false, reviveOnce: true,
+  };
+  let cfg = Object.assign({}, DEFAULT_CFG);
+
+  // ── Difficulty multiplier ────────────────────────────────────────────────
+  // Quest failed is the 1x base; harsher conditions sit above it, gentler ones
+  // below. Tuning the difficulty curve means editing these two tables and
+  // nothing else.
+  // One condition, not a combination. A quest can fail WITHOUT carting — time
+  // out, or blow the sub-objective — so cart and quest-failed are genuinely
+  // independent triggers rather than one subsuming the other. "both" is their
+  // union and is offered explicitly, which is why a radio still works: every
+  // meaningful combination has its own entry, and the gentler rules below
+  // quest-failed can never fire while it is selected.
+  const KILL_WEIGHT = {
+    both:   3,      // a cart OR a quest failure takes it — nothing is forgiven
+    cart:   2,      // carts only; you can still lose a quest and keep the combo
+    fail:   1,      // failures only; carting your way to a clear costs nothing
+    streak: 0.75,   // the first failure is forgiven
+    twice:  0.5,    // needs the same quest to beat you twice
+  };
+  const killBase = (c) => KILL_WEIGHT[c.kill] || 0;
+
+  // The kill condition sets the base; every other lever is written as the
+  // multiplier it reads as and contributes its distance from 1x, ADDITIVELY.
+  // A 0.75x lever is -0.25 off the total, not the total times 0.75.
+  //
+  // The 1x reference run is: the app rolls your loadout, both locks on, no
+  // revives — each of those is exactly 1x and so costs nothing.
+  const LEVER_WEIGHT = {
+    pickOwnLoadout:   0.75,   // choosing beats being handed one       -0.25
+    loadoutUnlocked:  0.75,   // free to swap weapon/style whenever    -0.25
+    questUnlocked:    0.75,   // free to walk away from a quest        -0.25
+    reviveAllowed:    0.75,   // a safety net at all                   -0.25
+    reviveOnce:       1.10,   // ...but only one each, so some of it back  +0.10
+  };
+  // The discounts can total -1.00, which the two gentle conditions can't absorb
+  // (0.5 base - 1.00 = -0.50), so the sum is floored rather than going negative.
+  const MULT_FLOOR = 0.1;
+
+  const leverDeltas = (c) => {
+    const L = LEVER_WEIGHT, d = [];
+    if (c.assign === "pick") d.push(L.pickOwnLoadout);
+    if (!c.lockLoadout)      d.push(L.loadoutUnlocked);
+    if (!c.lockQuest)        d.push(L.questUnlocked);
+    // Two independent values that stack: allowing revives at all is -0.25,
+    // and capping them at one per combo gives +0.10 of it back.
+    if (c.reviveEnabled) {
+      d.push(L.reviveAllowed);
+      if (c.reviveOnce) d.push(L.reviveOnce);
+    }
+    return d;
+  };
+
+  function multiplier(c) {
+    const base = killBase(c);
+    if (!base) return 0;                                // unreachable via the radio
+    const m = leverDeltas(c).reduce((sum, w) => sum - (1 - w), base);
+    return Math.max(MULT_FLOOR, Math.round(m * 100) / 100);
+  }
+  const fmtMult = (m) => "×" + m.toFixed(2);
+
+  // ── Revive economy ───────────────────────────────────────────────────────
+  // Cost climbs in flat steps: the Nth revive of a run costs BASE + STEP*(N-1).
+  // Tuning the curve means editing these two numbers and nothing else.
+  const REVIVE_BASE = 5000;
+  const REVIVE_STEP = 5000;
+  const REVIVE_TOLERANCE = 0.06;      // an option may miss the target by this much
+  const REVIVE_OPTIONS = 3;
+  const MATERIALS = (window.MHGU_MATERIALS || []).filter(m => m.v > 0);
+
+  const reviveCost = (used) => REVIVE_BASE + REVIVE_STEP * Math.max(0, used);
+
+  const MAT_MAX = MATERIALS.reduce((m, x) => Math.max(m, x.v), 0);
+  const SOFT_QTY = 3;                 // quantities stay small while the maths allows
+
+  // One bundle of 1-3 distinct materials totalling within tolerance of target.
+  //
+  // Quantities are a last resort, not the mechanism: each slot only considers
+  // materials expensive enough that a small multiple covers its share. Without
+  // that floor the search happily returns "33x Hermitaur Scrap", which is
+  // arithmetically correct and useless as a price. Once the target outgrows
+  // what three materials can cover (the dearest is 40,000z) the cap lifts,
+  // because at that point multiples are the only way to get there.
+  function buildBundle(target, rng) {
+    const size = 1 + rng(3);
+    const bundle = [];
+    let remaining = target;
+    for (let slot = 0; slot < size; slot++) {
+      const last = slot === size - 1;
+      // Leave room for later slots so the last one can still close the gap.
+      const share = last ? remaining : remaining / (size - slot) * (0.6 + rng(80) / 100);
+      const cap = Math.max(1, share) * 1.4;
+      const maxQty = Math.max(SOFT_QTY, Math.ceil(target / (MAT_MAX * 3)));
+      const floor = share / maxQty;
+      const pool = MATERIALS.filter(m => m.v <= cap && m.v >= floor
+        && !bundle.some(x => x.i === m.i));
+      if (!pool.length) return null;
+      const m = pool[rng(pool.length)];
+      const qty = Math.max(1, Math.round(share / m.v));
+      bundle.push({ i: m.i, n: m.n, v: m.v, qty });
+      remaining -= m.v * qty;
+    }
+    const total = bundle.reduce((s, x) => s + x.v * x.qty, 0);
+    if (Math.abs(total - target) > target * REVIVE_TOLERANCE) return null;
+    return { bundle, total };
+  }
+
+  // Three distinct options. Seeded so re-rendering doesn't reshuffle the prices
+  // in front of the user mid-decision.
+  function reviveOptions(target, seed) {
+    let s = (seed >>> 0) || 1;
+    const rng = (n) => { s = (s * 1664525 + 1013904223) >>> 0; return s % n; };
+    const out = [], seen = new Set();
+    for (let i = 0; i < 6000 && out.length < REVIVE_OPTIONS; i++) {
+      const o = buildBundle(target, rng);
+      if (!o) continue;
+      const key = o.bundle.map(x => x.i + "x" + x.qty).sort().join(",");
+      if (seen.has(key)) continue;
+      seen.add(key); out.push(o);
+    }
+    return out;
+  }
+
+  const emptyRun = () => ({
+    active: false, finished: false,
+    startedAt: 0, endedAt: 0,
+    deaths: [],            // {weapon, style, reason, quest, n, reviveCount}
+    failStreak: 0,         // run-global; carts never touch it
+    questFails: {},        // "Type|Name" -> cumulative failures
+    lockQuest: null,       // the quest you owe a retry on
+    combo: null,           // the loadout for the hunt in progress
+    quest: null,           // the quest for the hunt in progress
+    attemptCarts: 0,
+    cleared: 0, failed: 0, carts: 0, revives: 0,
+    revived: {},           // comboKey -> times bought back (survives the death being removed)
+    reviveLog: [],         // {weapon, style, cost, paid:[{n,qty}]} for the summary
+    earned: 0,             // zenny rewards of quests cleared, x the run's multiplier
+    mult: 1,               // snapshotted at Start Run; rules are frozen anyway
+  });
+  let run = emptyRun();
+
+  // Derived index over run.deaths — O(1) lookups when building the pool.
+  // Never persisted; rebuilt on load.
+  let deadKeys = new Set();
+  const rebuildDeadKeys = () => { deadKeys = new Set(run.deaths.map(d => comboKey(d.weapon, d.style))); };
+
+  // A fallen combo can be bought back unless the "once per combo" lever is on
+  // and it has already come back once. run.revived survives the death entry
+  // being removed, which is what makes that check possible.
+  const canRevive = (w, s) =>
+    cfg.reviveEnabled && run.active && !run.finished && deadKeys.has(comboKey(w, s)) &&
+    !(cfg.reviveOnce && (run.revived[comboKey(w, s)] || 0) >= 1);
+
+  function doRevive(w, s, option) {
+    const key = comboKey(w, s);
+    if (!canRevive(w, s)) return;
+    run.deaths = run.deaths.filter(d => comboKey(d.weapon, d.style) !== key);
+    run.revived[key] = (run.revived[key] || 0) + 1;
+    run.reviveLog.push({ weapon: w, style: s, cost: option.total,
+      paid: option.bundle.map(x => ({ n: x.n, qty: x.qty })) });
+    run.revives++;
+    rebuildDeadKeys();
+    save(); renderAll();
+  }
+
+  // ── Pool ─────────────────────────────────────────────────────────────────
+  const zenny = (n) => n.toLocaleString("en-US") + "z";
+  // A long run can earn seven figures, which will not fit a summary tile at
+  // full width. Abbreviate past a million; the tile keeps the exact figure in
+  // its tooltip.
+  const zennyShort = (n) => n >= 1e6
+    ? (n / 1e6).toFixed(n < 1e7 ? 2 : 1) + "Mz"
+    : zenny(n);
+  // Step the type down as the string grows so nothing overflows its tile.
+  const fitClass = (s) => s.length <= 4 ? "" : s.length <= 6 ? " fit-s"
+    : s.length <= 8 ? " fit-xs" : " fit-xxs";
+  const comboKey = (w, s) => w + "|" + s;
+  const questKey = (q) => q.t + "|" + q.n;
+  const isArena = (q) => !!q && q.t === "Arena";
+  const isAlive = (w, s) => !deadKeys.has(comboKey(w, s));
+
+  const legalStyles  = (w) => stylesFor(w).filter(s => isAlive(w, s));
+  const legalWeapons = () => ALL_WEAPONS.filter(w => legalStyles(w).length > 0);
+  function legalCombos() {
+    const out = [];
+    legalWeapons().forEach(w => legalStyles(w).forEach(s => out.push({ weapon: w, style: s })));
+    return out;
+  }
+
+  // Weapon-first: uniform among surviving weapons, then uniform among that
+  // weapon's surviving styles. Preserves the Randomizer's distribution rather
+  // than flattening across all 92 (which would shrink a weapon's share as its
+  // styles die).
+  function rollCombo() {
+    const weapons = legalWeapons();
+    if (!weapons.length) return null;
+    const weapon = pick(weapons);
+    const styles = legalStyles(weapon);
+    if (!styles.length) return null;   // unreachable by construction
+    return { weapon, style: pick(styles) };
+  }
+
+  // Run-over is derived, not latched, so it recomputes after every death and
+  // after any revive.
+  const runOver = () => run.active && (run.finished || legalCombos().length === 0);
+
+  // ── Persistence ──────────────────────────────────────────────────────────
+  const STORE_KEY = "mhgu-nuzlocke";
+
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, cfg, run }));
+    } catch (e) {}
+  }
+  function load() {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) {}
+    // Only keys DEFAULT_CFG still knows about, so settings that were replaced
+    // (the old per-condition kill booleans) don't linger in storage.
+    if (d && d.cfg) {
+      cfg = Object.assign({}, DEFAULT_CFG);
+      Object.keys(DEFAULT_CFG).forEach(k => { if (k in d.cfg) cfg[k] = d.cfg[k]; });
+      if (!KILL_WEIGHT[cfg.kill]) cfg.kill = DEFAULT_CFG.kill;
+    }
+    if (d && d.run) run = Object.assign(emptyRun(), d.run);
+    rebuildDeadKeys();
+  }
+
+  // ── Config <-> DOM ───────────────────────────────────────────────────────
+  const CFG_BOXES = {
+    lockLoadout: "l_loadout",
+    lockQuest: "l_quest",
+    reviveEnabled: "r_enabled", reviveOnce: "r_once",
+  };
+  // Radio groups: cfg key -> value -> element id.
+  const CFG_RADIOS = {
+    kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
+    assign: { roll: "a_roll", pick: "a_pick" },
+  };
+
+  function writeCfgToDom() {
+    Object.entries(CFG_BOXES).forEach(([k, id]) => { $(id).checked = !!cfg[k]; });
+    Object.entries(CFG_RADIOS).forEach(([k, maping]) => {
+      Object.entries(maping).forEach(([val, id]) => { $(id).checked = cfg[k] === val; });
+    });
+    applyCfgLockState();
+  }
+  function readCfgFromDom() {
+    if (cfgLocked()) return;                    // settings are frozen for the run
+    Object.entries(CFG_BOXES).forEach(([k, id]) => { cfg[k] = $(id).checked; });
+    Object.entries(CFG_RADIOS).forEach(([k, maping]) => {
+      const hit = Object.entries(maping).find(([, id]) => $(id).checked);
+      if (hit) cfg[k] = hit[0];
+    });
+    applyCfgLockState();
+  }
+
+  // The rules are fixed for the duration of a run — otherwise the difficulty
+  // you picked means nothing, since any condition could be switched off the
+  // moment it was about to cost you something.
+  const cfgLocked = () => run.active && !runOver();
+
+  const CFG_INPUTS = () => Object.values(CFG_BOXES).map($)
+    .concat(Object.values(CFG_RADIOS).flatMap(m => Object.values(m).map($)));
+
+  function applyCfgLockState() {
+    const locked = cfgLocked();
+    CFG_INPUTS().forEach(el => { el.disabled = locked; });
+    if (!locked) syncDependentBoxes();
+    $("cfgLockNote").classList.toggle("hidden", !locked);
+  }
+  // Sub-options only mean something when their parent is on.
+  function syncDependentBoxes() {
+    $("r_once").disabled = !cfg.reviveEnabled;
+  }
+
+  // ── Kill / revive ────────────────────────────────────────────────────────
+  // Idempotent: several conditions firing on one failure record a single death,
+  // tagged with the first matching reason.
+  function kill(combo, reason) {
+    const key = comboKey(combo.weapon, combo.style);
+    if (deadKeys.has(key)) return false;
+    deadKeys.add(key);
+    const prior = run.deaths.filter(d => comboKey(d.weapon, d.style) === key).length;
+    run.deaths.push({
+      weapon: combo.weapon, style: combo.style, reason,
+      quest: run.quest ? run.quest.n : "",
+      n: run.deaths.length + 1, reviveCount: prior,
+    });
+    return true;
+  }
+
+  // ── The report handler ───────────────────────────────────────────────────
+  function report(outcome) {
+    if (!run.active || run.finished) return;
+    if (!run.combo || !run.quest) return;
+
+    const combo = run.combo;
+    // Arena quests hand you a weapon, so nothing is at stake on them: no death,
+    // no streak change, no tally. Locks stay engaged across an Arena detour.
+    const counts = !isArena(run.quest);
+
+    if (outcome === "cart") {
+      run.carts++; run.attemptCarts++;
+      if (counts && (cfg.kill === "cart" || cfg.kill === "both")) kill(combo, "Carted");
+      // Deliberately does not end the attempt — Cleared/Failed stay available.
+      afterMutation();
+      return;
+    }
+
+    // The quest lock is a single-retry obligation: reaching any resolution on
+    // it discharges the debt. A fresh failure immediately re-owes it, so
+    // consecutive failures still pin you to the quest.
+    run.lockQuest = null;
+
+    if (outcome === "clear") {
+      run.cleared++;
+      if (counts) {
+        // Points only ever go up — a failure costs you a loadout, which is the
+        // punishment. Arena pays nothing, same as it costs nothing.
+        run.earned += Math.round((run.quest.r || 0) * run.mult);
+        run.failStreak = 0;
+      }
+    } else {                                        // "fail"
+      run.failed++;
+      if (counts) {
+        const qk = questKey(run.quest);
+        run.failStreak++;                           // before the streak check
+        run.questFails[qk] = (run.questFails[qk] || 0) + 1;
+
+        if      (cfg.kill === "fail" || cfg.kill === "both")          kill(combo, "Quest failed");
+        else if (cfg.kill === "streak" && run.failStreak >= 2)        kill(combo, "Two failures in a row");
+        else if (cfg.kill === "twice"  && run.questFails[qk] >= 2)    kill(combo, "Quest failed twice");
+
+        if (cfg.lockQuest) run.lockQuest = run.quest;
+      }
+    }
+
+    // Roll over into the next hunt. The loadout lock means exactly one thing:
+    // you keep the combo until it dies — through clears as well as failures.
+    run.attemptCarts = 0;
+    run.combo = (cfg.lockLoadout && isAlive(combo.weapon, combo.style))
+      ? { weapon: combo.weapon, style: combo.style } : null;
+    run.quest = run.lockQuest || null;
+    afterMutation();
+  }
+
+  function afterMutation() {
+    save();
+    renderAll();
+  }
+
+  // ── Run lifecycle ────────────────────────────────────────────────────────
+  function startRun() {
+    run = emptyRun();
+    run.active = true;
+    run.startedAt = Date.now();
+    run.mult = multiplier(cfg);
+    rebuildDeadKeys();
+    save(); renderAll();
+  }
+  function endRun() {
+    run.finished = true;
+    run.endedAt = Date.now();
+    save(); renderAll();
+  }
+
+  // ── Quest picker ─────────────────────────────────────────────────────────
+  let searchResults = [];
+  function renderQuestResults(term) {
+    const box = $("questResults");
+    const t = term.trim().toLowerCase();
+    if (!t) { box.classList.add("hidden"); return; }
+    searchResults = QUESTS.filter(q => q.n.toLowerCase().includes(t)).slice(0, 40);
+    if (!searchResults.length) {
+      box.innerHTML = '<p class="qr-none">No quest matches that.</p>';
+    } else {
+      // Buttons rather than divs so the list is reachable by keyboard and
+      // announced properly — it's the only way to set a quest.
+      box.innerHTML = searchResults.map((q, i) =>
+        `<button type="button" data-i="${i}">${escapeHtml(q.n)}` +
+        `<span class="qr-type"> &middot; ${escapeHtml(q.t)}${q.m ? " &middot; " + escapeHtml(q.m) : ""}</span>` +
+        `<span class="qr-worth">${q.t === "Arena" ? "&mdash;" : zenny(q.r || 0)}</span></button>`
+      ).join("");
+    }
+    box.classList.remove("hidden");
+  }
+  function chooseQuest(q) {
+    run.quest = q;
+    $("questSearch").value = "";
+    $("questResults").classList.add("hidden");
+    save(); renderAll();
+  }
+
+  // ── Rendering ────────────────────────────────────────────────────────────
+  function renderBoard() {
+    const board = $("board");
+    if (!run.active || runOver()) { board.classList.add("hidden"); return; }
+    board.classList.remove("hidden");
+
+    const cur = run.combo;
+    const isCurrent = (w, s) => cur && cur.weapon === w && cur.style === s;
+    const cellClass = (w, s) => {
+      if (!isAlive(w, s)) {
+        return "cell dead" + (canRevive(w, s) ? " revivable" : "");
+      }
+      // Back from the dead — worth marking, it cost something.
+      const back = (run.revived[comboKey(w, s)] || 0) > 0;
+      return "cell alive" + (back ? " revived" : "") + (isCurrent(w, s) ? " current" : "");
+    };
+    const cellTitle = (w, s) => canRevive(w, s)
+      ? ` title="Buy back for ${zenny(reviveCost(run.revives))}"` : "";
+
+    let html = '<div class="board-grid">';
+    html += '<div class="bh corner"></div>';
+    STYLES.forEach(s => { html += `<div class="bh">${escapeHtml(s)}</div>`; });
+    WEAPONS.forEach(w => {
+      html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
+              `<img src="${weaponIcon(w)}" alt="">${escapeHtml(WEAPON_ABBREV[w] || w)}</div>`;
+      STYLES.forEach(s => {
+        html += `<div class="${cellClass(w, s)}"${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}"></div>`;
+      });
+    });
+    html += "</div>";
+
+    html += '<div class="board-grid prowler">';
+    html += '<div class="bh corner"></div>';
+    BIAS_NAMES.forEach(b => { html += `<div class="bh">${escapeHtml(b)}</div>`; });
+    html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
+            `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">Prowler</div>`;
+    BIAS_NAMES.forEach(b => {
+      html += `<div class="${cellClass("Prowler", b)}"${cellTitle("Prowler", b)} data-w="Prowler" data-s="${escapeHtml(b)}"></div>`;
+    });
+    html += "</div>";
+
+    html += '<div class="board-legend"><span>Solid = available</span>' +
+            '<span style="color:var(--dead)">Struck through = fallen</span>' +
+            '<span>Outlined = current loadout</span></div>';
+    board.innerHTML = html;
+  }
+
+  function renderStatus() {
+    const strip = $("statusStrip");
+    if (!run.active || runOver()) { strip.classList.add("hidden"); return; }
+    strip.classList.remove("hidden");
+
+    const lost = run.deaths.length;
+    const alive = legalCombos().length;
+    let html =
+      `<span class="stat dead">Lost <b>${lost}</b></span>` +
+      `<span class="stat">Available <b>${alive}</b></span>` +
+      `<span class="stat">Cleared <b>${run.cleared}</b></span>` +
+      `<span class="stat">Failed <b>${run.failed}</b></span>` +
+      `<span class="stat">Carts <b>${run.carts}</b></span>` +
+      `<span class="stat earned">Earned <b>${zenny(run.earned)}</b></span>` +
+      `<span class="stat">Difficulty <b>${fmtMult(run.mult)}</b></span>` +
+      (cfg.reviveEnabled
+        ? `<span class="stat">Next revive <b>${zenny(reviveCost(run.revives))}</b></span>` : "");
+    if (cfg.kill === "streak") html += `<span class="stat">Streak <b>${run.failStreak}</b></span>`;
+
+    if (cfg.lockLoadout && run.combo) {
+      // A cart can kill the combo without ending the attempt, so the held
+      // loadout may already be dead — say so rather than "until it falls".
+      const dead = !isAlive(run.combo.weapon, run.combo.style);
+      html += `<span class="lock-chip${dead ? " fallen" : ""}">${LOCK_ICON} ` +
+        `${escapeHtml(WEAPON_ABBREV[run.combo.weapon] || run.combo.weapon)} + ` +
+        `${escapeHtml(run.combo.style)} &mdash; ` +
+        (dead ? "fallen; finish the hunt to move on" : "until it falls") + `</span>`;
+    }
+    if (run.lockQuest) {
+      html += `<span class="lock-chip">${LOCK_ICON} ${escapeHtml(run.lockQuest.n)} &mdash; owed a retry</span>`;
+    }
+    strip.innerHTML = html;
+  }
+
+  function renderHuntBar() {
+    const bar = $("huntBar");
+    if (!run.active || runOver()) { bar.classList.add("hidden"); return; }
+    bar.classList.remove("hidden");
+
+    // Locked to a live combo: you can't swap, so the pickers would be a lie.
+    const locked = cfg.lockLoadout && !!run.combo;
+    const pickMode = cfg.assign === "pick" && !locked;
+
+    $("hlPick").classList.toggle("hidden", !pickMode);
+    $("hlRolled").classList.toggle("hidden", pickMode);
+    $("rollBtn").classList.toggle("hidden", pickMode);
+
+    if (pickMode) {
+      const wSel = $("pickWeapon"), sSel = $("pickStyle");
+      // A cart can kill the held combo without ending the attempt, so the
+      // current loadout may be dead. Show it as it is — rendering must never
+      // reassign it, or the hunt silently continues on a different combo and
+      // the failure report kills that one too.
+      const held = run.combo;
+      const heldDead = held && !isAlive(held.weapon, held.style);
+      const weapons = legalWeapons();
+      if (heldDead && !weapons.includes(held.weapon)) weapons.unshift(held.weapon);
+      const curW = held && weapons.includes(held.weapon) ? held.weapon : weapons[0];
+      wSel.innerHTML = weapons.map(w =>
+        `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}>${escapeHtml(w)}</option>`).join("");
+
+      const styles = curW ? legalStyles(curW).slice() : [];
+      if (heldDead && held.weapon === curW && !styles.includes(held.style)) styles.unshift(held.style);
+      const curS = held && styles.includes(held.style) ? held.style : styles[0];
+      sSel.innerHTML = styles.map(s =>
+        `<option value="${escapeHtml(s)}"${s === curS ? " selected" : ""}>${escapeHtml(s)}</option>`).join("");
+
+      // Only seed a loadout when there isn't one; never overwrite an existing.
+      if (!run.combo && curW && curS) run.combo = { weapon: curW, style: curS };
+      // Nothing to swap to until the hunt is reported.
+      wSel.disabled = sSel.disabled = !!heldDead;
+    } else {
+      const c = run.combo;
+      $("hlText").textContent = c
+        ? (c.weapon + "  ·  " + c.style)
+        : "—";
+      const icon = $("hlIcon");
+      if (c) { icon.src = comboIcon(c.weapon, c.style); icon.classList.remove("hidden"); }
+      else icon.classList.add("hidden");
+      // Blocked while a hunt is outstanding — otherwise the mode is opt-out per
+      // roll and the locks mean nothing.
+      $("rollBtn").disabled = !!run.combo;
+      $("rollBtn").textContent = run.combo ? "Loadout set" : "Roll Loadout";
+    }
+
+    const q = run.quest;
+    const qLocked = !!run.lockQuest;
+    const chosen = $("questChosen");
+    chosen.classList.toggle("hidden", !q);
+    chosen.classList.toggle("locked", qLocked);
+    if (q) {
+      chosen.innerHTML =
+        (qLocked ? LOCK_ICON + " " : "") +
+        escapeHtml(q.n) +
+        (isArena(q)
+          ? ' <span class="qc-arena">Arena &mdash; nothing at stake</span>'
+          : ` <span class="qc-worth">${zenny(q.r || 0)}</span>`) +
+        (qLocked ? '<span class="qc-note">Locked &mdash; you owe this quest a retry</span>' : "");
+    }
+    // The search box would be a lie while the quest is locked — you can't pick.
+    $("questSearch").classList.toggle("hidden", qLocked);
+    if (qLocked) $("questResults").classList.add("hidden");
+
+    const ready = !!(run.combo && run.quest);
+    $("oClear").disabled = !ready;
+    $("oCart").disabled  = !ready;
+    $("oFail").disabled  = !ready;
+
+    let hint = "";
+    if (!run.combo) hint = "Get a loadout first.";
+    else if (!run.quest) hint = "Name the quest you're hunting.";
+    else if (isArena(run.quest)) hint = "Arena quest — reporting here won't cost you anything.";
+    else if (run.combo && !isAlive(run.combo.weapon, run.combo.style))
+      hint = "This loadout has already fallen — report the hunt to draw a new one.";
+    else if (run.attemptCarts) hint = run.attemptCarts + " cart(s) this attempt.";
+    $("outcomeHint").textContent = hint;
+  }
+
+  function renderDeaths() {
+    $("lostCount").textContent = run.deaths.length;
+    $("aliveCount").textContent = run.active ? legalCombos().length : TOTAL_COMBOS;
+    const el = $("deathList");
+    if (!run.deaths.length) {
+      el.innerHTML = '<p class="hint" style="margin:0">Nothing lost yet.</p>';
+      return;
+    }
+    el.innerHTML = run.deaths.slice().reverse().map(d =>
+      `<div class="bl-tag nuz-tag">` +
+      `<span class="nuz-combo">${escapeHtml(WEAPON_ABBREV[d.weapon] || d.weapon)} + ${escapeHtml(d.style)}</span>` +
+      `<span class="nuz-reason">${escapeHtml(d.reason)}</span></div>`
+    ).join("");
+  }
+
+  function renderSummary() {
+    const el = $("summary");
+    if (!runOver()) { el.classList.add("hidden"); return; }
+    el.classList.remove("hidden");
+
+    const exhausted = legalCombos().length === 0;
+    const mins = Math.max(1, Math.round(((run.endedAt || Date.now()) - run.startedAt) / 60000));
+    el.innerHTML =
+      `<h2>Run Over</h2>` +
+      `<p class="sub">${exhausted
+        ? "Every available loadout has fallen."
+        : "Ended manually with " + legalCombos().length + " still standing."}</p>` +
+      `<div class="sum-stats">` +
+        [
+          [String(run.cleared), "Cleared"],
+          [String(run.failed), "Failed"],
+          [String(run.carts), "Carts"],
+          [run.deaths.length + "/" + TOTAL_COMBOS, "Lost"],
+          [mins + "m", "Duration"],
+          [zennyShort(run.earned), "Earned", "earned", zenny(run.earned)],
+          [fmtMult(run.mult), "Difficulty"],
+        ].concat(run.revives
+          ? [[String(run.revives), "Revived", "", run.reviveLog
+              .map(r => (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style +
+                        " — " + zenny(r.cost)).join("\n")]]
+          : []).map(([val, label, cls, exact]) =>
+          `<div class="sum-stat${cls ? " " + cls : ""}"${exact ? ` title="${escapeHtml(exact)}"` : ""}>` +
+          `<b class="fit${fitClass(val)}">${escapeHtml(val)}</b><span>${label}</span></div>`
+        ).join("") +
+      `</div>` +
+      `<div class="sum-roll">` + run.deaths.map(d =>
+        `<div class="bl-tag nuz-tag"><span class="sr-n">#${d.n}</span>` +
+        `<span class="nuz-combo">${escapeHtml(WEAPON_ABBREV[d.weapon] || d.weapon)} + ${escapeHtml(d.style)}</span>` +
+        `<span class="nuz-reason">${escapeHtml(d.reason)}${d.quest ? " · " + escapeHtml(d.quest) : ""}</span></div>`
+      ).join("") + `</div>` +
+      `<div class="row end gap"><button id="sumNew" class="btn tiny accent">Start New Run</button></div>`;
+
+    $("sumNew").addEventListener("click", startRun);
+  }
+
+  function renderAll() {
+    const running = run.active && !runOver();
+    $("placeholder").classList.toggle("hidden", run.active);
+    $("startBtn").classList.toggle("hidden", run.active && !runOver());
+    $("endBtn").classList.toggle("hidden", !running);
+    $("startBtn").textContent = run.deaths.length || run.active ? "Start New Run" : "Start Run";
+
+    // Live while you're tuning; frozen to the run's snapshot once it starts.
+    const m = cfgLocked() ? run.mult : multiplier(cfg);
+    $("multValue").textContent = m ? fmtMult(m) : "—";
+    $("multBox").classList.toggle("locked", cfgLocked());
+    // Spell out the arithmetic — base, then each discount — so the number in the
+    // box is never a mystery.
+    const deltas = leverDeltas(cfg);
+    const raw = deltas.reduce((s, w) => s - (1 - w), killBase(cfg));
+    // Deltas can be negative (a discount) or positive (giving some back), so
+    // the sum line has to carry its own signs. While the rules are frozen the
+    // headline is the run's snapshot, so recomputing a sum from live config
+    // here would be able to contradict it — show nothing instead.
+    $("multSum").textContent = cfgLocked() ? "" : deltas.length
+      ? killBase(cfg) + deltas.map(w => (w <= 1 ? " − " : " + ") + Math.abs(1 - w).toFixed(2)).join("") +
+        " = " + raw.toFixed(2) + (raw < MULT_FLOOR ? " → floored at " + MULT_FLOOR.toFixed(2) : "")
+      : "";
+
+    applyCfgLockState();
+    renderStatus();
+    renderHuntBar();
+    renderBoard();
+    renderDeaths();
+    renderSummary();
+  }
+
+  // ── Theme ────────────────────────────────────────────────────────────────
+  // Themes are the 18 Deviants — this app's own identity, rather than the
+  // Randomizer's classic monster palette. [label, hex, icon/full name]: the
+  // label is the Deviant prefix so it fits the tile, the full name drives the
+  // icon file and the tooltip.
+  //
+  // Most hexes are the right-hand stop of that Deviant's in-game pigment, which
+  // is a two-color gradient. Several shift hue rather than shade across the
+  // plate (Snowbaron white→purple, Boltreaver green→blue), so the right stop is
+  // not simply a darker version of the left.
+  //
+  // Four are hand-picked rather than sampled: Dreadqueen takes Bloodbath's
+  // purple left stop, Bloodbath takes the old Nightcloak navy, and Dreadking and
+  // Nightcloak are deepened into a matched dark red / dark blue pair.
+  const COLORS = [
+    ["Redhelm",     "#96231C", "Redhelm Arzuros"],
+    ["Snowbaron",   "#8E6BC4", "Snowbaron Lagombi"],
+    ["Stonefist",   "#E8776E", "Stonefist Hermitaur"],
+    ["Dreadqueen",  "#7A4A9E", "Dreadqueen Rathian"],
+    ["Drilltusk",   "#D07A20", "Drilltusk Tetsucabra"],
+    ["Silverwind",  "#7A858E", "Silverwind Nargacuga"],
+    ["Crystalbeard","#CFAE44", "Crystalbeard Uragaan"],
+    ["Deadeye",     "#3F7A2E", "Deadeye Yian Garuga"],
+    ["Dreadking",   "#7E1E0E", "Dreadking Rathalos"],
+    ["Thunderlord", "#C79A1C", "Thunderlord Zinogre"],
+    ["Grimclaw",    "#2C4A96", "Grimclaw Tigrex"],
+    ["Hellblade",   "#B03414", "Hellblade Glavenus"],
+    ["Nightcloak",  "#152D75", "Nightcloak Malfestio"],
+    ["Rustrazor",   "#5E9CC8", "Rustrazor Ceanataur"],
+    ["Soulseer",    "#DC6F9E", "Soulseer Mizutsune"],
+    ["Boltreaver",  "#3070D0", "Boltreaver Astalos"],
+    ["Elderfrost",  "#B8C6CE", "Elderfrost Gammoth"],
+    ["Bloodbath",   "#1E2440", "Bloodbath Diablos"],
+  ];
+  const COLORS_HEX = Object.fromEntries(COLORS.map(([n, h]) => [h.toUpperCase(), n]));
+  const COLORS_ICON = Object.fromEntries(COLORS.filter(c => c[2]).map(([n, , i]) => [n, i]));
+
+  const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const hexRgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  function rgbToHsl([r, g, b]) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let h = 0;
+    if (d) h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? ((b - r) / d + 2) : ((r - g) / d + 4);
+    const l = (mx + mn) / 2;
+    return [h / 6, d ? d / (1 - Math.abs(2 * l - 1)) : 0, l];
+  }
+  function hslToRgb([h, s, l]) {
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h * 6) % 2 - 1)), m = l - c / 2;
+    const hi = Math.floor(h * 6) % 6;
+    const [r, g, b] = hi === 0 ? [c, x, 0] : hi === 1 ? [x, c, 0] : hi === 2 ? [0, c, x]
+      : hi === 3 ? [0, x, c] : hi === 4 ? [x, 0, c] : [c, 0, x];
+    return [r + m, g + m, b + m].map(v => clamp(v * 255));
+  }
+  // shade/lighten only move lightness in HSL space, so the hue and saturation of
+  // the chosen theme color are preserved — every derived shade stays in family.
+  //
+  // shade REMAPS the source lightness into [lo, hi] rather than multiplying and
+  // clamping. The clamp it replaces was the reason every theme looked alike:
+  // multiplying then capping at a single ceiling meant 17 of the 18 Deviants
+  // landed on exactly that ceiling, so every background came out at the same
+  // lightness and only a barely-visible hue told them apart. Remapping keeps the
+  // pale Deviants pale relative to the dark ones while still bounding the top of
+  // the range, so white text clears the 4.5:1 floor on every theme (worst case
+  // is Crystalbeard's hover at 6.8:1).
+  const shade = (rgb, lo, hi) => {
+    const [h, s, l] = rgbToHsl(rgb);
+    return hslToRgb([h, s, clamp01(lo + (hi - lo) * l)]);
+  };
+  const lighten = (rgb, b, minL) => {
+    const [h, s, l] = rgbToHsl(rgb);
+    return hslToRgb([h, s, clamp01(Math.max(l + (1 - l) * b, minL == null ? 0 : minL))]);
+  };
+  const css = (rgb) => `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+
+  function applyTheme(hex) {
+    const c = hexRgb(hex), r = document.documentElement.style;
+    r.setProperty("--bg",           css(shade(c, .10, .28)));
+    r.setProperty("--bg1",          css(shade(c, .085, .23)));
+    r.setProperty("--bg2",          css(shade(c, .07, .19)));
+    r.setProperty("--hover",        css(shade(c, .17, .35)));
+    r.setProperty("--accent",       css(shade(c, .10, .28)));
+    r.setProperty("--accent-hover", css(lighten(c, .40, .62)));
+    r.setProperty("--titlebar-overlay", "rgba(0,0,0,0.18)");
+    r.setProperty("--text", "#ffffff");
+    r.setProperty("--text-dim", "#fffffff5");
+    r.setProperty("--line", "rgba(11,8,8,0.12)");
+    r.setProperty("--card", "rgba(255,255,255,0.05)");
+    try { localStorage.setItem("mhgu-nuzlocke-theme", hex); } catch (e) {}
+    document.querySelectorAll(".swatch").forEach(s => s.classList.toggle("sel", s.dataset.hex === hex));
+    const ti = document.querySelector(".title-icon");
+    if (ti) {
+      const name = COLORS_HEX[hex.toUpperCase()];
+      ti.src = name ? monsterIcon(COLORS_ICON[name] || name) : FALLBACK_ICON;
+      ti.onerror = () => { ti.onerror = null; ti.src = FALLBACK_ICON; };
+    }
+  }
+  function buildSwatches() {
+    const wrap = $("swatches"); wrap.innerHTML = "";
+    COLORS.forEach(([name, hex]) => {
+      const full = COLORS_ICON[name] || name;
+      const d = document.createElement("div");
+      d.className = "swatch"; d.dataset.hex = hex; d.style.background = hex; d.title = full;
+      d.innerHTML = `<img class="swatch-icon" src="${monsterIcon(full)}" alt=""><span>${escapeHtml(name)}</span>`;
+      d.querySelector("img").onerror = function () { this.onerror = null; this.src = FALLBACK_ICON; };
+      d.addEventListener("click", () => applyTheme(hex));
+      wrap.appendChild(d);
+    });
+  }
+
+  // ── Revive modal ─────────────────────────────────────────────────────────
+  function openRevive(w, s) {
+    if (!canRevive(w, s)) return;
+    const target = reviveCost(run.revives);
+    // Seeded on the combo and the revive number, so the same offer persists if
+    // the modal is closed and reopened rather than rerolling the price.
+    const seed = (run.revives + 1) * 7919 + comboKey(w, s).split("")
+      .reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const opts = reviveOptions(target, seed);
+
+    $("reviveTitle").textContent = (WEAPON_ABBREV[w] || w) + " + " + s;
+    $("reviveSub").textContent = opts.length
+      ? `Revive #${run.revives + 1} — around ${zenny(target)} in materials. Pick a way to pay.`
+      : `Revive #${run.revives + 1} — around ${zenny(target)}, but no combination of materials lands close enough.`;
+
+    $("reviveOptions").innerHTML = opts.map((o, i) =>
+      `<button type="button" class="revive-opt" data-i="${i}">` +
+      o.bundle.map(x =>
+        `<span class="ro-line"><span class="ro-qty">${x.qty}&times;</span>` +
+        `<span class="ro-name">${escapeHtml(x.n)}</span>` +
+        `<span class="ro-val">${zenny(x.v * x.qty)}</span></span>`).join("") +
+      `<span class="ro-total">${zenny(o.total)}</span></button>`).join("");
+
+    $("reviveOptions").querySelectorAll(".revive-opt").forEach(btn => {
+      btn.addEventListener("click", () => {
+        $("reviveModal").classList.add("hidden");
+        doRevive(w, s, opts[+btn.dataset.i]);
+      });
+    });
+    $("reviveModal").classList.remove("hidden");
+  }
+
+  // ── Confirm modal ────────────────────────────────────────────────────────
+  let confirmAction = null;
+  function askConfirm(title, body, fn) {
+    $("confirmTitle").textContent = title;
+    $("confirmBody").textContent = body;
+    confirmAction = fn;
+    $("confirmModal").classList.remove("hidden");
+  }
+
+  // ── Export / import ──────────────────────────────────────────────────────
+  function exportRun() {
+    const blob = new Blob([JSON.stringify({ v: 1, cfg, run }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mhgu-nuzlocke.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  function importRun(file) {
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        const d = JSON.parse(fr.result);
+        if (d.cfg) cfg = Object.assign({}, DEFAULT_CFG, d.cfg);
+        if (d.run) run = Object.assign(emptyRun(), d.run);
+        rebuildDeadKeys(); writeCfgToDom(); save(); renderAll();
+      } catch (e) {
+        const b = $("importBtn"); const t = b.textContent;
+        b.textContent = "Invalid file!";
+        setTimeout(() => { b.textContent = t; }, 2000);
+      }
+    };
+    fr.readAsText(file);
+  }
+
+  // ── Wiring ───────────────────────────────────────────────────────────────
+  // Generic accordion — any .panel-head toggles its own panel.
+  document.querySelectorAll(".panel-head").forEach(h => {
+    h.addEventListener("click", () => {
+      const p = h.parentElement;
+      p.dataset.open = p.dataset.open === "true" ? "false" : "true";
+    });
+  });
+
+  document.querySelector(".sidebar").addEventListener("change", (e) => {
+    if (e.target.closest(".panel-body")) {
+      readCfgFromDom();
+      save(); renderAll();
+    }
+  });
+
+  $("startBtn").addEventListener("click", () => {
+    if (run.active && run.deaths.length) {
+      askConfirm("Start a new run?",
+        "This clears the current run — " + run.deaths.length + " fallen loadout(s) and all progress.",
+        startRun);
+    } else startRun();
+  });
+  $("endBtn").addEventListener("click", () => {
+    askConfirm("End this run?", "The run is closed out and you'll get the summary.", endRun);
+  });
+
+  $("rollBtn").addEventListener("click", () => {
+    if (run.combo) return;
+    const c = rollCombo();
+    if (!c) { renderAll(); return; }
+    run.combo = c; save(); renderAll();
+  });
+
+  // Only ever accept a combo that actually exists and is still alive — the
+  // selects are empty while the app is rolling for you, and a change event
+  // fired against them would otherwise produce a phantom "|" combo that can be
+  // hunted with and killed.
+  const setPickedCombo = (w, s) => {
+    if (!ALL_WEAPONS.includes(w)) return;
+    const styles = legalStyles(w);
+    const style = styles.includes(s) ? s : styles[0];
+    if (!style) return;
+    run.combo = { weapon: w, style };
+    save(); renderAll();
+  };
+  $("pickWeapon").addEventListener("change", () =>
+    setPickedCombo($("pickWeapon").value, null));
+  $("pickStyle").addEventListener("change", () =>
+    setPickedCombo($("pickWeapon").value, $("pickStyle").value));
+
+  $("questSearch").addEventListener("input", (e) => renderQuestResults(e.target.value));
+  $("questResults").addEventListener("click", (e) => {
+    const row = e.target.closest("[data-i]");
+    if (row) chooseQuest(searchResults[+row.dataset.i]);
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".hunt-quest")) $("questResults").classList.add("hidden");
+  });
+
+  $("oClear").addEventListener("click", () => report("clear"));
+  $("oCart").addEventListener("click",  () => report("cart"));
+  $("oFail").addEventListener("click",  () => report("fail"));
+
+  $("helpBtn").addEventListener("click", () => $("helpModal").classList.remove("hidden"));
+  $("helpClose").addEventListener("click", () => $("helpModal").classList.add("hidden"));
+  $("themeBtn").addEventListener("click", () => $("themeModal").classList.remove("hidden"));
+  $("themeClose").addEventListener("click", () => $("themeModal").classList.add("hidden"));
+  [["helpModal"], ["themeModal"], ["confirmModal"]].forEach(([id]) => {
+    $(id).addEventListener("click", (e) => { if (e.target.id === id) $(id).classList.add("hidden"); });
+  });
+  // Board is rebuilt on every render, so delegate rather than binding cells.
+  $("board").addEventListener("click", (e) => {
+    const cell = e.target.closest(".cell.revivable");
+    if (cell) openRevive(cell.dataset.w, cell.dataset.s);
+  });
+  $("reviveCancel").addEventListener("click", () => $("reviveModal").classList.add("hidden"));
+  $("reviveModal").addEventListener("click", (e) => {
+    if (e.target.id === "reviveModal") $("reviveModal").classList.add("hidden");
+  });
+
+  $("confirmCancel").addEventListener("click", () => $("confirmModal").classList.add("hidden"));
+  $("confirmOk").addEventListener("click", () => {
+    $("confirmModal").classList.add("hidden");
+    if (confirmAction) { const f = confirmAction; confirmAction = null; f(); }
+  });
+
+  $("exportBtn").addEventListener("click", exportRun);
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", (e) => {
+    if (e.target.files[0]) importRun(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  buildSwatches();
+  const DEFAULT_THEME = "#152D75";            // Nightcloak Malfestio
+  let savedTheme = DEFAULT_THEME;
+  try { savedTheme = localStorage.getItem("mhgu-nuzlocke-theme") || savedTheme; } catch (e) {}
+  // A stored hex that's no longer in the palette would leave no tile selected and
+  // no title icon, so fall back rather than half-applying it.
+  if (!COLORS_HEX[savedTheme.toUpperCase()]) savedTheme = DEFAULT_THEME;
+  applyTheme(savedTheme);
+
+  load();
+  writeCfgToDom();
+  $("questSearch").placeholder = "Search " + QUESTS.length + " quests…";
+  renderAll();
+})();
