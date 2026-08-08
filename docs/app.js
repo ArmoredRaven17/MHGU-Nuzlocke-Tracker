@@ -688,7 +688,7 @@
           [String(run.cleared), "Cleared"],
           [String(run.failed), "Failed"],
           [String(run.carts), "Carts"],
-          [run.deaths.length + "/" + TOTAL_COMBOS, "Lost"],
+          [String(run.deaths.length), "Lost"],
           [mins + "m", "Duration"],
           [zennyShort(run.earned), "Earned", "earned", zenny(run.earned)],
           [fmtMult(run.mult), run.mult < 0 ? "Penalty" : "Bonus"],
