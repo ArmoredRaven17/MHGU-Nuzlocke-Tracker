@@ -117,15 +117,22 @@ difficulty curve means editing those and nothing else**:
 - `KILL_WEIGHT` — the chosen condition sets the base. Quest-failed is the 1× anchor;
   carts-and-failures 3×, cart 2×, two-in-a-row 0.75×, same-quest-twice 0.5×.
 - `LEVER_WEIGHT` — every other lever, written as the multiplier it reads as.
-- `STYLE_CAP_WEIGHT` — the styles-per-weapon cap. 3 is the reference and costs nothing;
-  1 is ×3 (+2.00) and 6 is ×0.25 (−0.75). It swings hardest of any lever because it
-  decides how many hunts the run gets at all.
+- `STYLE_CAP_MULT` — the styles-per-weapon cap. 3 is the reference at ×1; 1 is ×3.5 and
+  6 is ×0.5.
+- `SURVIVOR_BONUS` — how much finishing with combos in hand pays. 1.0, so a flawless
+  run doubles.
 
-**Levers combine additively, not multiplicatively.** Each is written as e.g. `0.75`
-and contributes its *distance from 1×* — so a 0.75 lever is −0.25 off the total, not
-the total × 0.75. The 1× reference run is: app rolls your loadout, both locks on, no
-revives; each of those is exactly 1× and costs nothing. The sidebar spells the
-arithmetic out (`3 − 0.25 − 0.25 = 2.50`).
+**Levers combine additively — except the styles cap, which multiplies.** Each lever is
+written as e.g. `0.75` and contributes its *distance from 1×*, so a 0.75 lever is −0.25
+off the total, not the total × 0.75. The 1× reference run is: app rolls your loadout,
+both locks on, no revives; each of those is exactly 1× and costs nothing.
+
+The cap is the exception because it has to express a *ratio* across five different
+kill-condition bases, and an additive delta cannot. Simulation put the break-even for
+one style per weapon at +6.17 against carts-and-failures and nowhere near that against
+the gentle conditions, so no single delta served both. As a multiplier it does:
+`summed × STYLE_CAP_MULT[cap]`. Runs that go to exhaustion now land within 15% of each
+other across all six caps, which is what "the cap is a pure ratio" looks like.
 
 **The total is deliberately unbounded below.** This is a bonus multiplier, so a run
 soft enough to net out at zero earns nothing and one softer still is penalised —
@@ -139,8 +146,8 @@ and `zenny`, so the multiplier and the earnings figure match.
 **The kill conditions are a radio group, not checkboxes** — `cfg.kill` is one of
 `both | cart | fail | streak | twice`.
 
-Note what `both` exists for: **a quest can fail without carting** (time out, blow the
-sub-objective) and you can cart twice and still clear, so cart and quest-failed are
+Note what `both` exists for: **a quest can fail without carting** — you can time out or
+slay a capture target — and you can cart twice and still clear, so cart and quest-failed are
 genuinely independent triggers — neither subsumes the other. `both` is their union and
 is offered explicitly, which is what lets a radio still work. Everything below
 quest-failed *is* subsumed by it, so no other combination is meaningful. Because a
@@ -161,9 +168,39 @@ key to its value→element-id table; `CFG_BOXES` covers the booleans.
   top of any resolution — reaching an outcome discharges the debt — and the fail
   branch immediately re-owes it, so consecutive failures still pin you to the quest.
 
-The multiplier is snapshotted into `run.mult` at Start Run. Since the rules freeze for
-the run anyway this is belt-and-braces, but it keeps an imported or restored run scored
-the way it was played. Range runs from the ×0.10 floor up to ×3.00.
+The multiplier is snapshotted into `run.mult` at Start Run, alongside `run.maxLosses`.
+Since the rules freeze for the run anyway this is belt-and-braces, but the rules unlock
+again the moment a run ends, so without it the summary would ask `cfg` about a
+configuration that is no longer selected.
+
+### Run length
+
+**A run is `CLEAR_LIMIT` successful hunts (50), or exhaustion, whichever comes first.**
+This is fixed, not a lever, and it counts clears rather than attempts. Both parts are
+load-bearing and neither should be softened without re-simulating:
+
+- **It cannot be optional.** Unbounded, the gentle kill conditions win on sheer length —
+  `same quest twice` ran a median 1,384 hunts against 102 for the default and scored
+  2.27× it, inverting the whole difficulty ordering.
+- **It cannot be a scored lever.** A limit only binds when a run would otherwise outlast
+  it, so a short configuration could take the tightest limit, never reach it, and
+  collect the bonus for free.
+- **It counts clears, not attempts.** A failure never positively contributes, so it must
+  not extend the clock in a way that benefits you either. Under an attempt cap it did:
+  the gentle conditions spent their whole allowance earning while the harsh ones wiped
+  early and stopped, which combined with the survivor bonus to put `two in a row` above
+  the stricter `quest failed` at a 65% win rate. Counting clears hands every run the
+  same 50 payouts unless it wipes first, so the multiplier is what separates them.
+
+**The survivor bonus** pays `earned × survivorRate × SURVIVOR_BONUS`, where
+`survivorRate` is unspent allowance over `run.maxLosses`. Proportional rather than flat
+per combo, because a flat pot pays most to the loosest settings simply for having 90
+combos and gentle rules; as a share, keeping 5 of 15 scores like keeping 15 of 45. It is
+only ever a bonus — scaling a negative total by survival would punish keeping combos.
+
+Report unspent allowance in the summary, not `legalCombos().length`. The board count
+includes combos on retired weapons and reads higher than the figure the bonus is
+actually paid on.
 
 ## Design principle
 

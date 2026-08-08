@@ -72,14 +72,6 @@
           <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; 90 combos<span class="w">&times;0.5</span></label>
           <p class="hint" id="poolNote"></p>
 
-          <p class="hint" style="margin-top:8px">Hunts before the run closes. Pick the
-            session length you want &mdash; there is no unlimited option, because the
-            gentler kill conditions would otherwise run for hundreds of hunts and
-            out-earn the harsh ones on sheer length. It changes no bonus.</p>
-          <label class="chk"><input type="radio" name="hl" id="h_50">50 hunts</label>
-          <label class="chk"><input type="radio" name="hl" id="h_100" checked>100 hunts</label>
-          <label class="chk"><input type="radio" name="hl" id="h_200">200 hunts</label>
-
           <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>Randomized Weapon/Style combo<span class="w">&plusmn;0</span></label>
           <label class="chk"><input type="radio" name="assign" id="a_pick">Hunter's choice<span class="w">&minus;0.25</span></label>
@@ -219,7 +211,10 @@
        until that combo falls. The quest lock means a quest that beat you is owed one
        retry &mdash; your next hunt has to be that quest, win or lose. Turning either off
        makes the run easier and scores lower.</p>
-    <p>The run ends when nothing is left standing, or when you reach your hunt limit.</p>
+    <p>A run is <strong>50 successful hunts</strong>, or however far you get before
+       nothing is left standing. Only clears count towards the 50 &mdash; a failure costs
+       you a combo, it doesn't spend your run. Whatever you still hold at the end pays a
+       bonus on top of everything you earned, so finishing untouched is worth double.</p>
     <div class="row end"><button id="helpClose" class="btn tiny">Close</button></div>
   </div>
 </div>
@@ -288,6 +283,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=45"></script>
+<script src="app.js?v=47"></script>
 </body>
 </html>

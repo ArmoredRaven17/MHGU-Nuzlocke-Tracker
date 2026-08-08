@@ -29,7 +29,12 @@ what happened and takes options away. For quest rolling, use the
    once; it doesn't end the attempt.
 
 Your kill conditions are checked against that result. When one fires, the loadout is
-struck off the board for good. The run ends when nothing is left standing.
+struck off the board for good.
+
+A run is **50 successful hunts**, or however far you get before nothing is left
+standing. Only clears count towards the 50 — a failure costs you a combo, it doesn't
+spend your run. Whatever you're still holding at the end pays a bonus on top of
+everything you earned, so finishing untouched is worth double.
 
 ## Rules
 
@@ -48,17 +53,18 @@ nothing to gain from stacking them.
 | Same quest failed twice | Cumulative, not necessarily consecutive | ×0.5 |
 
 **Styles per weapon** — how many styles a weapon may lose before the whole weapon
-retires and its surviving styles leave the pool. This is what sets run length, and it
-pays the most of any lever: fewer styles means fewer hunts and fewer chances.
+retires and its surviving styles leave the pool. This is the only lever that *scales*
+your whole total rather than nudging it, because it decides how much of the board you
+ever get to spend.
 
 | Styles | Loadouts in the run | Difficulty |
 |---|---|---|
-| 1 | 15 | ×3 |
-| 2 | 30 | ×2 |
+| 1 | 15 | ×3.5 |
+| 2 | 30 | ×1.75 |
 | 3 *(default)* | 45 | ×1 |
-| 4 | 60 | −0.25 |
-| 5 | 75 | −0.50 |
-| 6 | 90 | −0.75 |
+| 4 | 60 | ×0.75 |
+| 5 | 75 | ×0.6 |
+| 6 | 90 | ×0.5 |
 
 **Other levers:**
 
@@ -66,19 +72,16 @@ pays the most of any lever: fewer styles means fewer hunts and fewer chances.
 - **Loadout lock** — you can't swap weapon or style at all until that combo falls
 - **Quest lock** — a quest that beat you is owed one retry; your next hunt has to be
   that quest, win or lose
-- **Revive** — buy a fallen loadout back, once each or repeatedly. Leave it off for a
-  run with no safety net
+- **Revive** — buy a fallen loadout back, once each or repeatedly
+- **Reroll** — refuse a combo you were handed and draw another; the refused one goes
+  back in the pool
 
 ### Buying a loadout back
 
-With revives on, click a struck-through cell on the board. You get three ways to pay,
-each a bundle of one to three real materials priced at their actual in-game sell
-value, and taking one puts that loadout back on the board.
-
-The cost climbs 5,000z every time — the first buy-back is 5,000z, the second 10,000z,
-and so on — so a run can only be rescued so often. Nothing is verified: sell the
-materials in game and take the option you paid, same honour system as the hunt
-results.
+With revives on, click a struck-through cell on the board. The cost climbs by the
+price you set every time — at the 10,000z default the first buy-back is 10,000z, the
+second 20,000z — and it comes straight out of your earned zenny, so rescuing a run
+costs you score. A per-run cap bounds how far that can go.
 
 Both locks are on by default: locked is the baseline the difficulty scale is measured
 against, and turning one off is a discount.
@@ -92,7 +95,8 @@ quest data — 300z for `Find the Ferns`, 78,600z for `Path of the Hunter`. Poin
 go up; a failure already costs you a loadout.
 
 That's then scaled by how hard you set the run. Your kill condition sets the base (see
-the table above) and every other lever adds to or subtracts from it:
+the table above), every other lever adds to or subtracts from it, and the styles cap
+scales the lot:
 
 | Lever | |
 |---|---|
@@ -101,10 +105,16 @@ the table above) and every other lever adds to or subtracts from it:
 | Quest lock off | −0.25 |
 | Revives allowed | −0.25 |
 | …but only once per combo | +0.10 back |
+| Rerolls allowed | −0.20 |
 
-So the harshest run with everything at baseline is ×3.00, and unlocking both locks
-brings it to ×2.50. The multiplier is shown while you set up — with the arithmetic
-spelled out — and locks in when you press Start Run.
+So the harshest run with everything at baseline is ×3.00; unlocking both locks brings
+it to ×2.50, and dropping to one style per weapon takes ×3.00 up to ×10.50. The total
+is shown while you set up and locks in when you press Start Run. It can go negative —
+stack enough discounts on a gentle kill condition and the run scores as a penalty.
+
+**Finishing with combos in hand pays again.** Whatever share of your allowance you
+still hold at the end is paid as a bonus on your earnings — keep 5 of 15 and it scores
+like keeping 15 of 45. It's a bonus only, never applied to a negative total.
 
 ## Development
 

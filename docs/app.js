@@ -71,7 +71,6 @@
     lockLoadout: true,
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
-    huntLimit: 100,                      // hunts before the run closes; always set
     reviveEnabled: false, reviveOnce: true,
     reviveCap: 5,                        // buy-backs allowed per run; see REVIVE_CAP_WEIGHT
     revivePrice: 10000,                  // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
@@ -236,8 +235,8 @@
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
     hunts: 0,              // resolved hunts; carts don't end one so don't count
-    huntLimit: 0,          // snapshotted at Start Run, like mult and maxLosses
-    cleared: 0, failed: 0, carts: 0, revives: 0, rerolls: 0,
+    cleared: 0,            // successful hunts; this is what CLEAR_LIMIT bounds
+    failed: 0, carts: 0, revives: 0, rerolls: 0,
     revived: {},           // comboKey -> times bought back (survives the death being removed)
     reviveLog: [],         // {weapon, style, cost} for the summary
     rerollLog: [],         // {weapon, style, cost}
@@ -368,23 +367,28 @@
 
   // Run-over is derived, not latched, so it recomputes after every death and
   // after any revive.
-  // A run closes on exhaustion, on the hunt limit, or when you end it manually.
+  // A run closes on exhaustion, on the clear limit, or when you end it manually.
   //
-  // The limit is a BOUND, not a scored lever, and that is deliberate. Every
-  // other restriction pays a bonus, but a hunt limit cannot: it only binds when
-  // a run would otherwise outlast it, so on a short configuration you could
-  // pick the tightest limit, never reach it, and collect the bonus for free.
+  // The limit counts SUCCESSFUL hunts, not attempts, and is fixed rather than
+  // chosen. Both of those are load-bearing.
   //
-  // It is also why there is no "no limit" option. Its job is to stop the gentle
-  // kill conditions winning on sheer length — simulation put "same quest twice"
-  // at a median 1,384 hunts against 102 for the default, which inverted the
-  // whole difficulty ordering. An unweighted opt-out would have handed that
-  // back for free. Choosing among 50/100/200 is a session-length preference;
-  // the ceiling is what keeps the ordering honest.
-  // Snapshotted at Start Run like mult and maxLosses, so a finished run keeps
-  // the limit it was played under even after the rules unlock.
-  const runHuntLimit = () => (run.huntLimit != null ? run.huntLimit : cfg.huntLimit);
-  const huntsUsed = () => run.hunts || 0;
+  // It exists to stop the gentle kill conditions winning on sheer length —
+  // unbounded, "same quest twice" ran a median 1,384 hunts against 102 for the
+  // default and inverted the entire difficulty ordering. So it cannot be a
+  // scored lever (it only binds when a run would otherwise outlast it, so a
+  // short configuration could take the tightest limit, never reach it, and
+  // collect the bonus for free) and it cannot be opted out of.
+  //
+  // Counting clears rather than attempts is what keeps the ordering honest. A
+  // failure never positively contributes, so it must not extend the clock in a
+  // way that benefits you either. Under an attempt cap it did: the gentle
+  // conditions spent their whole allowance earning while the harsh ones wiped
+  // early and stopped, and combined with the survivor bonus that put "two in a
+  // row" ABOVE the stricter "quest failed" at a 65% win rate. Counting clears
+  // hands every run the same 50 payouts unless it wipes first, so the
+  // multiplier is what separates them.
+  const CLEAR_LIMIT = 50;
+  const clearsUsed = () => run.cleared || 0;
 
   // What you finished holding, as a share of what this run could have lost.
   const survivorRate = () => {
@@ -397,9 +401,9 @@
   const survivorBonus = () =>
     run.earned > 0 ? Math.round(run.earned * survivorRate() * SURVIVOR_BONUS) : 0;
   const finalScore = () => run.earned + survivorBonus();
-  const huntCapHit = () => runHuntLimit() > 0 && huntsUsed() >= runHuntLimit();
+  const clearCapHit = () => clearsUsed() >= CLEAR_LIMIT;
   const runOver = () => run.active &&
-    (run.finished || huntCapHit() || legalCombos().length === 0);
+    (run.finished || clearCapHit() || legalCombos().length === 0);
 
   // ── Persistence ──────────────────────────────────────────────────────────
   const STORE_KEY = "mhgu-nuzlocke";
@@ -434,7 +438,6 @@
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
-    huntLimit: { 50: "h_50", 100: "h_100", 200: "h_200" },
     revivePrice: { 5000: "p_5000", 10000: "p_10000", 20000: "p_20000", 30000: "p_30000" },
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
@@ -451,7 +454,7 @@
     applyCfgLockState();
   }
   const RADIO_NUMERIC = { stylesPerWeapon: true, revivePrice: true, rerollPrice: true,
-    reviveCap: true, huntLimit: true };
+    reviveCap: true };
   function readCfgFromDom() {
     if (cfgLocked()) return;                    // settings are frozen for the run
     Object.entries(CFG_BOXES).forEach(([k, id]) => { cfg[k] = $(id).checked; });
@@ -530,7 +533,7 @@
 
     // One hunt = one resolution. Carting doesn't end the attempt, so it isn't
     // one; an Arena hunt still is, since it consumed real playing time.
-    run.hunts = huntsUsed() + 1;
+    run.hunts = (run.hunts || 0) + 1;
 
     if (outcome === "clear") {
       run.cleared++;
@@ -576,7 +579,6 @@
     run.startedAt = Date.now();
     run.mult = multiplier(cfg);
     run.maxLosses = maxLosses();
-    run.huntLimit = cfg.huntLimit;
     rebuildDeadKeys();
     save(); renderAll();
   }
@@ -674,10 +676,8 @@
     let html =
       `<span class="stat dead">Lost <b>${lost}/${runMax()}</b></span>` +
       `<span class="stat">Available <b>${alive}</b></span>` +
-      (runHuntLimit() > 0
-        ? `<span class="stat">Hunts <b>${huntsUsed()}/${runHuntLimit()}</b></span>`
-        : `<span class="stat">Hunts <b>${huntsUsed()}</b></span>`) +
-      `<span class="stat">Cleared <b>${run.cleared}</b></span>` +
+      `<span class="stat">Hunts <b>${run.hunts || 0}</b></span>` +
+      `<span class="stat">Cleared <b>${clearsUsed()}/${CLEAR_LIMIT}</b></span>` +
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
       `<span class="stat">Carts <b>${run.carts}</b></span>` +
       `<span class="stat earned">Earned <b>${zenny(run.earned)}</b></span>` +
@@ -818,8 +818,8 @@
     // Three ways to finish now, and which one it was is the headline.
     const why = exhausted
       ? "Every available combo has fallen."
-      : huntCapHit()
-        ? `You went the distance — ${runHuntLimit()} hunts, with ${standing} combo${
+      : clearCapHit()
+        ? `You went the distance — ${CLEAR_LIMIT} successful hunts, with ${standing} combo${
             standing === 1 ? "" : "s"} still standing.`
         : `Ended manually with ${standing} still standing.`;
     el.innerHTML =
@@ -827,10 +827,10 @@
       `<p class="sub">${escapeHtml(why)}</p>` +
       `<div class="sum-stats">` +
         [
-          [String(run.cleared), "Cleared"],
+          [clearsUsed() + "/" + CLEAR_LIMIT, "Cleared"],
           [String(run.failed), "Failed"],
           [String(run.carts), "Carts"],
-          [runHuntLimit() > 0 ? huntsUsed() + "/" + runHuntLimit() : String(huntsUsed()), "Hunts"],
+          [String(run.hunts || 0), "Hunts"],
           [run.deaths.length + "/" + runMax(), "Lost"],
           [mins + "m", "Duration"],
           [zennyShort(run.earned), "Earned", "", zenny(run.earned)],
