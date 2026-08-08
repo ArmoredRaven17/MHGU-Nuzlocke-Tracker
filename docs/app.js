@@ -1000,7 +1000,9 @@
   $("helpClose").addEventListener("click", () => $("helpModal").classList.add("hidden"));
   $("themeBtn").addEventListener("click", () => $("themeModal").classList.remove("hidden"));
   $("themeClose").addEventListener("click", () => $("themeModal").classList.add("hidden"));
-  [["helpModal"], ["themeModal"], ["confirmModal"]].forEach(([id]) => {
+  $("linksBtn").addEventListener("click", () => $("linksModal").classList.remove("hidden"));
+  $("linksClose").addEventListener("click", () => $("linksModal").classList.add("hidden"));
+  [["helpModal"], ["themeModal"], ["linksModal"], ["confirmModal"]].forEach(([id]) => {
     $(id).addEventListener("click", (e) => { if (e.target.id === id) $(id).classList.add("hidden"); });
   });
   // Board is rebuilt on every render, so delegate rather than binding cells.
