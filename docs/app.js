@@ -110,10 +110,25 @@
     reviveAllowed:    0.75,   // a safety net at all                   -0.25
     reviveOnce:       1.10,   // ...but only one each, so some of it back  +0.10
   };
-  // How many styles a weapon may lose before the whole weapon retires. Fewer
-  // styles means fewer loadouts, a shorter run and fewer chances to hunt, so a
-  // tight cap pays. 3 is the reference and costs nothing.
-  const STYLE_CAP_WEIGHT = { 1: 3, 2: 2, 3: 1, 4: 0.75, 5: 0.5, 6: 0.25 };
+  // How many styles a weapon may lose before the whole weapon retires. 3 is the
+  // reference and costs nothing.
+  //
+  // These are steep on purpose. Score accrues per hunt and a run lasts until
+  // its pool is spent, so cutting the pool cuts earnings proportionally: a
+  // 15-combo run lasts ~34 hunts against ~102 for 45 combos. Simulation over
+  // 4,000 runs put break-even for cap 1 at +6.17, not the +2.00 it had — under
+  // the old numbers taking the hardest setting scored barely half the default.
+  // These sit ~20% above break-even so restriction is genuinely high risk,
+  // high reward rather than merely survivable.
+  //
+  // CAVEAT: additive deltas are calibrated against the x3 base of the default
+  // kill condition. The true relationship is multiplicative in pool size, so
+  // on a gentler kill condition these over-reward — cap 1 on "quest failed"
+  // pays 9x where 3x is warranted. Fixing that properly means making this
+  // lever multiply the total rather than add to it.
+  // Written as multipliers like the other levers, so each contributes weight-1:
+  // +8.00, +2.25, 0, -0.75, -1.20, -1.50.
+  const STYLE_CAP_WEIGHT = { 1: 9, 2: 3.25, 3: 1, 4: 0.25, 5: -0.2, 6: -0.5 };
 
   // What the first buy-back costs, and what charging that is worth. A cheap
   // safety net makes the run easier; a dear one barely helps. 10,000z is the
