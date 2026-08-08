@@ -771,7 +771,10 @@
     ["Silverwind",  "#7A858E", "Silverwind Nargacuga"],
     ["Crystalbeard","#CFAE44", "Crystalbeard Uragaan"],
     ["Deadeye",     "#3F7A2E", "Deadeye Yian Garuga"],
-    ["Dreadking",   "#7E1E0E", "Dreadking Rathalos"],
+    // Deepened well past the sampled value: at #7E1E0E its background rendered
+    // 9 away from Redhelm's, effectively the same plate. The palette's own
+    // tightest legitimate pair is Redhelm/Hellblade at 18, so this clears that.
+    ["Dreadking",   "#3E0C05", "Dreadking Rathalos"],
     ["Thunderlord", "#C79A1C", "Thunderlord Zinogre"],
     ["Grimclaw",    "#2C4A96", "Grimclaw Tigrex"],
     ["Hellblade",   "#B03414", "Hellblade Glavenus"],
