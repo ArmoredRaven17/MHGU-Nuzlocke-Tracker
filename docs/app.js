@@ -57,7 +57,7 @@
     w.toLowerCase().replace(/ & /g, "_and_").replace(/ /g, "_") + "_tinted.png";
   const prowlerIcon = (f) => "assets/ProwlerIcons/" + f;
   // Training Codex — stands in for a padlock on anything the run has locked.
-  const LOCK_ICON = '<img class="lock-icon" src="assets/ItemIcons/MH4G-Book_Icon_Red.png" alt="Locked">';
+  const LOCK_ICON = '<img class="lock-icon" src="assets/ItemIcons/MH4G-Book_Icon_Red.webp" alt="Locked">';
   const comboIcon = (w, s) => (w === "Prowler" ? prowlerIcon(BIAS_FILE[s] || "") : weaponIcon(w));
 
   // ── State ────────────────────────────────────────────────────────────────
