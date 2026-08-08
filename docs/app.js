@@ -766,7 +766,10 @@
     ["Redhelm",     "#96231C", "Redhelm Arzuros"],
     ["Snowbaron",   "#8E6BC4", "Snowbaron Lagombi"],
     ["Stonefist",   "#E8776E", "Stonefist Hermitaur"],
-    ["Dreadqueen",  "#7A4A9E", "Dreadqueen Rathian"],
+    // Darkened from #7A4A9E, which sat 21 from Snowbaron's plate. Going darker
+    // trades Snowbaron for Bloodbath's navy, so this is the balance point:
+    // nearest neighbour 30, better than the 21 it started at.
+    ["Dreadqueen",  "#4A2A66", "Dreadqueen Rathian"],
     ["Drilltusk",   "#D07A20", "Drilltusk Tetsucabra"],
     ["Silverwind",  "#7A858E", "Silverwind Nargacuga"],
     ["Crystalbeard","#CFAE44", "Crystalbeard Uragaan"],
