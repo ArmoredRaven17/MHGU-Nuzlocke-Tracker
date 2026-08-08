@@ -216,6 +216,8 @@
     reviveLog: [],         // {weapon, style, cost, paid:[{n,qty}]} for the summary
     earned: 0,             // zenny rewards of quests cleared, x the run's multiplier
     mult: 1,               // snapshotted at Start Run; rules are frozen anyway
+    maxLosses: 0,          // likewise — the rules unlock again once the run ends,
+                           // so the summary can't ask cfg what the cap was
   });
   let run = emptyRun();
 
@@ -276,6 +278,9 @@
   // Longest a run can possibly last: every weapon spends its full allowance.
   const maxLosses = () => ALL_WEAPONS.reduce(
     (n, w) => n + Math.min(cfg.stylesPerWeapon, stylesFor(w).length), 0);
+  // The run's own ceiling, snapshotted at Start Run. Falls back to the live
+  // figure for runs saved before it was recorded.
+  const runMax = () => run.maxLosses || maxLosses();
 
   // Weapon-first: uniform among surviving weapons, then uniform among that
   // weapon's surviving styles. Preserves the Randomizer's distribution rather
@@ -450,6 +455,7 @@
     run.active = true;
     run.startedAt = Date.now();
     run.mult = multiplier(cfg);
+    run.maxLosses = maxLosses();
     rebuildDeadKeys();
     save(); renderAll();
   }
@@ -545,7 +551,7 @@
     const lost = run.deaths.length;
     const alive = legalCombos().length;
     let html =
-      `<span class="stat dead">Lost <b>${lost}/${maxLosses()}</b></span>` +
+      `<span class="stat dead">Lost <b>${lost}/${runMax()}</b></span>` +
       `<span class="stat">Available <b>${alive}</b></span>` +
       `<span class="stat">Cleared <b>${run.cleared}</b></span>` +
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
@@ -688,7 +694,7 @@
           [String(run.cleared), "Cleared"],
           [String(run.failed), "Failed"],
           [String(run.carts), "Carts"],
-          [String(run.deaths.length), "Lost"],
+          [run.deaths.length + "/" + runMax(), "Lost"],
           [mins + "m", "Duration"],
           [zennyShort(run.earned), "Earned", "earned", zenny(run.earned)],
           [fmtMult(run.mult), run.mult < 0 ? "Penalty" : "Bonus"],
