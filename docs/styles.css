@@ -239,12 +239,30 @@ body{
 .placeholder h2{font-size:26px;margin:0 0 12px}
 .placeholder p{line-height:1.6;margin:8px 0}
 
-/* Queried as a container, not against the viewport: the sidebar takes 300px, so
-   this card is narrow long before the window is. */
-.summary{max-width:640px;margin:20px auto;padding:20px;border:1px solid var(--line);
+/* Queried as containers, not against the viewport: the sidebar takes 300px, so
+   these are narrow long before the window is. Two levels, because the columns
+   respond to the card while the score responds to its own column. */
+.summary{max-width:1400px;margin:20px auto;padding:20px;border:1px solid var(--line);
   border-radius:10px;background:var(--card);container-type:inline-size}
 .summary h2{margin:0 0 4px;font-size:26px}
 .summary .sub{opacity:.7;margin:0 0 18px;font-size:13px}
+
+/* Rules on the left, the score in the middle, what fell on the right. */
+/* Rules are short labels, the centre seats four tiles across, and the quest log
+   carries full quest names — so the log gets nearly as much room as the score. */
+.sum-cols{display:grid;gap:14px;align-items:start;margin-bottom:16px;
+  grid-template-columns:minmax(165px,0.75fr) minmax(0,1.5fr) minmax(230px,1.4fr)}
+/* Container queries measure the content box, so this is ~700 + the card's 42px
+   of padding and border — a window around 1080px wide. */
+@container (max-width:700px){ .sum-cols{grid-template-columns:1fr} }
+.sum-panel{padding:14px;border:1px solid var(--line);border-radius:10px;background:#ffffff08}
+.sum-center{container-type:inline-size}
+.sum-panel h3{margin:0 0 10px;font-size:15px;font-weight:600;opacity:.8;
+  text-transform:uppercase;letter-spacing:.06em}
+.sum-rules{display:flex;flex-direction:column;gap:9px}
+.sr-row{display:flex;flex-direction:column;gap:1px;min-width:0}
+.sr-row span{font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.55}
+.sr-row b{font-size:12px;font-weight:600;line-height:1.35}
 /* The score is the whole point of the screen, so it gets the top and the size. */
 .sum-hero{text-align:center;padding:16px 12px;margin-bottom:10px;border:1px solid var(--line);
   border-radius:10px;background:#ffffff0a}
@@ -262,11 +280,10 @@ body{
 /* Fixed counts rather than auto-fit: the two rows carry different kinds of
    number and reflowing them into one another would lose that split. */
 .sum-stats.cols-4{grid-template-columns:repeat(4,1fr)}
-.sum-stats.cols-5{grid-template-columns:repeat(5,1fr);margin-bottom:18px}
-@container (max-width:420px){
-  .sum-stats.cols-4{grid-template-columns:repeat(2,1fr)}
-  .sum-stats.cols-5{grid-template-columns:repeat(3,1fr)}
-}
+.sum-stats.cols-3{grid-template-columns:repeat(3,1fr)}
+.sum-stats.last{margin-bottom:0}
+/* Against the centre column, so the row folds when that column gets tight. */
+@container (max-width:300px){ .sum-stats.cols-4{grid-template-columns:repeat(2,1fr)} }
 .sum-stat{text-align:center;padding:10px 6px;border:1px solid var(--line);
   border-radius:8px;background:#ffffff0a}
 .sum-stat b{display:block;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums;
@@ -276,10 +293,13 @@ body{
 .sum-stat b.fit-xs{font-size:15px}
 .sum-stat b.fit-xxs{font-size:13px}
 .sum-stat span{font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.05em}
-.sum-roll{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;
-  margin-bottom:16px}
-.sum-roll .bl-tag{font-size:11px}
+.sum-roll{max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.sum-roll .bl-tag{font-size:11px;flex-wrap:wrap;row-gap:1px}
 .sum-roll .sr-n{opacity:.5;min-width:22px}
+/* Quest names are long. Give the reason its own line under the combo rather than
+   squeezing both onto one and truncating the name that identifies the hunt. */
+.sum-roll .nuz-combo{flex:1 0 auto}
+.sum-roll .nuz-reason{flex:1 0 100%;margin-left:30px;white-space:normal;line-height:1.35}
 
 /* ── Modals ─────────────────────────────────────────────────────────── */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;

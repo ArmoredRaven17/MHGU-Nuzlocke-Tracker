@@ -245,6 +245,7 @@
     mult: 1,               // snapshotted at Start Run; rules are frozen anyway
     maxLosses: 0,          // likewise — the rules unlock again once the run ends,
                            // so the summary can't ask cfg what the cap was
+    cfg: null,             // the whole lever set, for the summary's Rules panel
   });
   let run = emptyRun();
 
@@ -351,6 +352,10 @@
   // The run's own ceiling, snapshotted at Start Run. Falls back to the live
   // figure for runs saved before it was recorded.
   const runMax = () => run.maxLosses || maxLosses();
+  // Each cap yields a distinct ceiling (15/30/45/60/75/90), so a run that kept
+  // no rules snapshot can still have this one rule read back off its ceiling.
+  const capForCeiling = (ceiling) => [1, 2, 3, 4, 5, 6].find(c =>
+    ALL_WEAPONS.reduce((n, w) => n + Math.min(c, stylesFor(w).length), 0) === ceiling);
 
   // Weapon-first: uniform among surviving weapons, then uniform among that
   // weapon's surviving styles. Preserves the Randomizer's distribution rather
@@ -425,6 +430,17 @@
     }
     if (d && d.run) run = Object.assign(emptyRun(), d.run);
     rebuildDeadKeys();
+    // A run saved before run.cfg existed has no rules snapshot. If it is still
+    // going, the live cfg IS its snapshot — the rules are frozen for the
+    // duration of a run, so they cannot have diverged — and adopting it now
+    // means the panel is correct for the rest of the run. A run that already
+    // ENDED gets nothing: the rules unlocked when it finished, so the live cfg
+    // is no evidence of what was played. renderSummary says so rather than
+    // reporting numbers it cannot stand behind.
+    if (run.active && !run.cfg && !runOver()) {
+      run.cfg = Object.assign({}, cfg);
+      save();
+    }
   }
 
   // ── Config <-> DOM ───────────────────────────────────────────────────────
@@ -443,6 +459,20 @@
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
     assign: { roll: "a_roll", pick: "a_pick" },
   };
+
+  // How a radio's chosen value reads, taken from the sidebar label itself rather
+  // than a second table — the summary's Rules panel then can't drift from the
+  // control it is reporting on. The difficulty badge is dropped; the panel is a
+  // record of what was played, and the weights are already on the tiles.
+  function ruleLabel(key, value) {
+    const id = (CFG_RADIOS[key] || {})[value];
+    const input = id && $(id);
+    if (!input || !input.closest("label")) return String(value);
+    const label = input.closest("label").cloneNode(true);
+    const w = label.querySelector(".w");
+    if (w) w.remove();
+    return label.textContent.trim();
+  }
 
   function writeCfgToDom() {
     Object.entries(CFG_BOXES).forEach(([k, id]) => { $(id).checked = !!cfg[k]; });
@@ -579,6 +609,7 @@
     run.startedAt = Date.now();
     run.mult = multiplier(cfg);
     run.maxLosses = maxLosses();
+    run.cfg = Object.assign({}, cfg);
     rebuildDeadKeys();
     save(); renderAll();
   }
@@ -814,7 +845,6 @@
     // allowance — not the raw board count, which includes combos belonging to
     // retired weapons and so reads higher.
     const standing = runMax() - run.deaths.length;
-    const mins = Math.max(1, Math.round(((run.endedAt || Date.now()) - run.startedAt) / 60000));
     // Three ways to finish now, and which one it was is the headline.
     const why = exhausted
       ? "Every available combo has fallen."
@@ -825,8 +855,8 @@
     const tile = ([val, label, cls, exact]) =>
       `<div class="sum-stat${cls ? " " + cls : ""}"${exact ? ` title="${escapeHtml(exact)}"` : ""}>` +
       `<b class="fit${fitClass(val)}">${escapeHtml(val)}</b><span>${label}</span></div>`;
-    // Two rows, and the order is the point: the score is the headline, what
-    // built it comes next, and the tally of how the run went comes last.
+    // Three rows, and the order is the point: the score is the headline, what
+    // built it comes next, then how the run went, then what it cost you.
     // "Lost" is absent deliberately — Survived carries the same information.
     const scoring = [
       [fmtMult(run.mult), "Difficulty"],
@@ -836,29 +866,69 @@
       [zennyShort(survivorBonus()), "Survivor", "", zenny(survivorBonus())],
     ];
     const tally = [
-      [String(run.hunts || 0), "Hunts"],
       [clearsUsed() + "/" + CLEAR_LIMIT, "Cleared"],
+      [String(run.hunts || 0), "Hunts"],
       [String(run.failed), "Failed"],
+    ];
+    // Each log lists what was bought and for how much; zero is still worth
+    // showing, since "I never paid" is part of the record.
+    const spend = ([n, log]) => log.map(r =>
+      (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style + " — " + zenny(r.cost)
+    ).join("\n") || "None";
+    const costs = [
       [String(run.carts), "Carts"],
-      [mins + "m", "Duration"],
-    ].concat(run.revives
-      ? [[String(run.revives), "Revived", "", run.reviveLog
-          .map(r => (WEAPON_ABBREV[r.weapon] || r.weapon) + " + " + r.style +
-                    " — " + zenny(r.cost)).join("\n")]]
-      : []);
+      [String(run.rerolls || 0), "Rerolls", "", spend([run.rerolls, run.rerollLog || []])],
+      [String(run.revives || 0), "Revives", "", spend([run.revives, run.reviveLog || []])],
+    ];
     const final = zennyShort(finalScore());
+    // The rules unlock the moment a run ends, so this panel reads ONLY the
+    // snapshot taken at Start Run — never the live cfg. Falling back to cfg
+    // would make a finished run's rules follow the sidebar around, which is the
+    // one thing a record of what was played must not do.
+    const rcfg = run.cfg;
+    const rules = rcfg ? [
+      ["Kill condition",    ruleLabel("kill", rcfg.kill)],
+      ["Weapons/Styles",    ruleLabel("stylesPerWeapon", rcfg.stylesPerWeapon)],
+      ["Loadout",           ruleLabel("assign", rcfg.assign)],
+      ["Weapon/Style lock", rcfg.lockLoadout ? "On" : "Off"],
+      ["Quest lock",        rcfg.lockQuest ? "On" : "Off"],
+      ["Revives",           rcfg.reviveEnabled
+        ? [zenny(rcfg.revivePrice), rcfg.reviveCap + " max",
+           rcfg.reviveOnce ? "one per combo" : "repeatable"].join(" · ")
+        : "Off"],
+      ["Rerolls",           rcfg.rerollEnabled ? zenny(rcfg.rerollPrice) : "Off"],
+    ] : [
+      // No snapshot: only the styles cap survives, read back off the ceiling.
+      ["Weapons/Styles", ruleLabel("stylesPerWeapon", capForCeiling(runMax())) ],
+    ];
+    const roll = run.deaths.map(d =>
+      `<div class="bl-tag nuz-tag"><span class="sr-n">#${d.n}</span>` +
+      `<span class="nuz-combo">${escapeHtml(WEAPON_ABBREV[d.weapon] || d.weapon)} + ${escapeHtml(d.style)}</span>` +
+      `<span class="nuz-reason">${escapeHtml(d.reason)}${d.quest ? " · " + escapeHtml(d.quest) : ""}</span></div>`
+    ).join("");
     el.innerHTML =
       `<h2>Run Over</h2>` +
       `<p class="sub">${escapeHtml(why)}</p>` +
-      `<div class="sum-hero" title="${escapeHtml(zenny(finalScore()))}">` +
-        `<b class="fit${fitClass(final)}">${escapeHtml(final)}</b><span>Final</span></div>` +
-      `<div class="sum-stats cols-4">` + scoring.map(tile).join("") + `</div>` +
-      `<div class="sum-stats cols-5">` + tally.map(tile).join("") + `</div>` +
-      `<div class="sum-roll">` + run.deaths.map(d =>
-        `<div class="bl-tag nuz-tag"><span class="sr-n">#${d.n}</span>` +
-        `<span class="nuz-combo">${escapeHtml(WEAPON_ABBREV[d.weapon] || d.weapon)} + ${escapeHtml(d.style)}</span>` +
-        `<span class="nuz-reason">${escapeHtml(d.reason)}${d.quest ? " · " + escapeHtml(d.quest) : ""}</span></div>`
-      ).join("") + `</div>` +
+      `<div class="sum-cols">` +
+        `<section class="sum-panel"><h3>Rules</h3><div class="sum-rules">` +
+          rules.map(([k, v]) =>
+            `<div class="sr-row"><span>${k}</span><b>${escapeHtml(v)}</b></div>`).join("") +
+        `</div>` +
+        (rcfg ? "" : `<p class="hint">This run finished before the tracker started ` +
+          `recording rules, so the rest weren't saved.</p>`) +
+        `</section>` +
+        `<section class="sum-panel sum-center">` +
+          `<div class="sum-hero" title="${escapeHtml(zenny(finalScore()))}">` +
+            `<b class="fit${fitClass(final)}">${escapeHtml(final)}</b><span>Final</span></div>` +
+          `<div class="sum-stats cols-4">` + scoring.map(tile).join("") + `</div>` +
+          `<div class="sum-stats cols-3">` + tally.map(tile).join("") + `</div>` +
+          `<div class="sum-stats cols-3 last">` + costs.map(tile).join("") + `</div>` +
+        `</section>` +
+        `<section class="sum-panel"><h3>Quest Log</h3>` +
+          (roll ? `<div class="sum-roll">${roll}</div>`
+                : `<p class="hint">No combos lost.</p>`) +
+        `</section>` +
+      `</div>` +
       `<div class="row end gap"><button id="sumNew" class="btn tiny accent">Start New Run</button></div>`;
 
     $("sumNew").addEventListener("click", startRun);
