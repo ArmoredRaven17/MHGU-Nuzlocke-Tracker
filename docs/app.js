@@ -976,6 +976,7 @@
     return hslToRgb([h, s, clamp01(Math.max(l + (1 - l) * b, minL == null ? 0 : minL))]);
   };
   const css = (rgb) => `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
   function applyTheme(hex) {
     const c = hexRgb(hex), r = document.documentElement.style;
@@ -985,6 +986,16 @@
     r.setProperty("--hover",        css(shade(c, .17, .35)));
     r.setProperty("--accent",       css(shade(c, .10, .28)));
     r.setProperty("--accent-hover", css(lighten(c, .40, .62)));
+    // A fallen combo used to be marked in a fixed red, which fought every theme
+    // it wasn't Dreadking. These follow the theme instead, and sit above the
+    // --bg2 band (which tops out at .19) so the tag still reads as marked —
+    // the separation is lightness, not hue. The line-through on the combo name
+    // carries the meaning regardless of color.
+    r.setProperty("--fallen-line", css(shade(c, .28, .48)));
+    r.setProperty("--fallen-fill", rgba(shade(c, .40, .62), .12));
+    // Text on a fallen marker needs to clear the dark panel it sits on, so it
+    // gets a floor rather than a band.
+    r.setProperty("--fallen-text", css(lighten(c, .55, .72)));
     r.setProperty("--titlebar-overlay", "rgba(0,0,0,0.18)");
     r.setProperty("--text", "#ffffff");
     r.setProperty("--text-dim", "#fffffff5");

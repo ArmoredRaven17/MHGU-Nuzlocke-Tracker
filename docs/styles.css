@@ -10,6 +10,7 @@
   --text:#f3f3f3; --text-dim:#ffffff; --line:#ffffff1f; --card:#ffffff0d;
   --titlebar-overlay:rgba(0,0,0,0.18);
   --dead:#ff4d4d;
+  --fallen-line:#6f6f6f; --fallen-fill:rgba(190,190,190,.12); --fallen-text:#c9c9c9;
 }
 *{box-sizing:border-box;scrollbar-color:var(--accent) var(--bg2);scrollbar-width:thin}
 ::-webkit-scrollbar{width:6px;height:6px}
@@ -116,7 +117,7 @@ body{
 .bl-list{display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto}
 .bl-tag{display:flex;align-items:center;gap:8px;background:var(--card);
   border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px}
-.nuz-tag{border-color:#7a2020;background:#ff2a2a14}
+.nuz-tag{border-color:var(--fallen-line);background:var(--fallen-fill)}
 .nuz-combo{text-decoration:line-through;opacity:.75;flex:1;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
 .nuz-reason{font-size:11px;opacity:.6;white-space:nowrap}
@@ -129,7 +130,8 @@ body{
 .stat.dead b{color:var(--dead)}
 .lock-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;
   border:1px solid var(--accent);border-radius:20px;font-size:12px;background:#ffffff0d}
-.lock-chip.fallen{border-color:#7a2020;background:#ff2a2a14;color:var(--dead)}
+.lock-chip.fallen{border-color:var(--fallen-line);background:var(--fallen-fill);
+  color:var(--fallen-text)}
 
 /* ── Hunt bar ───────────────────────────────────────────────────────── */
 .hunt-bar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;
@@ -202,8 +204,8 @@ body{
   min-height:34px;display:flex;align-items:center;justify-content:center;
   font-size:11px;opacity:.95;transition:background .12s,border-color .12s}
 .cell.alive{cursor:default}
-.cell.dead{background:#ff2a2a10;border-color:#7a2020;opacity:.4;
-  text-decoration:line-through;color:var(--dead)}
+.cell.dead{background:var(--fallen-fill);border-color:var(--fallen-line);opacity:.4;
+  text-decoration:line-through;color:var(--fallen-text)}
 .cell.revived{border-color:#c9a227;background:#c9a2271a}
 /* Alive, but its weapon spent its style allowance — out of the pool, not lost */
 .cell.retired{opacity:.22;border-style:dotted}
