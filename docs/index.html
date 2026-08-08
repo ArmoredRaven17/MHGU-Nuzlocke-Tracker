@@ -45,8 +45,8 @@
       <section class="panel" data-open="true">
         <button class="panel-head">Kill Conditions <span class="chev">&#9662;</span></button>
         <div class="panel-body">
-          <p class="hint">What takes a loadout away. Pick one &mdash; the harsher rules
-            already cover the gentler ones, so there's nothing to gain by stacking them.</p>
+          <p class="hint">What takes a weapon/style combo away. Pick one &mdash; the harsher
+            rules already cover the gentler ones, so there's nothing to gain by stacking them.</p>
           <label class="chk"><input type="radio" name="kill" id="k_both" checked>Carts and quest failures<span class="w">&times;3</span></label>
           <label class="chk"><input type="radio" name="kill" id="k_cart">Cart<span class="w">&times;2</span></label>
           <label class="chk"><input type="radio" name="kill" id="k_fail">Quest failed<span class="w">&times;1</span></label>
@@ -56,38 +56,37 @@
       </section>
 
       <section class="panel" data-open="false">
-        <button class="panel-head">Loadout <span class="chev">&#9662;</span></button>
+        <button class="panel-head">Weapons/Styles <span class="chev">&#9662;</span></button>
         <div class="panel-body">
-          <p class="hint">How many styles a weapon may lose before the whole weapon
-            retires and its remaining styles leave the pool. Fewer styles means a
-            shorter run and fewer chances to hunt, so it pays more.</p>
-          <label class="chk"><input type="radio" name="cap" id="c_1">1 style &mdash; 15 loadouts<span class="w">&times;3</span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles &mdash; 30 loadouts<span class="w">&times;2</span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles &mdash; 45 loadouts<span class="w">&times;1</span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; 60 loadouts<span class="w">&minus;0.25</span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; 75 loadouts<span class="w">&minus;0.50</span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; 90 loadouts<span class="w">&minus;0.75</span></label>
+          <p class="hint">How many styles per weapon you can use before it is removed
+            from the pool.</p>
+          <label class="chk"><input type="radio" name="cap" id="c_1">1 style &mdash; 15 combos<span class="w">&times;3</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles &mdash; 30 combos<span class="w">&times;2</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles &mdash; 45 combos<span class="w">&times;1</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; 60 combos<span class="w">&minus;0.25</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; 75 combos<span class="w">&minus;0.50</span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; 90 combos<span class="w">&minus;0.75</span></label>
           <p class="hint" id="poolNote"></p>
 
           <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>The app rolls one for me<span class="w">&plusmn;0</span></label>
           <label class="chk"><input type="radio" name="assign" id="a_pick">I pick from what's left<span class="w">&minus;0.25</span></label>
-          <p class="hint" style="margin-top:8px">Locks &mdash; both are &times;1 and cost nothing.
-            Unticking one takes 0.25 off your difficulty.</p>
-          <label class="chk"><input type="checkbox" id="l_loadout" checked>Loadout lock &mdash; you're stuck with the combo until it falls<span class="w">&minus;0.25 if off</span></label>
-          <label class="chk"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; you owe the quest that beat you one retry<span class="w">&minus;0.25 if off</span></label>
+          <p class="hint" style="margin-top:8px">Locks &mdash; base restrictions you can remove.</p>
+          <label class="chk"><input type="checkbox" id="l_loadout" checked>Weapon/Style lock &mdash; use weapon/style until it falls<span class="w">&minus;0.25 if off</span></label>
+          <label class="chk"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; must do a retry when you fail a quest<span class="w">&minus;0.25 if off</span></label>
         </div>
       </section>
 
       <section class="panel" data-open="false">
         <button class="panel-head">Revive <span class="chev">&#9662;</span></button>
         <div class="panel-body">
-          <p class="hint">Buy a fallen loadout back by selling monster materials. Leave off for a run with no safety net.</p>
+          <p class="hint">Pay to revive a fallen weapon/style combo by selling specific
+            monster materials. Leave off for a run with no safety net.</p>
           <label class="chk"><input type="checkbox" id="r_enabled">Allow revives<span class="w">&minus;0.25</span></label>
           <label class="chk"><input type="checkbox" id="r_once" checked>&nbsp;&nbsp;&nbsp;&mdash; once per combo only<span class="w">+0.10</span></label>
           <p class="hint" id="reviveNote" style="margin-top:8px">Cost climbs 5,000z each
             time: the first buy-back is 5,000z, the second 10,000z, and so on. Click a
-            fallen loadout on the board to see three ways to pay.</p>
+            fallen combo on the board to see three ways to pay.</p>
         </div>
       </section>
 
@@ -108,7 +107,7 @@
 
       <div id="huntBar" class="hunt-bar hidden">
         <div class="hunt-loadout">
-          <div class="hl-label">Loadout</div>
+          <div class="hl-label">Weapon/Style</div>
           <div id="hlRolled" class="hl-value">
             <img id="hlIcon" class="hl-icon hidden" alt="">
             <span id="hlText">&mdash;</span>
@@ -117,7 +116,7 @@
             <select id="pickWeapon"></select>
             <select id="pickStyle"></select>
           </div>
-          <button id="rollBtn" class="btn tiny">Roll Loadout</button>
+          <button id="rollBtn" class="btn tiny">Roll Combo</button>
         </div>
 
         <div class="hunt-quest">
@@ -139,7 +138,7 @@
       </div>
 
       <div id="placeholder" class="placeholder">
-        <h2>92 loadouts. One run.</h2>
+        <h2>92 possible Weapon/Style Combos. One run.</h2>
         <p>14 weapons across 6 styles, plus a Prowler with 8 biases.</p>
         <p>Fail a hunt or get carted and you lose that weapon/style combination for the
            rest of the run.</p>
@@ -161,14 +160,14 @@
     <p>This tracks a Nuzlocke run. It doesn't roll quests &mdash; hunt whatever you like,
        then come back and say what happened.</p>
     <ol>
-      <li><strong>Get a loadout.</strong> Either the app hands you a surviving weapon and
+      <li><strong>Get a combo.</strong> Either the app hands you a surviving weapon and
           style, or you pick one yourself. Dead combos are never offered.</li>
       <li><strong>Name the quest</strong> you're about to hunt.</li>
       <li><strong>Report the result</strong> &mdash; Cleared, Carted, or Failed. Carted can be
           pressed more than once; it doesn't end the attempt.</li>
     </ol>
     <p>The kill condition you chose is checked against that result. When it fires, the
-       loadout you were using is struck off the board permanently.</p>
+       weapon/style combo you were using is struck off the board permanently.</p>
     <p>It's one choice rather than several. Carting and failing a quest are separate
        things &mdash; you can time out or blow a sub-objective without ever carting, and
        you can cart twice and still clear &mdash; so the harshest setting covers both
@@ -176,7 +175,7 @@
     <p><strong>Arena quests don't count.</strong> Their weapons are handed to you, so
        nothing is lost on an Arena hunt.</p>
     <p><strong>Locks</strong> are on by default and are what the difficulty scale is
-       measured against. The loadout lock means you can't swap weapon or style at all
+       measured against. The weapon/style lock means you can't swap at all
        until that combo falls. The quest lock means a quest that beat you is owed one
        retry &mdash; your next hunt has to be that quest, win or lose. Turning either off
        makes the run easier and scores lower.</p>
@@ -195,7 +194,7 @@
 
 <div id="reviveModal" class="modal hidden">
   <div class="modal-card">
-    <h2 id="reviveTitle">Buy back a loadout</h2>
+    <h2 id="reviveTitle">Buy back a combo</h2>
     <p class="hint" id="reviveSub"></p>
     <div id="reviveOptions" class="revive-options"></div>
     <p class="hint">Sell the materials in game, then take the option you paid. Nothing
@@ -217,6 +216,6 @@
 
 <script src="data.js?v=2"></script>
 <script src="materials.js?v=1"></script>
-<script src="app.js?v=27"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>

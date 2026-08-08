@@ -533,7 +533,7 @@
     html += '<div class="board-legend"><span>Solid = available</span>' +
             '<span style="color:var(--dead)">Struck through = fallen</span>' +
             '<span>Faded = weapon retired, allowance spent</span>' +
-            '<span>Outlined = current loadout</span></div>';
+            '<span>Outlined = current combo</span></div>';
     board.innerHTML = html;
   }
 
@@ -619,7 +619,7 @@
       // Blocked while a hunt is outstanding — otherwise the mode is opt-out per
       // roll and the locks mean nothing.
       $("rollBtn").disabled = !!run.combo;
-      $("rollBtn").textContent = run.combo ? "Loadout set" : "Roll Loadout";
+      $("rollBtn").textContent = run.combo ? "Combo set" : "Roll Combo";
     }
 
     const q = run.quest;
@@ -646,11 +646,11 @@
     $("oFail").disabled  = !ready;
 
     let hint = "";
-    if (!run.combo) hint = "Get a loadout first.";
+    if (!run.combo) hint = "Get a weapon/style first.";
     else if (!run.quest) hint = "Name the quest you're hunting.";
     else if (isArena(run.quest)) hint = "Arena quest — reporting here won't cost you anything.";
     else if (run.combo && !isAlive(run.combo.weapon, run.combo.style))
-      hint = "This loadout has already fallen — report the hunt to draw a new one.";
+      hint = "This combo has already fallen — report the hunt to draw a new one.";
     else if (run.attemptCarts) hint = run.attemptCarts + " cart(s) this attempt.";
     $("outcomeHint").textContent = hint;
   }
@@ -680,7 +680,7 @@
     el.innerHTML =
       `<h2>Run Over</h2>` +
       `<p class="sub">${exhausted
-        ? "Every available loadout has fallen."
+        ? "Every available combo has fallen."
         : "Ended manually with " + legalCombos().length + " still standing."}</p>` +
       `<div class="sum-stats">` +
         [
@@ -951,7 +951,7 @@
   $("startBtn").addEventListener("click", () => {
     if (run.active && run.deaths.length) {
       askConfirm("Start a new run?",
-        "This clears the current run — " + run.deaths.length + " fallen loadout(s) and all progress.",
+        "This clears the current run — " + run.deaths.length + " fallen combo(s) and all progress.",
         startRun);
     } else startRun();
   });
