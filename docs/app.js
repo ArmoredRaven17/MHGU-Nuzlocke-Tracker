@@ -72,7 +72,7 @@
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
-    revivePrice: 5000,                   // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
+    revivePrice: 10000,                  // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
   };
   let cfg = Object.assign({}, DEFAULT_CFG);
 
@@ -114,9 +114,16 @@
   const STYLE_CAP_WEIGHT = { 1: 3, 2: 2, 3: 1, 4: 0.75, 5: 0.5, 6: 0.25 };
 
   // What the first buy-back costs, and what charging that is worth. A cheap
-  // safety net makes the run easier, a dear one barely helps. 5,000z is the
+  // safety net makes the run easier; a dear one barely helps. 10,000z is the
   // reference and costs nothing. Only applies when revives are switched on.
-  const REVIVE_PRICE_WEIGHT = { 2500: 0.75, 5000: 1, 10000: 1.25, 20000: 1.5 };
+  //
+  // The top bonus is deliberately small. Having no safety net at all must beat
+  // having an expensive one, and "no revives" contributes exactly 0 — so the
+  // best revive case (allowed -0.25, once-only +0.10, dearest price) has to
+  // stay below zero. That caps the dearest price under +0.15; +0.10 leaves the
+  // best possible revive run at -0.05. Raising it past +0.15 would invert the
+  // intent, so check REVIVE_NEVER_BEATS_OFF if you retune these.
+  const REVIVE_PRICE_WEIGHT = { 5000: 0.85, 10000: 1, 20000: 1.05, 30000: 1.10 };
 
   // The total is deliberately unbounded below. This is a bonus multiplier, so a
   // run soft enough to net out at zero earns nothing, and one softer still is
@@ -144,6 +151,24 @@
     const m = leverDeltas(c).reduce((sum, w) => sum - (1 - w), killBase(c));
     return Math.round(m * 100) / 100;
   }
+
+  // Invariant: no safety net must always beat having one, however dearly it is
+  // priced. Checked rather than assumed, because it depends on three separate
+  // weights and is easy to break by nudging any of them.
+  (function assertReviveNeverBeatsOff() {
+    const base = { kill: "fail", assign: "roll", lockLoadout: true, lockQuest: true,
+                   stylesPerWeapon: 3 };
+    const off = multiplier(Object.assign({}, base, { reviveEnabled: false }));
+    const best = Math.max(...Object.keys(REVIVE_PRICE_WEIGHT).map(p =>
+      Math.max(...[true, false].map(once =>
+        multiplier(Object.assign({}, base,
+          { reviveEnabled: true, reviveOnce: once, revivePrice: +p }))))));
+    if (best >= off) {
+      console.warn("Revive weights inverted: best revive run scores " + best +
+        ", which is not below the " + off + " for allowing none. " +
+        "Lower the dearest REVIVE_PRICE_WEIGHT or LEVER_WEIGHT.reviveOnce.");
+    }
+  })();
   // Typographic minus, not a hyphen — "×-0.75" reads as a typo.
   const fmtMult = (m) => "×" + m.toFixed(2).replace("-", "−");
 
@@ -337,7 +362,7 @@
   const CFG_RADIOS = {
     kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
-    revivePrice: { 2500: "p_2500", 5000: "p_5000", 10000: "p_10000", 20000: "p_20000" },
+    revivePrice: { 5000: "p_5000", 10000: "p_10000", 20000: "p_20000", 30000: "p_30000" },
     assign: { roll: "a_roll", pick: "a_pick" },
   };
 
