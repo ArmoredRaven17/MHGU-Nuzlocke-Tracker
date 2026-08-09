@@ -266,6 +266,10 @@ body{
 .board-grid{display:grid;grid-template-columns:auto repeat(6,minmax(36px,1fr));
   gap:3px;align-items:stretch;container-type:inline-size}
 .board-grid.prowler{grid-template-columns:auto repeat(8,minmax(26px,1fr))}
+/* Prowler packs eight biases into the width six styles get, so its columns are
+   three quarters as wide. cqi measures the grid, not the column, so both grids
+   would otherwise take the same type size into very different space. */
+.board-grid.prowler .bh{font-size:clamp(6px, 1.25cqi, 10px)}
 .bh{font-size:clamp(7px, 1.5cqi, 11px);text-transform:uppercase;letter-spacing:.04em;
   opacity:.6;display:flex;align-items:center;justify-content:center;padding:2px;
   text-align:center;overflow-wrap:anywhere}
