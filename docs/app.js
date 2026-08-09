@@ -72,7 +72,7 @@
   const DEFAULT_CFG = {
     kill: "both",                        // "both" | "cart" | "fail" | "streak" | "twice"
     assign: "roll",                      // "roll" | "pick"
-    lockLoadout: true,
+    loadout: "hold",                     // "hold" | "cycle" | "free"; see LEVER_WEIGHT
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
@@ -114,6 +114,17 @@
     questUnlocked:    0.75,   // free to walk away from a quest        -0.25
     reviveAllowed:    0.75,   // a safety net at all                   -0.25
     reviveOnce:       1.10,   // ...but only one each, so some of it back  +0.10
+    // Cycling is the only lever that sits ABOVE the reference, because it is
+    // the only one that takes something away rather than handing it back:
+    // holding lets you ride a combo you are good with for as long as it lives,
+    // and cycling ends that on every clear.
+    //
+    // Its size is a judgement call and cannot be otherwise. The simulation
+    // treats every combo as equally winnable — which is your call, and the
+    // right one — so a model in which combos are interchangeable can never
+    // measure a rule about WHICH combo you hold. Same wall as the loadout lock
+    // and Hunter's choice. See LEVER PLACEHOLDER in CLAUDE.md.
+    loadoutCycles:    1.15,   // a fresh combo after every clear       +0.15
   };
   // How many styles a weapon may lose before the whole weapon retires. This one
   // MULTIPLIES the total rather than adding to it, and it is the only lever
@@ -175,7 +186,8 @@
   const leverDeltas = (c) => {
     const L = LEVER_WEIGHT, d = [];
     if (c.assign === "pick") d.push(L.pickOwnLoadout);
-    if (!c.lockLoadout)      d.push(L.loadoutUnlocked);
+    if (c.loadout === "free")   d.push(L.loadoutUnlocked);
+    if (c.loadout === "cycle")  d.push(L.loadoutCycles);
     if (!c.lockQuest)        d.push(L.questUnlocked);
     // Two independent values that stack: allowing revives at all is -0.25,
     // and capping them at one per combo gives +0.10 of it back.
@@ -207,7 +219,7 @@
   // priced. Checked rather than assumed, because it depends on three separate
   // weights and is easy to break by nudging any of them.
   (function assertReviveNeverBeatsOff() {
-    const base = { kill: "fail", assign: "roll", lockLoadout: true, lockQuest: true,
+    const base = { kill: "fail", assign: "roll", loadout: "hold", lockQuest: true,
                    stylesPerWeapon: 3 };
     const off = multiplier(Object.assign({}, base, { reviveEnabled: false }));
     const best = Math.max(...Object.keys(REVIVE_PRICE_WEIGHT).map(p =>
@@ -435,6 +447,17 @@
       localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, cfg, run }));
     } catch (e) {}
   }
+  // lockLoadout was a boolean before cycling existed. Anything saved or exported
+  // under the old scheme maps straight across; a run's own snapshot is migrated
+  // too, so a finished run still reports the rules it was actually played under.
+  // Keyed off whether the SOURCE is already in the new format, not off whether
+  // the target holds a valid value — cfg is seeded from DEFAULT_CFG, so it
+  // always holds "hold" by the time this runs, and testing the target would
+  // silently skip every migration.
+  function migrateLoadout(target, source) {
+    if (source && typeof source.loadout === "string") return;
+    target.loadout = source && source.lockLoadout === false ? "free" : "hold";
+  }
   function load() {
     let d = null;
     try { d = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) {}
@@ -444,8 +467,12 @@
       cfg = Object.assign({}, DEFAULT_CFG);
       Object.keys(DEFAULT_CFG).forEach(k => { if (k in d.cfg) cfg[k] = d.cfg[k]; });
       if (!KILL_WEIGHT[cfg.kill]) cfg.kill = DEFAULT_CFG.kill;
+      migrateLoadout(cfg, d.cfg);
     }
-    if (d && d.run) run = Object.assign(emptyRun(), d.run);
+    if (d && d.run) {
+      run = Object.assign(emptyRun(), d.run);
+      if (run.cfg) migrateLoadout(run.cfg, run.cfg);
+    }
     rebuildDeadKeys();
     // A run saved before run.cfg existed has no rules snapshot. If it is still
     // going, the live cfg IS its snapshot — the rules are frozen for the
@@ -462,7 +489,6 @@
 
   // ── Config <-> DOM ───────────────────────────────────────────────────────
   const CFG_BOXES = {
-    lockLoadout: "l_loadout",
     lockQuest: "l_quest",
     reviveEnabled: "r_enabled", reviveOnce: "r_once",
     rerollEnabled: "rr_enabled",
@@ -475,6 +501,7 @@
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
     assign: { roll: "a_roll", pick: "a_pick" },
+    loadout: { hold: "ld_hold", cycle: "ld_cycle", free: "ld_free" },
   };
 
   // How a radio's chosen value reads, taken from the sidebar label itself rather
@@ -612,7 +639,15 @@
     // Roll over into the next hunt. The loadout lock means exactly one thing:
     // you keep the combo until it dies — through clears as well as failures.
     run.attemptCarts = 0;
-    run.combo = (cfg.lockLoadout && isAlive(combo.weapon, combo.style))
+    // hold  — keep it until it dies, through clears as well as failures
+    // cycle — a clear hands it in; a failure does not, so you can take the
+    //         quest that beat you again with the same combo (which is what the
+    //         quest lock is asking you to do)
+    // free  — pick again every hunt
+    const keepCombo = cfg.loadout === "hold" ? true
+                    : cfg.loadout === "cycle" ? outcome !== "clear"
+                    : false;
+    run.combo = (keepCombo && isAlive(combo.weapon, combo.style))
       ? { weapon: combo.weapon, style: combo.style } : null;
     run.quest = run.lockQuest || null;
     afterMutation();
@@ -746,14 +781,15 @@
         ? `<span class="stat">Next revive <b>${zenny(reviveCost(run.revives))}</b></span>` : "");
     if (cfg.kill === "streak") html += `<span class="stat">Streak <b>${run.failStreak}</b></span>`;
 
-    if (cfg.lockLoadout && run.combo) {
+    if (cfg.loadout !== "free" && run.combo) {
       // A cart can kill the combo without ending the attempt, so the held
       // loadout may already be dead — say so rather than "until it falls".
       const dead = !isAlive(run.combo.weapon, run.combo.style);
       html += `<span class="lock-chip${dead ? " fallen" : ""}">${LOCK_ICON} ` +
         `${escapeHtml(WEAPON_ABBREV[run.combo.weapon] || run.combo.weapon)} + ` +
         `${escapeHtml(run.combo.style)} &mdash; ` +
-        (dead ? "fallen; finish the hunt to move on" : "until it falls") + `</span>`;
+        (dead ? "fallen; finish the hunt to move on"
+              : cfg.loadout === "cycle" ? "until you clear" : "until it falls") + `</span>`;
     }
     if (run.lockQuest) {
       html += `<span class="lock-chip">${LOCK_ICON} ${escapeHtml(run.lockQuest.n)} &mdash; owed a retry</span>`;
@@ -766,8 +802,9 @@
     if (!run.active || runOver()) { bar.classList.add("hidden"); return; }
     bar.classList.remove("hidden");
 
-    // Locked to a live combo: you can't swap, so the pickers would be a lie.
-    const locked = cfg.lockLoadout && !!run.combo;
+    // Holding a live combo: you can't swap, so the pickers would be a lie.
+    // Cycling holds you too — just only until the next clear.
+    const locked = cfg.loadout !== "free" && !!run.combo;
     const pickMode = cfg.assign === "pick" && !locked;
 
     $("hlPick").classList.toggle("hidden", !pickMode);
@@ -918,7 +955,7 @@
       ["Kill condition",    ruleLabel("kill", rcfg.kill)],
       ["Weapons/Styles",    ruleLabel("stylesPerWeapon", rcfg.stylesPerWeapon)],
       ["Loadout",           ruleLabel("assign", rcfg.assign)],
-      ["Weapon/Style lock", rcfg.lockLoadout ? "On" : "Off"],
+      ["Weapon/Style hold", ruleLabel("loadout", rcfg.loadout)],
       ["Quest lock",        rcfg.lockQuest ? "On" : "Off"],
       ["Revives",           rcfg.reviveEnabled
         ? [zenny(rcfg.revivePrice), rcfg.reviveCap + " max",

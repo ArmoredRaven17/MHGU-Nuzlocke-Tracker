@@ -69,7 +69,10 @@ ever get to spend.
 **Other levers:**
 
 - **Loadout** — the app rolls one, or you pick from what's left
-- **Loadout lock** — you can't swap weapon or style at all until that combo falls
+- **How long you hold it** — *until it falls* (the baseline), *until you clear* (a
+  failure keeps it, so you can retry the quest that beat you with the same combo —
+  harder than the baseline, and the only lever that scores **above** it), or *swap
+  whenever you like*
 - **Quest lock** — a quest that beat you is owed one retry; your next hunt has to be
   that quest, win or lose
 - **Revive** — buy a fallen loadout back, once each or repeatedly
@@ -83,8 +86,9 @@ price you set every time — at the 10,000z default the first buy-back is 10,000
 second 20,000z — and it comes straight out of your earned zenny, so rescuing a run
 costs you score. A per-run cap bounds how far that can go.
 
-Both locks are on by default: locked is the baseline the difficulty scale is measured
-against, and turning one off is a discount.
+Holding until a combo falls, and the quest lock, are the baseline the difficulty scale
+is measured against. Loosening either is a discount; cycling on every clear is the one
+option that tightens it.
 
 **Arena quests aren't part of a run.** They hand you a fixed set of five weapons, so
 there's no combo of yours to put at stake. They aren't listed.
@@ -106,7 +110,8 @@ scales the lot:
 | Lever | |
 |---|---|
 | You pick your own loadout | −0.25 |
-| Loadout lock off | −0.25 |
+| Hold until you clear | **+0.15** |
+| Swap whenever you like | −0.25 |
 | Quest lock off | −0.25 |
 | Revives allowed | −0.25 |
 | …but only once per combo | +0.10 back |

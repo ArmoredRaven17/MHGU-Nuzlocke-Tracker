@@ -74,8 +74,11 @@
           <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>Randomized Weapon/Style combo<span class="w">&plusmn;0</span></label>
           <label class="chk"><input type="radio" name="assign" id="a_pick">Hunter's choice<span class="w">&minus;0.25</span></label>
+          <p class="hint" style="margin-top:8px">How long you hold a weapon/style.</p>
+          <label class="chk"><input type="radio" name="ld" id="ld_hold" checked>Until it falls<span class="w">&plusmn;0</span></label>
+          <label class="chk"><input type="radio" name="ld" id="ld_cycle">Until you clear &mdash; a failure keeps it<span class="w">+0.15</span></label>
+          <label class="chk"><input type="radio" name="ld" id="ld_free">Swap whenever you like<span class="w">&minus;0.25</span></label>
           <p class="hint" style="margin-top:8px">Locks &mdash; base restrictions you can remove.</p>
-          <label class="chk"><input type="checkbox" id="l_loadout" checked>Weapon/Style lock &mdash; use weapon/style until it falls<span class="w">&minus;0.25 if off</span></label>
           <label class="chk"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; must do a retry when you fail a quest<span class="w">&minus;0.25 if off</span></label>
         </div>
       </section>
@@ -209,11 +212,15 @@
        different quests, so the run is a route rather than the same quest fifty times.
        Only clearing spends it &mdash; fail and it stays on the board, which is what lets
        the quest lock send you back to it.</p>
-    <p><strong>Locks</strong> are on by default and are what the difficulty scale is
-       measured against. The weapon/style lock means you can't swap at all
-       until that combo falls. The quest lock means a quest that beat you is owed one
-       retry &mdash; your next hunt has to be that quest, win or lose. Turning either off
-       makes the run easier and scores lower.</p>
+    <p><strong>How long you hold a weapon/style.</strong> <em>Until it falls</em> is the
+       baseline &mdash; you keep it through clears as well as failures, until it dies.
+       <em>Until you clear</em> hands it in every time you succeed, but a failure keeps
+       it, so you can take the quest that beat you again with the same combo. That's
+       harder than the baseline and scores higher. <em>Swap whenever you like</em> is
+       the easy option.</p>
+    <p><strong>The quest lock</strong> means a quest that beat you is owed one retry
+       &mdash; your next hunt has to be that quest, win or lose. It's on by default;
+       turning it off makes the run easier and scores lower.</p>
     <p>A run is <strong>50 successful hunts</strong>, or however far you get before
        nothing is left standing. Only clears count towards the 50 &mdash; a failure costs
        you a combo, it doesn't spend your run. Whatever you still hold at the end pays a
@@ -286,6 +293,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=56"></script>
+<script src="app.js?v=58"></script>
 </body>
 </html>

@@ -169,14 +169,38 @@ radio always has a selection, there is no "at least one condition" guard to main
 The only other radio is `assign`; the rest are plain booleans. `CFG_RADIOS` maps a cfg
 key to its value→element-id table; `CFG_BOXES` covers the booleans.
 
-**Both locks default on — locked is the 1× reference, unlocking is the discount.**
+**The baseline is `loadout: "hold"` plus the quest lock — the 1× reference.**
 
-- **Loadout lock**: you keep the combo until it dies, through *clears* as well as
-  failures. There is no separate `lockCombo` state — it is simply whether `run.combo`
-  is carried over at the end of `report()`. A cart can kill the held combo without
-  ending the attempt, so `run.combo` may briefly point at a dead combo; the status
-  chip and outcome hint detect that (`isAlive`) and say "fallen" rather than "until it
-  falls". It self-clears on the next resolution.
+- **`cfg.loadout`** is three-way, not a boolean, and it is simply whether `run.combo`
+  survives the end of `report()`. There is no separate `lockCombo` state.
+  - `hold` — kept until it dies, through *clears* as well as failures. The reference.
+  - `cycle` — a **clear** hands it in; a **failure** keeps it. That asymmetry is the
+    whole point: under a harsh kill condition the combo dies on a failure anyway, and
+    under a gentle one keeping it lets you take the quest that beat you again with the
+    same combo, which is exactly what the quest lock is asking for.
+  - `free` — pick again every hunt.
+
+  A cart can kill the held combo without ending the attempt, so `run.combo` may briefly
+  point at a dead combo; the status chip and outcome hint detect that (`isAlive`) and
+  say "fallen" rather than "until it falls"/"until you clear". It self-clears on the
+  next resolution.
+
+  `cycle` is **the only lever that scores above the reference** (+0.15). Everything else
+  in the app either costs nothing or hands something back, which is why the difficulty
+  distribution is one-sided — 98% of configurations sit below the default. More levers
+  of this shape would fix that.
+
+  **LEVER PLACEHOLDER**: +0.15 is judgement, not measurement, and cannot be otherwise.
+  The simulator treats every combo as equally winnable — a deliberate design call, since
+  players prefer combos that aren't objectively strongest — so a model where combos are
+  interchangeable can never measure a rule about *which* combo you hold. `pickOwnLoadout`
+  and `loadoutUnlocked` are unmeasurable for the same reason.
+
+  Saves predating this are migrated by `migrateLoadout()`, keyed off whether the
+  **source** has a `loadout` string. Do not key it off the target: `cfg` is seeded from
+  `DEFAULT_CFG` and so always holds `"hold"` by then, which silently skips every
+  migration. A run's own `run.cfg` snapshot is migrated too, so a finished run still
+  reports the rules it was played under.
 - **Quest lock**: a single-retry obligation. `report()` clears `run.lockQuest` at the
   top of any resolution — reaching an outcome discharges the debt — and the fail
   branch immediately re-owes it, so consecutive failures still pin you to the quest.
