@@ -852,9 +852,8 @@
     let html = '<div class="board-legend">' +
       '<span>Full colour &mdash; available</span>' +
       '<span>Bone &mdash; fallen, gone for the run</span>' +
-      '<span>Darkened &mdash; weapon retired; these were never lost, ' +
-        'just out of the pool</span>' +
-      '<span>Outlined &mdash; the combo you are on</span></div>';
+      '<span>Darkened &mdash; weapon retired/non-selectable</span>' +
+      '<span>Weapon icon &mdash; the combo you are on</span></div>';
 
     html += '<div class="board-grid">';
     html += '<div class="bh corner"></div>';
@@ -863,7 +862,8 @@
       html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
               `<img src="${weaponIcon(w)}" alt="">${escapeHtml(WEAPON_ABBREV[w] || w)}</div>`;
       STYLES.forEach(s => {
-        html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]}"` +
+        html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]};` +
+                `--wi:url('${weaponIcon(w)}')"` +
                 `${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}"></div>`;
       });
     });
@@ -875,7 +875,8 @@
     html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
             `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">Prowler</div>`;
     BIAS_NAMES.forEach(b => {
-      html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler}"` +
+      html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler};` +
+              `--wi:url('${prowlerIcon(BIAS_FILE.Charisma)}')"` +
               `${cellTitle("Prowler", b)} data-w="Prowler" data-s="${escapeHtml(b)}"></div>`;
     });
     html += "</div>";
@@ -955,8 +956,12 @@
       // anything — and under hold or cycle that combo was immediately locked, so
       // the pickers vanished before they could be used. The selects now hold a
       // draft and nothing is committed until Confirm.
-      // Nothing to swap to until the hunt is reported.
+      // Nothing to swap to until the hunt is reported. Confirm goes with them:
+      // it was left live beside frozen selects, so it neither did anything nor
+      // looked like it wouldn't.
+      const canCommit = !heldDead && !!curW && !!curS;
       wSel.disabled = sSel.disabled = !!heldDead;
+      $("pickConfirm").disabled = !canCommit;
     } else {
       const c = run.combo;
       $("hlText").textContent = c
@@ -1136,6 +1141,9 @@
 
   function renderAll() {
     const running = run.active && !runOver();
+    // The controls column only exists while there is a hunt to act on; hiding it
+    // also hands its 320px back to the result screen, which wants the width.
+    $("controlsPanel").classList.toggle("hidden", !running);
     $("startBtn").classList.toggle("hidden", run.active && !runOver());
     $("endBtn").classList.toggle("hidden", !running);
     $("startBtn").textContent = run.deaths.length || run.active ? "Start New Run" : "Start Run";

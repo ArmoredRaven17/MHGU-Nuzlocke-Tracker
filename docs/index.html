@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=56">
+<link rel="stylesheet" href="styles.css?v=72">
 </head>
 <body>
 <div id="app">
@@ -146,48 +146,51 @@
 
       <div id="statusStrip" class="status-strip hidden"></div>
 
-      <div id="huntBar" class="hunt-bar hidden">
-        <div class="hunt-col">
-        <div class="hunt-loadout">
-          <div class="hl-label">Weapon/Style</div>
-          <div id="hlRolled" class="hl-value">
-            <img id="hlIcon" class="hl-icon hidden" alt="">
-            <span id="hlText">&mdash;</span>
-          </div>
-          <div id="hlPick" class="hl-pick hidden">
-            <select id="pickWeapon"></select>
-            <select id="pickStyle"></select>
-            <button id="pickConfirm" class="btn tiny">Confirm</button>
-          </div>
-          <button id="rollBtn" class="btn tiny">Roll Combo</button>
-          <button id="rerollBtn" class="btn tiny hidden">Reroll&hellip;</button>
-        </div>
-
-        <div class="hunt-outcome">
-          <div class="hl-label">Result</div>
-          <div class="row gap">
-            <button id="oClear" class="btn tiny outcome-clear">Cleared</button>
-            <button id="oCart"  class="btn tiny outcome-cart">Carted</button>
-            <button id="oFail"  class="btn tiny outcome-fail">Failed</button>
-          </div>
-          <p id="outcomeHint" class="hint"></p>
-        </div>
-        </div>
-
-        <div class="hunt-quest">
-          <div class="hl-label">Quest</div>
-          <input id="questSearch" type="text" placeholder="Search quests&hellip;" autocomplete="off">
-          <div id="questResults" class="quest-results hidden"></div>
-          <div id="questChosen" class="quest-chosen empty"></div>
-        </div>
-
-      </div>
-
       <div id="board" class="board"></div>
 
       <div id="summary" class="summary hidden"></div>
 
     </section>
+
+    <!-- ── Controls: everything you act on for the hunt in progress ── -->
+    <aside id="controlsPanel" class="controls hidden">
+        <div id="huntBar" class="hunt-bar hidden">
+          <div class="hunt-col">
+          <div class="hunt-loadout">
+            <div class="hl-label">Weapon/Style</div>
+            <div id="hlRolled" class="hl-value">
+              <img id="hlIcon" class="hl-icon hidden" alt="">
+              <span id="hlText">&mdash;</span>
+            </div>
+            <div id="hlPick" class="hl-pick hidden">
+              <select id="pickWeapon"></select>
+              <select id="pickStyle"></select>
+              <button id="pickConfirm" class="btn tiny accent">Confirm</button>
+            </div>
+            <button id="rollBtn" class="btn tiny">Roll Combo</button>
+            <button id="rerollBtn" class="btn tiny hidden">Reroll&hellip;</button>
+          </div>
+
+          <div class="hunt-outcome">
+            <div class="hl-label">Result</div>
+            <div class="row gap">
+              <button id="oClear" class="btn tiny outcome-clear">Cleared</button>
+              <button id="oCart"  class="btn tiny outcome-cart">Carted</button>
+              <button id="oFail"  class="btn tiny outcome-fail">Failed</button>
+            </div>
+            <p id="outcomeHint" class="hint"></p>
+          </div>
+          </div>
+
+          <div class="hunt-quest">
+            <div class="hl-label">Quest</div>
+            <input id="questSearch" type="text" placeholder="Search quests&hellip;" autocomplete="off">
+            <div id="questResults" class="quest-results hidden"></div>
+            <div id="questChosen" class="quest-chosen empty"></div>
+          </div>
+
+        </div>
+    </aside>
   </main>
 </div>
 
@@ -334,6 +337,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=80"></script>
+<script src="app.js?v=90"></script>
 </body>
 </html>

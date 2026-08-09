@@ -52,13 +52,31 @@ body{
   background-size:auto 100%;background-position:left center;background-repeat:repeat;
 }
 .content{flex:1;padding:18px;overflow-y:auto;min-width:0;background-color:var(--bg1)}
+/* Everything you act on for the hunt in progress, in its own column. It used to
+   sit above the board, where it cost 163px of the height the grid needed — and
+   the grid is the thing you are meant to be able to take in at a glance.
+   It hides entirely once the run is over: there is nothing to act on, and the
+   result screen wants the width back for its three panels. */
+.controls{
+  width:320px;flex-shrink:0;padding:12px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:8px;
+  background-image:
+    linear-gradient(color-mix(in srgb,var(--accent) 90%,transparent),color-mix(in srgb,var(--accent) 90%,transparent)),
+    url('assets/sidebar-background-texture1.png');
+  background-size:auto 100%;background-position:left center;background-repeat:repeat;
+}
 
 /* Buttons */
 .btn{background:#ffffff14;color:var(--text);border:1px solid var(--line);
   border-radius:7px;padding:8px 14px;cursor:pointer;font-size:14px}
 .btn:hover{background:#ffffff24}
+/* Disabled has to be obvious on the accent buttons too — at opacity alone a
+   dark accent button barely moves, so it also loses its weight and text shadow. */
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn:disabled:hover{background:#ffffff14}
+.btn.accent:disabled{opacity:.45;background:#ffffff10;border-color:var(--line);
+  color:var(--text);font-weight:400;text-shadow:none}
+.btn.accent:disabled:hover{background:#ffffff10}
 .btn.block{width:100%}
 .btn.tiny{padding:3px 10px;font-size:12px}
 .btn.block,.btn.tiny{
@@ -153,8 +171,8 @@ body{
 .stat.dead b{color:var(--dead)}
 
 /* ── Hunt bar ───────────────────────────────────────────────────────── */
-.hunt-bar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;
-  padding:12px;margin-bottom:14px;border:1px solid var(--line);
+.hunt-bar{display:flex;flex-direction:column;gap:14px;align-items:stretch;
+  padding:12px;border:1px solid var(--line);
   border-radius:8px;background:var(--card)}
 .hunt-loadout,.hunt-quest,.hunt-outcome{display:flex;flex-direction:column;gap:6px}
 /* Loadout and result stack in one column, quest beside them: the two things you
@@ -164,11 +182,17 @@ body{
    the taller column it drives the whole bar's height, so it holds one line's
    worth of space whether or not it has anything to say. */
 #outcomeHint{min-height:17px;margin:2px 0 0}
-.hunt-quest{flex:1;min-width:240px;position:relative}
+.hunt-quest{position:relative}
 .hl-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.6}
 .hl-value{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;min-height:26px}
 .hl-icon{width:24px;height:24px;object-fit:contain}
-.hl-pick{display:flex;gap:6px}
+/* Stacked, not a row. Three controls side by side came to 301px inside a 271px
+   box once the hunt bar moved into a 320px column, and Confirm hung past the
+   panel edge. Weapon names are long enough — "Sword & Shield", "Heavy Bowgun" —
+   that giving each control the full width is the honest fix rather than
+   squeezing them. */
+.hl-pick{display:flex;flex-direction:column;gap:6px}
+.hl-pick select,.hl-pick button{width:100%}
 .hl-pick select{background:var(--bg2);color:var(--text);border:1px solid var(--line);
   border-radius:6px;padding:5px 8px;font-size:13px}
 
@@ -232,11 +256,19 @@ body{
 
 /* ── Board ──────────────────────────────────────────────────────────── */
 .board{display:flex;flex-direction:column;gap:14px}
-.board-grid{display:grid;grid-template-columns:auto repeat(6,minmax(64px,1fr));
-  gap:3px;align-items:stretch}
-.board-grid.prowler{grid-template-columns:auto repeat(8,minmax(52px,1fr))}
-.bh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;
-  display:flex;align-items:center;justify-content:center;padding:2px;text-align:center}
+/* Each grid is its own container so the headers can size against the columns
+   they sit in rather than against the window. Browser zoom shrinks the CSS
+   viewport, which narrows these columns — with a fixed 11px the Prowler labels
+   bunched and clipped, and "Protection" and "Gathering" were already overflowing
+   at 100%: eight biases share the width six styles get.
+   The column minimums are low so the board keeps shrinking rather than pushing
+   a horizontal scrollbar — at 150% zoom a 40px floor was already overflowing. */
+.board-grid{display:grid;grid-template-columns:auto repeat(6,minmax(36px,1fr));
+  gap:3px;align-items:stretch;container-type:inline-size}
+.board-grid.prowler{grid-template-columns:auto repeat(8,minmax(26px,1fr))}
+.bh{font-size:clamp(7px, 1.5cqi, 11px);text-transform:uppercase;letter-spacing:.04em;
+  opacity:.6;display:flex;align-items:center;justify-content:center;padding:2px;
+  text-align:center;overflow-wrap:anywhere}
 .bh.corner{opacity:0}
 /* Thin dark outline so the weapon colour reads at any lightness — Insect Glaive
    is near white and Switch Axe grey, both of which wash out against the board
@@ -250,12 +282,12 @@ body{
 /* Row height scales with the window rather than sitting at a fixed 34px: fifteen
    rows plus the hunt bar and status strip overflowed a 720px-tall screen by
    171px, and the board is the thing you are meant to be able to see at a glance.
-   Tall screens still get the full 34px — reached around 1250px — and short ones
-   shrink to fit instead of scrolling. Everything inside a row is sized off the
-   same variable, so the bone and weapon icons come down with it rather than
-   setting a floor. Retuned when the result buttons moved under the loadout,
-   which made the hunt bar 41px taller. */
-.board{--cell-h:clamp(19px, 2.72vh, 34px)}
+   Tall screens get the full 34px — reached around 860px, since moving the
+   controls into their own column gave the board back the 163px the hunt bar was
+   taking. Tuned for the narrower column a live run leaves, where the status
+   strip and legend wrap to two and three lines and cost ~50px between them. Everything inside a row is sized off the same variable, so the bone
+   and weapon icons come down with it rather than setting a floor. */
+.board{--cell-h:clamp(21px, 3.82vh, 34px)}
 /* Each row is tinted with its weapon's colour — the same one already used on the
    row label — so a row is identifiable without reading across to the label.
    --wc is set per cell in renderBoard. Kept low: the tint is for orientation,
@@ -320,18 +352,23 @@ body{
 .revive-opt.pay-zenny:hover,.revive-opt.pay-zenny:focus-visible{border-color:var(--dead);background:#ff2a2a14}
 .revive-opt.pay-zenny .ro-total{color:var(--dead)}
 .ro-note{font-size:11px;opacity:.6}
-/* Bright yellow marks the combo you're on, and it glows.
-   The glow does the work a flat ring couldn't: yellow has no contrast against
-   this palette — every one of the fifteen weapon colours sits under 3:1 against
-   it, Long Sword at 1.09 — so brightness alone cannot separate them. A halo
-   spilling past the cell edge is read as light rather than as colour, which no
-   neighbouring cell can imitate whatever its hue.
-   The cell keeps its ordinary border — the glow is the whole marker — and
-   z-index lifts it over its neighbours instead of under them. */
-.cell.current{position:relative;z-index:2;
-  box-shadow:0 0 14px 4px rgba(255,232,20,.6),
-             0 0 5px 1px rgba(255,232,20,.95);
-  font-weight:700}
+/* Same shape as a completed line in MHGU Bingo (.cell.line): an inset white
+   ring plus an outer glow in the square's own colour.
+/* The cell you're on keeps its weapon colour and carries its row's weapon icon.
+   The icon is the marker that actually works, because it is a SHAPE — it does
+   not have to out-contrast anything, so the cell is free to stay the colour its
+   row already is. Every colour-based attempt failed on some row: a same-colour
+   glow had nothing to separate from, no fixed accent beats all fifteen hues,
+   and a white fill sat at 1.09:1 against Insect Glaive's near-white row.
+   Drawn as a silhouette rather than in the source art's own light tint, which
+   is made for a dark background and would vanish on the paler weapons. Black
+   clears 4:1 against every colour in the palette, the darkest being Charge
+   Blade. It reads as an icon in the slot, not as the darkened retired cells. */
+.cell.current{position:relative;font-weight:700}
+.cell.current::after{content:"";position:absolute;inset:0;
+  background-image:var(--wi);background-repeat:no-repeat;background-position:center;
+  background-size:auto calc(var(--cell-h, 34px) * .72);
+  filter:brightness(0);opacity:.8}
 .board-legend{display:flex;gap:16px;font-size:11px;opacity:.6;flex-wrap:wrap;
   margin-bottom:10px}
 
