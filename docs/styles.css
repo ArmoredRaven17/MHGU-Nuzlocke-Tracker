@@ -261,9 +261,6 @@ body{
 .board-legend{display:flex;gap:16px;font-size:11px;opacity:.6;flex-wrap:wrap}
 
 /* ── Placeholder / summary ──────────────────────────────────────────── */
-.placeholder{max-width:520px;margin:40px auto;text-align:center;opacity:.8}
-.placeholder h2{font-size:26px;margin:0 0 12px}
-.placeholder p{line-height:1.6;margin:8px 0}
 
 /* Queried as containers, not against the viewport: the sidebar takes 300px, so
    these are narrow long before the window is. Two levels, because the columns

@@ -817,7 +817,11 @@
   // ── Rendering ────────────────────────────────────────────────────────────
   function renderBoard() {
     const board = $("board");
-    if (!run.active || runOver()) { board.classList.add("hidden"); return; }
+    // Shown before a run as well as during one. With no deaths recorded yet the
+    // pool functions already answer "all 92 alive", so the idle state is the
+    // board rather than a page of prose describing it. Only the end-of-run
+    // summary displaces it.
+    if (runOver()) { board.classList.add("hidden"); return; }
     board.classList.remove("hidden");
 
     const cur = run.combo;
@@ -1106,7 +1110,6 @@
 
   function renderAll() {
     const running = run.active && !runOver();
-    $("placeholder").classList.toggle("hidden", run.active);
     $("startBtn").classList.toggle("hidden", run.active && !runOver());
     $("endBtn").classList.toggle("hidden", !running);
     $("startBtn").textContent = run.deaths.length || run.active ? "Start New Run" : "Start Run";
