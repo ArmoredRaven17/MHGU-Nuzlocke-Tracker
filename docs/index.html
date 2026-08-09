@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=72">
+<link rel="stylesheet" href="styles.css?v=76">
 </head>
 <body>
 <div id="app">
@@ -228,6 +228,22 @@
     <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>. Combos
        you're still holding at the end pay a bonus on top of what you earned.</p>
 
+    <h3>Reading the board</h3>
+    <p>The grid is every weapon against every style &mdash; 14 weapons across 6 styles,
+       plus a Prowler row of 8 biases. Each row is its weapon's colour.</p>
+    <ul>
+      <li><strong>Full colour</strong> &mdash; available, you can be handed it or pick it.</li>
+      <li><strong>A bone</strong> &mdash; fallen. That combo is gone for the rest of the run.</li>
+      <li><strong>Darkened</strong> &mdash; the weapon retired, so this one is
+          non-selectable. It was never lost: the weapon spent its style allowance and
+          took its survivors out of the pool with it.</li>
+      <li><strong>The weapon's icon</strong> &mdash; the combo you're on right now.</li>
+    </ul>
+    <p>The name at the start of each row says what's happened to that weapon: it shows
+       <strong>Selected</strong> while you're on one of its styles, and
+       <strong>Retired</strong> once it's out of the pool.</p>
+    <p>With revives on, a fallen combo can be clicked to buy it back.</p>
+
     <h3>When the run ends</h3>
     <p>The result screen shows three things side by side. <strong>Rules</strong> is the
        set of choices the run was played under, kept as it was when you pressed Start Run
@@ -337,6 +353,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=90"></script>
+<script src="app.js?v=92"></script>
 </body>
 </html>

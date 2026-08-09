@@ -841,26 +841,26 @@
       const back = (run.revived[comboKey(w, s)] || 0) > 0;
       return "cell alive" + (back ? " revived" : "") + (isCurrent(w, s) ? " current" : "");
     };
+    // The row label doubles as the weapon's status. Retired and Selected are the
+    // two states you cannot read off a single cell — retired is a property of the
+    // whole weapon, and "which one am I on" means scanning 92 cells for an icon.
+    // Saying it on the row answers both at the point you are already looking.
+    const rowLabel = (w) => isRetired(w) ? "Retired"
+      : (run.combo && run.combo.weapon === w) ? "Selected"
+      : (WEAPON_ABBREV[w] || w);
+
     const cellTitle = (w, s) => canRevive(w, s)
       ? ` title="Buy back for ${zenny(reviveCost(run.revives))}"` : "";
 
-    // Legend first: below the board it sat under 92 cells and nobody reached it.
-    // It explains how to read the grid, so it has to come before the grid.
-    // Kept in step with the cell styles. Fallen and retired are the pair worth
-    // spelling out — one you lost, the other you never lost, its weapon having
-    // spent its style allowance and taken the survivors out of the pool with it.
-    let html = '<div class="board-legend">' +
-      '<span>Full colour &mdash; available</span>' +
-      '<span>Bone &mdash; fallen, gone for the run</span>' +
-      '<span>Darkened &mdash; weapon retired/non-selectable</span>' +
-      '<span>Weapon icon &mdash; the combo you are on</span></div>';
-
-    html += '<div class="board-grid">';
+    // No legend. Retired and Selected now say so on the row label, and the board
+    // marks the rest by what sits in the slot rather than by colour, which the
+    // help modal covers. A key nobody needs is just height the grid wanted.
+    let html = '<div class="board-grid">';
     html += '<div class="bh corner"></div>';
     STYLES.forEach(s => { html += `<div class="bh">${escapeHtml(s)}</div>`; });
     WEAPONS.forEach(w => {
       html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
-              `<img src="${weaponIcon(w)}" alt="">${escapeHtml(WEAPON_ABBREV[w] || w)}</div>`;
+              `<img src="${weaponIcon(w)}" alt="">${escapeHtml(rowLabel(w))}</div>`;
       STYLES.forEach(s => {
         html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]};` +
                 `--wi:url('${weaponIcon(w)}')"` +
@@ -873,7 +873,8 @@
     html += '<div class="bh corner"></div>';
     BIAS_NAMES.forEach(b => { html += `<div class="bh">${escapeHtml(b)}</div>`; });
     html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
-            `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">Prowler</div>`;
+            `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">` +
+            `${escapeHtml(rowLabel("Prowler"))}</div>`;
     BIAS_NAMES.forEach(b => {
       html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler};` +
               `--wi:url('${prowlerIcon(BIAS_FILE.Charisma)}')"` +
