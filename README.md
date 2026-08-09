@@ -10,10 +10,9 @@ A gauntlet of **50 quests** with permadeath on **weapon + style combos**. Lose a
 and the loadout you took is gone for the rest of the run, and your score is the zenny
 you walked away with.
 
-There are **92** of them: 14 weapons across 6 styles, plus a Prowler with 8 biases.
-The unit of loss is the combo rather than crafted gear, so permadeath costs you
-nothing to set up — you already own every combo — while still forcing you onto
-weapons you'd never otherwise touch.
+There are **84** of them: 14 weapons across 6 styles. The unit of loss is the combo
+rather than crafted gear, so permadeath costs you nothing to set up — you already own
+every combo — while still forcing you onto weapons you'd never otherwise touch.
 
 ## What it isn't
 
@@ -60,12 +59,12 @@ ever get to spend.
 
 | Styles | Loadouts in the run | |
 |---|---|---|
-| 1 | 15 | +XL |
-| 2 | 30 | +L |
-| 3 *(default)* | 45 | the baseline |
-| 4 | 60 | −M |
-| 5 | 75 | −M |
-| 6 | 90 | −L |
+| 1 | 14 | +XL |
+| 2 | 28 | +L |
+| 3 *(default)* | 42 | the baseline |
+| 4 | 56 | −M |
+| 5 | 70 | −M |
+| 6 | 84 | −L |
 
 **Other levers:**
 
@@ -118,7 +117,7 @@ A letter is free to report the measured effect, so it does.
 
 **Finishing with combos in hand pays again.** Whatever share of your allowance you
 still hold at the end is paid as a bonus on your earnings — keep 5 of 15 and it scores
-like keeping 15 of 45. Keep everything and your score doubles.
+like keeping 14 of 42. Keep everything and your score doubles.
 
 ### Buying a loadout back
 

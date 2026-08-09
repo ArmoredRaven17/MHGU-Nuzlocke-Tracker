@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=77">
+<link rel="stylesheet" href="styles.css?v=78">
 </head>
 <body>
 <div id="app">
@@ -73,7 +73,6 @@
           <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; 60 combos<span class="w"></span></label>
           <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; 75 combos<span class="w"></span></label>
           <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; 90 combos<span class="w"></span></label>
-          <p class="hint" id="poolNote"></p>
 
           <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>Randomized Weapon/Style combo<span class="w"></span></label>
@@ -134,7 +133,7 @@
       <section class="panel" data-open="false">
         <button class="panel-head">Fallen <span class="chev">&#9662;</span></button>
         <div class="panel-body">
-          <p class="hint"><strong id="lostCount">0</strong> lost &middot; <strong id="aliveCount">92</strong> still standing</p>
+          <p class="hint"><strong id="lostCount">0</strong> lost &middot; <strong id="aliveCount">84</strong> still standing</p>
           <div id="deathList" class="bl-list"></div>
         </div>
       </section>
@@ -209,8 +208,7 @@
     </ol>
     <p>The kill condition you chose is checked against that result. When it fires, the
        weapon/style combo you were using is struck off the board permanently. There are
-       <strong>92</strong> of them &mdash; 14 weapons across 6 styles, plus a Prowler with
-       8 biases.</p>
+       <strong>84</strong> of them &mdash; 14 weapons across 6 styles.</p>
 
     <h3>The run</h3>
     <p>A run is <strong>50 successful hunts</strong>, or however far you get before nothing
@@ -229,8 +227,8 @@
        you're still holding at the end pay a bonus on top of what you earned.</p>
 
     <h3>Reading the board</h3>
-    <p>The grid is every weapon against every style &mdash; 14 weapons across 6 styles,
-       plus a Prowler row of 8 biases. Each row is its weapon's colour.</p>
+    <p>The grid is every weapon against every style &mdash; 14 weapons across 6 styles.
+       Each row is its weapon's colour.</p>
     <ul>
       <li><strong>Full colour</strong> &mdash; available, you can be handed it or pick it.</li>
       <li><strong>A bone</strong> &mdash; fallen. That combo is gone for the rest of the run.</li>
@@ -353,6 +351,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=92"></script>
+<script src="app.js?v=93"></script>
 </body>
 </html>

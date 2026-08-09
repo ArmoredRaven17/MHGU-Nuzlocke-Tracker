@@ -21,7 +21,7 @@
     "Dual Blades":"#6ac083","Hammer":"#c3a3d2","Hunting Horn":"#f89a64",
     "Lance":"#9fbcff","Gunlance":"#f4baf5","Switch Axe":"#aaaaaa",
     "Charge Blade":"#fc5800","Insect Glaive":"#f5f5f5","Light Bowgun":"#acd56b",
-    "Heavy Bowgun":"#f8899c","Bow":"#55edc4","Prowler":"#c29930",
+    "Heavy Bowgun":"#f8899c","Bow":"#55edc4",
   };
 
   const STYLES = ["Guild","Striker","Adept","Aerial","Valor","Alchemy"];
@@ -33,24 +33,13 @@
     "Light Bowgun":"LBG","Heavy Bowgun":"HBG","Bow":"Bow",
   };
 
-  const BIASES = [
-    ["Charisma",  "FourthGen-Palico_Icon_Blue.webp"],
-    ["Fighting",  "Palico_Weapon_Cutting_Icon_Red.webp"],
-    ["Protection","FourthGen-Down_Arrow_Icon_Blue.webp"],
-    ["Assisting", "MH4G-Trap_Icon_Purple.webp"],
-    ["Healing",   "MH4G-Horn_Icon_Green.webp"],
-    ["Bombing",   "MH4G-Barrel_Icon_Brown.webp"],
-    ["Gathering", "MH4G-Boomerang_Icon_Blue.webp"],
-    ["Beast",     "FourthGen-Claw_Icon_Dark_Red.webp"],
-  ];
-  const BIAS_FILE = Object.fromEntries(BIASES);
-  const BIAS_NAMES = BIASES.map(b => b[0]);
-
-  // Prowler is a weapon whose biases occupy the style slot: 8 lives against a
-  // normal weapon's 6. 14 x 6 + 8 = 92.
-  const ALL_WEAPONS = WEAPONS.concat(["Prowler"]);
-  const stylesFor = (w) => (w === "Prowler" ? BIAS_NAMES : STYLES);
-  const TOTAL_COMBOS = WEAPONS.length * STYLES.length + BIAS_NAMES.length;
+  // Prowler is not part of a run. It was the one weapon whose slots were biases
+  // rather than styles — 8 against everything else's 6 — which is why the board
+  // needed a second grid and why a cap of 6 retired it two short of the pool.
+  // 14 x 6 = 84.
+  const ALL_WEAPONS = WEAPONS;
+  const stylesFor = () => STYLES;
+  const TOTAL_COMBOS = WEAPONS.length * STYLES.length;
 
   // ── Icon path helpers ────────────────────────────────────────────────────
   const FALLBACK_ICON = "assets/MonsterIcons/MHGU-Question_Mark_Icon.webp";
@@ -59,10 +48,9 @@
     : FALLBACK_ICON;
   const weaponIcon = (w) => "assets/WeaponIcons/icon_" +
     w.toLowerCase().replace(/ & /g, "_and_").replace(/ /g, "_") + "_tinted.png";
-  const prowlerIcon = (f) => "assets/ProwlerIcons/" + f;
   // Training Codex — stands in for a padlock on anything the run has locked.
   const LOCK_ICON = '<img class="lock-icon" src="assets/ItemIcons/MH4G-Book_Icon_Red.webp" alt="Locked">';
-  const comboIcon = (w, s) => (w === "Prowler" ? prowlerIcon(BIAS_FILE[s] || "") : weaponIcon(w));
+  const comboIcon = (w) => weaponIcon(w);
 
   // ── State ────────────────────────────────────────────────────────────────
   // cfg outlives individual runs, so starting a new one doesn't mean re-ticking
@@ -106,29 +94,33 @@
   //
   // Solved by fixed point: factor = effect / measured relative length, iterated
   // until stable. Re-solve with scratch sim-multiplicative.js if you retune.
+  // Re-solved for the 14-weapon roster when Prowler was removed: every ceiling
+  // scaled by exactly 14/15, since Prowler contributed min(cap, 8) and for caps
+  // 1-6 that is just cap. Uniform scaling, so the ratios barely moved — the
+  // largest shift was the styles cap at ~5%.
   //
   //                       factor  effect
   const LEVERS = {
     kill: {
       both:   [1.000, 1.00],   // a cart OR a failure takes it — nothing forgiven
-      cart:   [0.713, 0.75],   // carts only; you can lose a quest and keep it
-      fail:   [0.408, 0.50],   // failures only; carting to a clear costs nothing
-      streak: [0.259, 0.38],   // the first failure is forgiven
-      twice:  [0.177, 0.26],   // needs the same quest to beat you twice
+      cart:   [0.709, 0.75],   // carts only; you can lose a quest and keep it
+      fail:   [0.400, 0.50],   // failures only; carting to a clear costs nothing
+      streak: [0.250, 0.38],   // the first failure is forgiven
+      twice:  [0.171, 0.26],   // needs the same quest to beat you twice
     },
     // The styles cap swings hardest because it decides how much of the board you
     // ever get to spend. Its effects carry ~17% on top of the honest pool ratio,
     // so restriction is high risk / high reward rather than merely break-even.
     cap: {
-      1: [4.483, 1.60], 2: [1.851, 1.35], 3: [1.000, 1.00],
-      4: [0.747, 0.85], 5: [0.590, 0.72], 6: [0.470, 0.60],
+      1: [4.717, 1.60], 2: [1.944, 1.35], 3: [1.000, 1.00],
+      4: [0.737, 0.85], 5: [0.578, 0.72], 6: [0.459, 0.60],
     },
     assign:  { roll: [1, 1], pick: [0.850, 0.85] },
     // cycle is the only option in the app that scores ABOVE the reference.
     loadout: { hold: [1, 1], cycle: [1.150, 1.15], free: [0.850, 0.85] },
     quest:   { on: [1, 1], off: [0.850, 0.85] },
 
-    reviveOn:    [0.780, 0.82],   // a safety net at all
+    reviveOn:    [0.775, 0.82],   // a safety net at all
     reviveOnce:  [1.060, 1.06],   // ...but one each, so some of it back
     // Costs double now (see reviveCost), which makes the price self-limiting:
     // a dearer price just means fewer buy-backs, so total spend barely moves
@@ -869,19 +861,6 @@
     });
     html += "</div>";
 
-    html += '<div class="board-grid prowler">';
-    html += '<div class="bh corner"></div>';
-    BIAS_NAMES.forEach(b => { html += `<div class="bh">${escapeHtml(b)}</div>`; });
-    html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
-            `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">` +
-            `${escapeHtml(rowLabel("Prowler"))}</div>`;
-    BIAS_NAMES.forEach(b => {
-      html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler};` +
-              `--wi:url('${prowlerIcon(BIAS_FILE.Charisma)}')"` +
-              `${cellTitle("Prowler", b)} data-w="Prowler" data-s="${escapeHtml(b)}"></div>`;
-    });
-    html += "</div>";
-
     board.innerHTML = html;
   }
 
@@ -1171,11 +1150,6 @@
     $("multBox").classList.toggle("negative", false);
     $("multBox").classList.toggle("locked", cfgLocked());
 
-    // Counts are on the labels now; this only explains the one number that
-    // looks wrong — Prowler has 8 biases, so a cap of 6 retires it two short.
-    $("poolNote").textContent = cfg.stylesPerWeapon === 6
-      ? `Not quite all ${TOTAL_COMBOS}: Prowler has 8 biases, so it retires two short.`
-      : "";
 
     applyCfgLockState();
     renderStatus();

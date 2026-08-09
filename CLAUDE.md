@@ -35,20 +35,23 @@ users keep the stale copy until they hard-refresh.
 ## Core concept
 
 The unit of loss is a **weapon + style combo**, stored as `{weapon, style}` and keyed
-`"weapon|style"`. **Prowler is a weapon whose 8 biases occupy the style slot**, so the
-store is uniform and Prowler needs no special case. 14 × 6 + 8 = **92**.
+`"weapon|style"`. 14 × 6 = **84**.
+
+**Prowler was removed.** It was the one weapon whose slots were biases rather than
+styles — 8 against everything else's 6 — which cost a second board grid, a `stylesFor`
+special case, and a footnote explaining why a cap of 6 gave 90 rather than 92. Removing
+it scaled every ceiling by exactly 14/15, because Prowler contributed `min(cap, 8)` and
+for caps 1–6 that is just `cap`. Uniform scaling, so the balance ratios barely moved;
+the factors were re-solved anyway and the largest shift was ~5% on the styles cap.
 
 **`cfg.stylesPerWeapon` caps how many styles a weapon may lose before the whole weapon
 retires**, taking its surviving styles out of the pool. This is the main control on run
-length: 92 loadouts is a long run, so the default cap of 3 brings it to 45 (cap 1 = 15,
-cap 6 = 90). A retired weapon's live styles render `.retired` — faded and dotted,
+length: 84 loadouts is a long run, so the default cap of 3 brings it to 42 (cap 1 = 14,
+cap 6 = 84). A retired weapon's live styles render `.retired` — faded and dotted,
 visibly distinct from `.dead`, because they were never lost.
 
 `stylesLost()` counts from `run.deaths`, so a revive (which *removes* a death) can
 un-retire a weapon. That falls out of the design rather than needing special handling.
-
-Note cap 6 gives 90, not 92: Prowler has 8 biases and the cap applies uniformly, so it
-retires two short. Uniformity is worth more than the two loadouts.
 
 ## Architecture
 

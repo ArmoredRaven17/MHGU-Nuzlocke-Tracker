@@ -258,18 +258,13 @@ body{
 .board{display:flex;flex-direction:column;gap:14px}
 /* Each grid is its own container so the headers can size against the columns
    they sit in rather than against the window. Browser zoom shrinks the CSS
-   viewport, which narrows these columns — with a fixed 11px the Prowler labels
-   bunched and clipped, and "Protection" and "Gathering" were already overflowing
-   at 100%: eight biases share the width six styles get.
+   viewport, which narrows these columns — at a fixed 11px the headers bunched
+   and clipped rather than shrinking with the space they had.
    The column minimums are low so the board keeps shrinking rather than pushing
    a horizontal scrollbar — at 150% zoom a 40px floor was already overflowing. */
 .board-grid{display:grid;grid-template-columns:auto repeat(6,minmax(36px,1fr));
   gap:3px;align-items:stretch;container-type:inline-size}
-.board-grid.prowler{grid-template-columns:auto repeat(8,minmax(26px,1fr))}
-/* Prowler packs eight biases into the width six styles get, so its columns are
-   three quarters as wide. cqi measures the grid, not the column, so both grids
-   would otherwise take the same type size into very different space. */
-.board-grid.prowler .bh{font-size:clamp(6px, 1.25cqi, 10px)}
+
 .bh{font-size:clamp(7px, 1.5cqi, 11px);text-transform:uppercase;letter-spacing:.04em;
   opacity:.6;display:flex;align-items:center;justify-content:center;padding:2px;
   text-align:center;overflow-wrap:anywhere}
