@@ -1,13 +1,14 @@
-# MHGU Nuzlocke Tracker
+# MHGU Zenny Gauntlet
 
-A Nuzlocke run tracker for Monster Hunter Generations Ultimate.
+A scored challenge run for Monster Hunter Generations Ultimate.
 
-**Live:** https://ArmoredRaven17.github.io/MHGU-Nuzlocke-Tracker/
+**Live:** https://ArmoredRaven17.github.io/MHGU-Zenny-Gauntlet/
 
 ## What it is
 
-A Nuzlocke borrows the Pokémon ruleset — permadeath — and applies it to **weapon +
-style combos**. Lose a hunt and the loadout you took is gone for the rest of the run.
+A gauntlet of **50 quests** with permadeath on **weapon + style combos**. Lose a hunt
+and the loadout you took is gone for the rest of the run, and your score is the zenny
+you walked away with.
 
 There are **92** of them: 14 weapons across 6 styles, plus a Prowler with 8 biases.
 The unit of loss is the combo rather than crafted gear, so permadeath costs you

@@ -477,7 +477,7 @@
     (run.finished || clearCapHit() || legalCombos().length === 0);
 
   // ── Persistence ──────────────────────────────────────────────────────────
-  const STORE_KEY = "mhgu-nuzlocke";
+  const STORE_KEY = "mhgu-zenny-gauntlet";
 
   function save() {
     try {
@@ -1253,7 +1253,7 @@
     r.setProperty("--text-dim", "#fffffff5");
     r.setProperty("--line", "rgba(11,8,8,0.12)");
     r.setProperty("--card", "rgba(255,255,255,0.05)");
-    try { localStorage.setItem("mhgu-nuzlocke-theme", hex); } catch (e) {}
+    try { localStorage.setItem("mhgu-zenny-gauntlet-theme", hex); } catch (e) {}
     document.querySelectorAll(".swatch").forEach(s => s.classList.toggle("sel", s.dataset.hex === hex));
     const ti = document.querySelector(".title-icon");
     if (ti) {
@@ -1335,7 +1335,7 @@
     const blob = new Blob([JSON.stringify({ v: 1, cfg, run }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "mhgu-nuzlocke.json";
+    a.download = "mhgu-zenny-gauntlet.json";
     a.click();
     URL.revokeObjectURL(a.href);
   }
@@ -1465,7 +1465,7 @@
   buildSwatches();
   const DEFAULT_THEME = "#07143C";            // Nightcloak Malfestio
   let savedTheme = DEFAULT_THEME;
-  try { savedTheme = localStorage.getItem("mhgu-nuzlocke-theme") || savedTheme; } catch (e) {}
+  try { savedTheme = localStorage.getItem("mhgu-zenny-gauntlet-theme") || savedTheme; } catch (e) {}
   // A stored hex that's no longer in the palette would leave no tile selected and
   // no title icon, so fall back rather than half-applying it.
   if (!COLORS_HEX[savedTheme.toUpperCase()]) savedTheme = DEFAULT_THEME;

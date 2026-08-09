@@ -4,13 +4,19 @@ Guidance for Claude Code working in this repo.
 
 ## Project
 
-**MHGU Nuzlocke Tracker** — a static GitHub Pages site tracking a Nuzlocke run in
-Monster Hunter Generations Ultimate. No build step, no framework, no dependencies.
+**MHGU Zenny Gauntlet** — a static GitHub Pages site running a scored challenge in
+Monster Hunter Generations Ultimate: 50 quests, permadeath on weapon/style combos, and
+zenny for a score.
 
-Live at https://ArmoredRaven17.github.io/MHGU-Nuzlocke-Tracker/, served from `docs/`.
+Renamed from *MHGU Nuzlocke Tracker*. It stopped being a Nuzlocke once revives and a
+tunable difficulty economy went in — a Nuzlocke is binary, you finish it or you don't,
+whereas this is scored and its difficulty is a dial. Permadeath is now a mechanic
+inside it rather than its identity. No build step, no framework, no dependencies.
+
+Live at https://ArmoredRaven17.github.io/MHGU-Zenny-Gauntlet/, served from `docs/`.
 
 **To develop:** `python -m http.server 5580 --directory docs`, or use the
-`mhgu-nuzlocke` entry in the Randomizer repo's `.claude/launch.json`. Open over
+`mhgu-zenny-gauntlet` entry in the Randomizer repo's `.claude/launch.json`. Open over
 `http://` rather than `file://` — localStorage is isolated on `file://`.
 
 ## Files
@@ -48,7 +54,7 @@ retires two short. Uniformity is worth more than the two loadouts.
 
 **`cfg`** holds the rule toggles and outlives individual runs. **`run`** holds the
 run itself and is wiped by Start Run. `deadKeys` is a derived `Set` rebuilt on load,
-never persisted. Both persist to one localStorage key, `mhgu-nuzlocke`.
+never persisted. Both persist to one localStorage key, `mhgu-zenny-gauntlet`.
 
 **The pool is enumerated, never rejection-sampled.** `legalStyles` / `legalWeapons` /
 `legalCombos` build the list of what survives, and `rollCombo` picks from it. There
