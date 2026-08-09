@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
 <div id="app">
@@ -83,7 +83,7 @@
           <label class="chk"><input type="radio" name="ld" id="ld_cycle">Until you clear &mdash; a failure keeps it<span class="w"></span></label>
           <label class="chk"><input type="radio" name="ld" id="ld_free">Swap whenever you like<span class="w"></span></label>
           <p class="hint" style="margin-top:8px">Locks &mdash; base restrictions you can remove.</p>
-          <label class="chk applies-off"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; must do a retry when you fail a quest<span class="w"></span></label>
+          <label class="chk"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; must do a retry when you fail a quest<span class="w"></span></label>
         </div>
       </section>
 
@@ -93,21 +93,23 @@
           <p class="hint">You may pay to revive a fallen Weapon/Style combo to make
             things easier, but it comes with a penalty that can be reduced.</p>
           <label class="chk"><input type="checkbox" id="r_enabled">Allow revives<span class="w"></span></label>
-          <label class="chk"><input type="checkbox" id="r_once" checked>One Revive per combo only<span class="w"></span></label>
-          <p class="hint" style="margin-top:8px">Revives allowed for the whole run.</p>
-          <label class="chk"><input type="radio" name="rcap" id="rc_1">1<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rcap" id="rc_3">3<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rcap" id="rc_5" checked>5<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rcap" id="rc_10">10<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rcap" id="rc_20">20<span class="w"></span></label>
-          <p class="hint" style="margin-top:8px">Value for a buyback of a Weapon/Style
-            combo.</p>
-          <label class="chk"><input type="radio" name="price" id="p_5000">5,000z<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="price" id="p_10000" checked>10,000z<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="price" id="p_20000">20,000z<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="price" id="p_30000">30,000z<span class="w"></span></label>
-          <p class="hint" id="reviveNote" style="margin-top:8px">Deducted from your
-            earned zenny. Click a fallen combo on the board to buy it back.</p>
+          <div id="reviveOpts" class="opt-group">
+            <label class="chk"><input type="checkbox" id="r_once" checked>One Revive per combo only<span class="w"></span></label>
+            <p class="hint" style="margin-top:8px">Revives allowed for the whole run.</p>
+            <label class="chk"><input type="radio" name="rcap" id="rc_1">1<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rcap" id="rc_3">3<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rcap" id="rc_5" checked>5<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rcap" id="rc_10">10<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rcap" id="rc_20">20<span class="w"></span></label>
+            <p class="hint" style="margin-top:8px">Value for a buyback of a Weapon/Style
+              combo.</p>
+            <label class="chk"><input type="radio" name="price" id="p_5000">5,000z<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="price" id="p_10000" checked>10,000z<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="price" id="p_20000">20,000z<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="price" id="p_30000">30,000z<span class="w"></span></label>
+            <p class="hint" id="reviveNote" style="margin-top:8px">Deducted from your
+              earned zenny. Click a fallen combo on the board to buy it back.</p>
+          </div>
         </div>
       </section>
 
@@ -117,13 +119,15 @@
           <p class="hint">You may pay to refuse a Weapon/Style combo you were handed and
             draw another. The refused combo goes back in the pool.</p>
           <label class="chk"><input type="checkbox" id="rr_enabled">Allow rerolls<span class="w"></span></label>
-          <p class="hint" style="margin-top:8px">Value for a reroll.</p>
-          <label class="chk"><input type="radio" name="rrprice" id="rp_2500">2,500z<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rrprice" id="rp_5000" checked>5,000z<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rrprice" id="rp_10000">10,000z<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="rrprice" id="rp_20000">20,000z<span class="w"></span></label>
-          <p class="hint" style="margin-top:8px">Only applies when the app is rolling
-            for you &mdash; there is nothing to refuse on Hunter's choice.</p>
+          <div id="rerollOpts" class="opt-group">
+            <p class="hint" style="margin-top:8px">Value for a reroll.</p>
+            <label class="chk"><input type="radio" name="rrprice" id="rp_2500">2,500z<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rrprice" id="rp_5000" checked>5,000z<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rrprice" id="rp_10000">10,000z<span class="w"></span></label>
+            <label class="chk"><input type="radio" name="rrprice" id="rp_20000">20,000z<span class="w"></span></label>
+            <p class="hint" style="margin-top:8px">Only applies when the app is rolling
+              for you &mdash; there is nothing to refuse on Hunter's choice.</p>
+          </div>
         </div>
       </section>
 
@@ -330,6 +334,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=63"></script>
+<script src="app.js?v=65"></script>
 </body>
 </html>

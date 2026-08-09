@@ -574,14 +574,52 @@
     Object.entries(CFG_RADIOS.reviveCap).forEach(([v, id]) => set(id, L.reviveCap[v][1]));
     Object.entries(CFG_RADIOS.revivePrice).forEach(([v, id]) => set(id, L.revivePrice[v][1]));
     Object.entries(CFG_RADIOS.rerollPrice).forEach(([v, id]) => set(id, L.rerollPrice[v][1]));
-    // No "if on"/"if off" qualifiers: the badge lights exactly when its modifier
-    // applies, so the highlight already says which state it belongs to. The
-    // quest lock is the one rule that is ON by default and costs you when
-    // UNTICKED, so its label carries .applies-off to invert the highlight.
+    // No "if on"/"if off" qualifiers: paintBadgeState lights a badge exactly
+    // when its modifier is in the multiplier, so the highlight already says
+    // which state the number belongs to.
     set("l_quest", L.quest.off[1]);
     set("r_enabled", L.reviveOn[1]);
     set("r_once", L.reviveOnce[1]);
     set("rr_enabled", L.rerollOn[1]);
+  }
+
+  // Which badges are actually contributing right now. Asked of cfg rather than
+  // of the DOM, because "is this option selected" is not the same question as
+  // "is this option doing anything" — a revive price is selected at all times
+  // and does nothing at all while revives are off. Structural CSS could only
+  // ever answer the first, which is why the price and cap badges used to light
+  // up on a run with no revives in it.
+  //
+  // This mirrors legs() deliberately: if a lever is added there and not here,
+  // the sidebar will misreport it.
+  function activeBadges() {
+    const on = new Set([
+      CFG_RADIOS.kill[cfg.kill],
+      CFG_RADIOS.stylesPerWeapon[cfg.stylesPerWeapon],
+      CFG_RADIOS.assign[cfg.assign],
+      CFG_RADIOS.loadout[cfg.loadout],
+    ]);
+    // The quest lock is the one rule that is ON by default: unticking it is
+    // what costs you, so that is when its badge belongs.
+    if (!cfg.lockQuest) on.add("l_quest");
+    if (cfg.reviveEnabled) {
+      on.add("r_enabled");
+      if (cfg.reviveOnce) on.add("r_once");
+      on.add(CFG_RADIOS.revivePrice[cfg.revivePrice]);
+      on.add(CFG_RADIOS.reviveCap[cfg.reviveCap]);
+    }
+    if (cfg.rerollEnabled) {
+      on.add("rr_enabled");
+      on.add(CFG_RADIOS.rerollPrice[cfg.rerollPrice]);
+    }
+    return on;
+  }
+  function paintBadgeState() {
+    const on = activeBadges();
+    document.querySelectorAll(".chk").forEach(label => {
+      const input = label.querySelector("input"), w = label.querySelector(".w");
+      if (input && w) w.classList.toggle("on", on.has(input.id));
+    });
   }
 
   function writeCfgToDom() {
@@ -1079,6 +1117,12 @@
     const d = cfgLocked() ? (run.diff != null ? run.diff : difficulty(cfg)) : difficulty(cfg);
     $("multValue").textContent = ratingFor(d);
     $("bonusValue").textContent = bonusFor(d);
+    paintBadgeState();
+    // Turning revives or rerolls off IS the selection — the price and cap below
+    // them describe something that isn't happening, so they go rather than sit
+    // there greyed.
+    $("reviveOpts").classList.toggle("hidden", !cfg.reviveEnabled);
+    $("rerollOpts").classList.toggle("hidden", !cfg.rerollEnabled);
     $("multBox").classList.toggle("negative", false);
     $("multBox").classList.toggle("locked", cfgLocked());
 
