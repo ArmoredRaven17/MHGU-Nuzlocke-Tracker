@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=25">
+<link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
 <div id="app">
@@ -217,21 +217,31 @@
        quests, so a run is a route rather than the same quest fifty times. Only clearing
        spends one; fail and it stays on the board, which is what lets the quest lock send
        you back to it.</p>
-    <p><strong>Arena quests aren't part of a run.</strong> They hand you a fixed set of
-       five weapons, so there's no combo of yours to put at stake. They aren't listed.</p>
-    <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>. Whatever
-       share of your combos you're still holding at the end pays a bonus on top of
-       everything you earned, so finishing untouched is worth double.</p>
+    <p><strong>Arena quests aren't part of a run.</strong> They come with fixed sets.
+       Some conditions force you to use a weapon/style combo, and Arena would interfere
+       with that &mdash; the app would also have to make sure you can use at least one of
+       the five sets offered before you could enter the quest. They were dropped since
+       people tend to care more about non-Arena quests.</p>
+    <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>. Combos
+       you're still holding at the end pay a bonus on top of what you earned.</p>
+
+    <h3>When the run ends</h3>
+    <p>The result screen shows three things side by side. <strong>Rules</strong> is the
+       set of choices the run was played under, kept as it was when you pressed Start Run
+       &mdash; changing the settings afterwards won't rewrite it. <strong>Quest Log</strong>
+       lists every combo that fell, in order, with the quest it fell on.</p>
+    <p>In the middle is your <strong>score</strong>: everything you earned, plus the bonus
+       for combos still standing, with the difficulty you played at. Below that is how the
+       run actually went &mdash; hunts taken, clears, failures, carts, and any rerolls or
+       revives you paid for.</p>
 
     <h3>Difficulty and bonus</h3>
-    <p>Every setting shows a size &mdash; <strong>XS</strong> through <strong>XL</strong>,
-       the same idea as Attack Up &mdash; and lights up when it's actually in play. The run
-       as a whole gets a rating from Very Easy to Very Hard, with the bonus it pays shown
-       beneath it. <strong>A harder run is worth more</strong>: that's the whole trade.</p>
-    <p>There are no numbers anywhere, on purpose. A displayed multiplier has to be
-       arithmetic you can add up, which means it can only report each setting's nominal
-       weight &mdash; and that isn't what the setting does to your score, because a harder
-       run is also a shorter one. A size is free to tell you the truth instead.</p>
+    <p>Each choice you make impacts the Difficulty &mdash; Very Easy to Very Hard. Some
+       choices impact the difficulty greatly while others impact it less. Every setting
+       shows a size value &mdash; <strong>XS</strong> through <strong>XL</strong>. This is
+       the size of the bonus you receive by selecting the option. They will light up when
+       they are active in the selection. More difficult runs offer higher bonuses but make
+       failing more likely.</p>
 
     <h3>The settings</h3>
     <p><strong>Only one kill condition is ever in play.</strong> Carting and failing a
