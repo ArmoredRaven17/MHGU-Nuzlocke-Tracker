@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=24">
+<link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
 <div id="app">
@@ -30,6 +30,10 @@
         <div class="row" style="justify-content:space-between">
           <span class="mult-label" id="multLabel">Difficulty</span>
           <span id="multValue" class="mult-value">Hard</span>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <span class="mult-label">Bonus</span>
+          <span id="bonusValue" class="mult-bonus">Large</span>
         </div>
       </div>
       <p id="cfgLockNote" class="hint lock-note hidden"><img class="lock-icon"
@@ -195,36 +199,59 @@
        then come back and say what happened.</p>
     <ol>
       <li><strong>Get a combo.</strong> Either the app hands you a surviving weapon and
-          style, or you pick one yourself. Dead combos are never offered.</li>
+          style, or you pick one yourself. Fallen combos are never offered.</li>
       <li><strong>Name the quest</strong> you're about to hunt.</li>
-      <li><strong>Report the result</strong> &mdash; Cleared, Carted, or Failed. Carted can be
-          pressed more than once; it doesn't end the attempt.</li>
+      <li><strong>Report the result</strong> &mdash; Cleared, Carted, or Failed. Carted can
+          be pressed more than once; it doesn't end the attempt.</li>
     </ol>
     <p>The kill condition you chose is checked against that result. When it fires, the
-       weapon/style combo you were using is struck off the board permanently.</p>
-    <p>Only one kill condition is ever in play. Carting and failing a quest are separate
-       things &mdash; you can time out or slay a capture target without carting, and you
-       can cart twice and still clear &mdash; so the harshest setting covers both
-       explicitly. Below that, each rule already covers the gentler ones beneath it.</p>
+       weapon/style combo you were using is struck off the board permanently. There are
+       <strong>92</strong> of them &mdash; 14 weapons across 6 styles, plus a Prowler with
+       8 biases.</p>
+
+    <h3>The run</h3>
+    <p>A run is <strong>50 successful hunts</strong>, or however far you get before nothing
+       is left standing. Only clears count towards the 50 &mdash; a failure costs you a
+       combo, it doesn't spend your run.</p>
+    <p><strong>Clear a quest and it's spent.</strong> Fifty clears means fifty different
+       quests, so a run is a route rather than the same quest fifty times. Only clearing
+       spends one; fail and it stays on the board, which is what lets the quest lock send
+       you back to it.</p>
     <p><strong>Arena quests aren't part of a run.</strong> They hand you a fixed set of
        five weapons, so there's no combo of yours to put at stake. They aren't listed.</p>
-    <p><strong>Clear a quest and it's spent for the run.</strong> Fifty clears means fifty
-       different quests, so the run is a route rather than the same quest fifty times.
-       Only clearing spends it &mdash; fail and it stays on the board, which is what lets
-       the quest lock send you back to it.</p>
+    <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>. Whatever
+       share of your combos you're still holding at the end pays a bonus on top of
+       everything you earned, so finishing untouched is worth double.</p>
+
+    <h3>Difficulty and bonus</h3>
+    <p>Every setting shows a size &mdash; <strong>XS</strong> through <strong>XL</strong>,
+       the same idea as Attack Up &mdash; and lights up when it's actually in play. The run
+       as a whole gets a rating from Very Easy to Very Hard, with the bonus it pays shown
+       beneath it. <strong>A harder run is worth more</strong>: that's the whole trade.</p>
+    <p>There are no numbers anywhere, on purpose. A displayed multiplier has to be
+       arithmetic you can add up, which means it can only report each setting's nominal
+       weight &mdash; and that isn't what the setting does to your score, because a harder
+       run is also a shorter one. A size is free to tell you the truth instead.</p>
+
+    <h3>The settings</h3>
+    <p><strong>Only one kill condition is ever in play.</strong> Carting and failing a
+       quest are separate things &mdash; you can time out or slay a capture target without
+       carting, and you can cart twice and still clear &mdash; so the harshest setting
+       covers both explicitly. Below that, each rule already covers the gentler ones
+       beneath it.</p>
     <p><strong>How long you hold a weapon/style.</strong> <em>Until it falls</em> is the
-       baseline &mdash; you keep it through clears as well as failures, until it dies.
-       <em>Until you clear</em> hands it in every time you succeed, but a failure keeps
-       it, so you can take the quest that beat you again with the same combo. That's
-       harder than the baseline and scores higher. <em>Swap whenever you like</em> is
-       the easy option.</p>
+       baseline: you keep it through clears as well as failures, until it dies.
+       <em>Until you clear</em> hands it in every time you succeed, but a failure keeps it,
+       so you can take the quest that beat you again with the same combo. That's harder
+       than the baseline and is the one setting that pays <em>more</em> than it.
+       <em>Swap whenever you like</em> is the easy option.</p>
     <p><strong>The quest lock</strong> means a quest that beat you is owed one retry
        &mdash; your next hunt has to be that quest, win or lose. It's on by default;
-       turning it off makes the run easier and scores lower.</p>
-    <p>A run is <strong>50 successful hunts</strong>, or however far you get before
-       nothing is left standing. Only clears count towards the 50 &mdash; a failure costs
-       you a combo, it doesn't spend your run. Whatever you still hold at the end pays a
-       bonus on top of everything you earned, so finishing untouched is worth double.</p>
+       turning it off makes the run easier and pays less.</p>
+    <p><strong>Revives and rerolls</strong> are both off by default. A revive buys a
+       fallen combo back; a reroll refuses the combo you were handed and draws another.
+       Both come out of your earned zenny, and <strong>both double in price each time you
+       use them</strong> &mdash; so they're there to rescue a run, not to run on.</p>
     <div class="row end"><button id="helpClose" class="btn tiny">Close</button></div>
   </div>
 </div>
@@ -293,6 +320,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=62"></script>
+<script src="app.js?v=63"></script>
 </body>
 </html>

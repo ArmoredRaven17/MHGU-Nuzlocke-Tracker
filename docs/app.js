@@ -193,14 +193,26 @@
   // loosen it. So the defaults are genuinely Hard, and that is not a display
   // artefact — adding more levers shaped like "hold until you clear" is what
   // would populate the top.
+  //
+  // Each band carries its payoff alongside it, deliberately in one array rather
+  // than two: they are the same fact said twice — once as what the run costs you
+  // and once as what it pays — so they must never be able to disagree. A player
+  // reading "Very Hard" alone has been told the price and not the reward, which
+  // is why a harder run needs to visibly say Extra Large next to it.
+  //
+  // Note the sizes are relative to the other settings, not to zero: a Normal run
+  // rates around 0.55, so it earns rather less than the quests' face value. It is
+  // "Medium" because it sits in the middle of what is reachable.
   const RATINGS = [
-    [1.10, "Very Hard"],
-    [0.70, "Hard"],
-    [0.40, "Normal"],
-    [0.20, "Easy"],
-    [0,    "Very Easy"],
+    [1.10, "Very Hard", "Extra Large"],
+    [0.70, "Hard",      "Large"],
+    [0.40, "Normal",    "Medium"],
+    [0.20, "Easy",      "Small"],
+    [0,    "Very Easy", "Extra Small"],
   ];
-  const ratingFor = (d) => (RATINGS.find(([min]) => d >= min) || RATINGS[RATINGS.length - 1])[1];
+  const bandFor = (d) => RATINGS.find(([min]) => d >= min) || RATINGS[RATINGS.length - 1];
+  const ratingFor = (d) => bandFor(d)[1];
+  const bonusFor  = (d) => bandFor(d)[2];
 
   // A single option's size, as a shirt size rather than a number — the same
   // vocabulary as Attack Up (S/M/L). Built from `effect`, so it says what the
@@ -978,7 +990,8 @@
     // built it comes next, then how the run went, then what it cost you.
     // "Lost" is absent deliberately — Survived carries the same information.
     const scoring = [
-      [ratingFor(run.diff != null ? run.diff : difficulty(cfg)), "Difficulty"],
+      [ratingFor(run.diff != null ? run.diff : difficulty(cfg)), "Difficulty", "",
+        bonusFor(run.diff != null ? run.diff : difficulty(cfg)) + " bonus"],
       [zennyShort(run.earned), "Earned", "", zenny(run.earned)],
       [(runMax() - run.deaths.length) + "/" + runMax(), "Survived", "",
         Math.round(survivorRate() * 100) + "% of the run's combos still standing"],
@@ -1065,7 +1078,7 @@
     // never something a player could act on.
     const d = cfgLocked() ? (run.diff != null ? run.diff : difficulty(cfg)) : difficulty(cfg);
     $("multValue").textContent = ratingFor(d);
-    $("multLabel").textContent = "Difficulty";
+    $("bonusValue").textContent = bonusFor(d);
     $("multBox").classList.toggle("negative", false);
     $("multBox").classList.toggle("locked", cfgLocked());
 
