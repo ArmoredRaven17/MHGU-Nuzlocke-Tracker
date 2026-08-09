@@ -230,6 +230,7 @@
     deaths: [],            // {weapon, style, reason, quest, n, reviveCount}
     failStreak: 0,         // run-global; carts never touch it
     questFails: {},        // "Type|Name" -> cumulative failures
+    questsDone: {},        // "Type|Name" -> true once CLEARED; see clearedQuest()
     lockQuest: null,       // the quest you owe a retry on
     combo: null,           // the loadout for the hunt in progress
     quest: null,           // the quest for the hunt in progress
@@ -331,6 +332,18 @@
   const comboKey = (w, s) => w + "|" + s;
   const questKey = (q) => q.t + "|" + q.n;
   const isArena = (q) => !!q && q.t === "Arena";
+  // A quest is spent once you CLEAR it, and only then. Consuming it on any
+  // attempt would break two rules outright: the quest lock forces a retry of a
+  // quest that would no longer exist, and "same quest failed twice" could never
+  // fire at all. Failing leaves it on the board, which is also the natural
+  // reading — you haven't done it yet.
+  //
+  // The rule exists because farming one quest fifty times was worth 5.17x
+  // playing whatever you fancied, which was a bigger score swing than any
+  // difficulty lever. It costs an ordinary player almost nothing: fifty draws
+  // from 1,239 quests collide about once a run. Arena is exempt for the same
+  // reason it scores nothing — it is outside the economy entirely.
+  const questDone = (q) => !isArena(q) && !!run.questsDone[questKey(q)];
   const isAlive = (w, s) => !deadKeys.has(comboKey(w, s));
 
   // A weapon only gets so many styles before the whole thing retires, taking
@@ -572,6 +585,8 @@
         // punishment. Arena pays nothing, same as it costs nothing.
         run.earned += Math.round((run.quest.r || 0) * run.mult);
         run.failStreak = 0;
+        // Spent. Clearing is the only thing that takes a quest off the board.
+        run.questsDone[questKey(run.quest)] = true;
       }
     } else {                                        // "fail"
       run.failed++;
@@ -625,9 +640,16 @@
     const box = $("questResults");
     const t = term.trim().toLowerCase();
     if (!t) { box.classList.add("hidden"); return; }
-    searchResults = QUESTS.filter(q => q.n.toLowerCase().includes(t)).slice(0, 40);
+    // Cleared quests are gone for the run, so they are absent rather than
+    // disabled — the search is for picking, and an unpickable row is noise.
+    const hits = QUESTS.filter(q => q.n.toLowerCase().includes(t));
+    const spent = hits.filter(questDone).length;
+    searchResults = hits.filter(q => !questDone(q)).slice(0, 40);
     if (!searchResults.length) {
-      box.innerHTML = '<p class="qr-none">No quest matches that.</p>';
+      box.innerHTML = spent
+        ? `<p class="qr-none">${spent === 1 ? "That quest has" : "Those quests have"}` +
+          ` already been cleared this run.</p>`
+        : '<p class="qr-none">No quest matches that.</p>';
     } else {
       // Buttons rather than divs so the list is reachable by keyboard and
       // announced properly — it's the only way to set a quest.
