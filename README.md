@@ -24,7 +24,7 @@ what happened and takes options away. For quest rolling, use the
 
 1. **Get a loadout** — the app hands you a surviving combo, or you pick one yourself.
    Fallen combos are never offered.
-2. **Name the quest** you're hunting, from a searchable list of all 1297.
+2. **Name the quest** you're hunting, from a searchable list of 1,239 (Arena excluded).
 3. **Report the result** — Cleared, Carted, or Failed. Carted can be pressed more than
    once; it doesn't end the attempt.
 
@@ -86,7 +86,12 @@ costs you score. A per-run cap bounds how far that can go.
 Both locks are on by default: locked is the baseline the difficulty scale is measured
 against, and turning one off is a discount.
 
-**Arena quests don't count.** Their weapons are handed to you, so nothing is at stake.
+**Arena quests aren't part of a run.** They hand you a fixed set of five weapons, so
+there's no combo of yours to put at stake. They aren't listed.
+
+**Clearing a quest spends it.** Fifty clears means fifty different quests, so a run is a
+route rather than the same quest fifty times. Only clearing spends one — fail and it
+stays on the board, which is what lets the quest lock send you back to it.
 
 ## Scoring
 

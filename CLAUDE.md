@@ -76,8 +76,21 @@ while a run is live and `readCfgFromDom()` no-ops, so the difficulty you committ
 can't be softened the moment a condition is about to cost you something. They unlock
 again when the run ends.
 
-**Arena quests are inert.** `isArena(q)` gates the whole scoring path: no death, no
-streak change, no tally. Locks stay engaged across an Arena hunt.
+**Arena quests are filtered out of the pool** at the top of `app.js`, so `QUESTS` is
+1,239 rather than 1,297. An Arena quest hands you a fixed set of five weapons, so there
+is no combo of yours to put at stake; honouring that would mean granting an attempt per
+set, which is a different game. `isArena(q)` and the `counts` gate in `report()` survive
+as a guard for runs saved before the filter existed — without them, restoring such a run
+would score a quest that was played on the understanding it counted for nothing.
+
+**Clearing a quest spends it for the run** (`run.questsDone`, keyed like `questFails`).
+Fifty clears means fifty different quests. Only a *clear* spends one, and that is
+load-bearing rather than flavour: consuming on any attempt would make the quest lock
+demand a retry of a quest that no longer exists, and would stop `same quest failed twice`
+from ever firing. The rule exists because farming the best-paying quest fifty times was
+worth **5.17×** playing at random — a larger score swing than any difficulty lever, and
+invisible to every simulation, since they all picked quests uniformly. It costs an
+ordinary player almost nothing: fifty draws from 1,239 collide about once per run.
 
 ## Theme
 

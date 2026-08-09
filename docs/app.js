@@ -1,6 +1,10 @@
 "use strict";
 (function () {
-  const QUESTS = window.MHGU_QUESTS || [];
+  // Arena is not part of a run. Its quests hand you a fixed set of five weapons,
+  // so there is no combo to put at stake — honouring them would mean granting an
+  // attempt per set, which is a different game. They are filtered out of the
+  // pool rather than made inert, so they never appear in the route at all.
+  const QUESTS = (window.MHGU_QUESTS || []).filter(q => q.t !== "Arena");
   const $ = (id) => document.getElementById(id);
   const rand = (n) => Math.floor(Math.random() * n);
   const pick = (arr) => arr[rand(arr.length)];
@@ -555,8 +559,10 @@
     if (!run.combo || !run.quest) return;
 
     const combo = run.combo;
-    // Arena quests hand you a weapon, so nothing is at stake on them: no death,
-    // no streak change, no tally. Locks stay engaged across an Arena detour.
+    // Arena is filtered out of the pool, so this can only be true for a run
+    // saved or exported before that change. Kept as a guard rather than deleted:
+    // without it, restoring such a run would suddenly score a quest that was
+    // played on the understanding it counted for nothing.
     const counts = !isArena(run.quest);
 
     if (outcome === "cart") {
@@ -656,7 +662,7 @@
       box.innerHTML = searchResults.map((q, i) =>
         `<button type="button" data-i="${i}">${escapeHtml(q.n)}` +
         `<span class="qr-type"> &middot; ${escapeHtml(q.t)}${q.m ? " &middot; " + escapeHtml(q.m) : ""}</span>` +
-        `<span class="qr-worth">${q.t === "Arena" ? "&mdash;" : zenny(q.r || 0)}</span></button>`
+        `<span class="qr-worth">${zenny(q.r || 0)}</span></button>`
       ).join("");
     }
     box.classList.remove("hidden");
