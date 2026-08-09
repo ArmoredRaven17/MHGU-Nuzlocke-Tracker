@@ -233,15 +233,18 @@ body{
 .cell.alive{cursor:default;border-color:color-mix(in srgb, var(--wc, transparent) 35%, var(--line))}
 /* Board cells are empty divs — the weapon and style come from their position in
    the grid — so text-decoration:line-through had nothing to strike and the text
-   colour coloured nothing. Draw the strike instead.
-   It uses --dead, the same fixed red as the Lost tally, rather than a
-   theme-derived tone: a fallen combo has to read at a glance on all 18
-   Deviants, and a marker in the run's own hue is a marker in the background's
-   hue. Opacity stays high for the same reason — at .4 it was blue on blue. */
-.cell.dead{background:var(--fallen-fill);border-color:var(--fallen-line);opacity:.85;
-  position:relative}   /* no row tint: gone should read as gone */
-.cell.dead::after{content:"";position:absolute;left:3px;right:3px;top:calc(50% - 1px);
-  height:2px;border-radius:1px;background:var(--dead);opacity:.9}
+   colour coloured nothing. The strike is drawn instead.
+   A fallen cell keeps its row tint and strikes in the row's own colour, so the
+   weapon stays identifiable after it is lost. That puts the whole burden of
+   "this is gone" on the line, so it is drawn at full strength and thicker than
+   a text strike would be. The muted --fallen-fill sits underneath to take the
+   tint down without draining it. */
+.cell.dead{background:color-mix(in srgb, var(--wc, transparent) 12%, var(--fallen-fill));
+  border-color:color-mix(in srgb, var(--wc, transparent) 30%, var(--fallen-line));
+  opacity:.85;position:relative}
+.cell.dead::after{content:"";position:absolute;left:3px;right:3px;top:calc(50% - 1.5px);
+  height:3px;border-radius:2px;background:var(--wc, var(--dead));
+  box-shadow:0 0 0 1px rgba(0,0,0,.45)}
 .cell.revived{border-color:#c9a227;background:#c9a2271a}
 /* Alive, but its weapon spent its style allowance — out of the pool, not lost */
 .cell.retired{opacity:.22;border-style:dotted}
