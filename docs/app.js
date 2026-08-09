@@ -4,7 +4,10 @@
   // so there is no combo to put at stake — honouring them would mean granting an
   // attempt per set, which is a different game. They are filtered out of the
   // pool rather than made inert, so they never appear in the route at all.
-  const QUESTS = (window.MHGU_QUESTS || []).filter(q => q.t !== "Arena");
+  // Prowler quests are out for the same reason the Prowler weapon is: you hunt
+  // them as a Palico, so none of the 84 weapon/style combos is at stake on one.
+  // Arena is out because its five fixed sets are not yours either.
+  const QUESTS = (window.MHGU_QUESTS || []).filter(q => q.t !== "Arena" && !q.p);
   const $ = (id) => document.getElementById(id);
   const rand = (n) => Math.floor(Math.random() * n);
   const pick = (arr) => arr[rand(arr.length)];
@@ -386,7 +389,7 @@
   // The rule exists because farming one quest fifty times was worth 5.17x
   // playing whatever you fancied, which was a bigger score swing than any
   // difficulty lever. It costs an ordinary player almost nothing: fifty draws
-  // from 1,239 quests collide about once a run. Arena is exempt for the same
+  // from 1,136 quests collide about once a run. Arena is exempt for the same
   // reason it scores nothing — it is outside the economy entirely.
   const questDone = (q) => !isArena(q) && !!run.questsDone[questKey(q)];
   const isAlive = (w, s) => !deadKeys.has(comboKey(w, s));
@@ -405,15 +408,15 @@
     return out;
   }
   // Longest a run can possibly last: every weapon spends its full allowance.
-  const maxLosses = () => ALL_WEAPONS.reduce(
-    (n, w) => n + Math.min(cfg.stylesPerWeapon, stylesFor(w).length), 0);
+  const ceilingFor = (cap) => ALL_WEAPONS.reduce(
+    (n, w) => n + Math.min(cap, stylesFor(w).length), 0);
+  const maxLosses = () => ceilingFor(cfg.stylesPerWeapon);
   // The run's own ceiling, snapshotted at Start Run. Falls back to the live
   // figure for runs saved before it was recorded.
   const runMax = () => run.maxLosses || maxLosses();
   // Each cap yields a distinct ceiling (15/30/45/60/75/90), so a run that kept
   // no rules snapshot can still have this one rule read back off its ceiling.
-  const capForCeiling = (ceiling) => [1, 2, 3, 4, 5, 6].find(c =>
-    ALL_WEAPONS.reduce((n, w) => n + Math.min(c, stylesFor(w).length), 0) === ceiling);
+  const capForCeiling = (ceiling) => [1, 2, 3, 4, 5, 6].find(c => ceilingFor(c) === ceiling);
 
   // Weapon-first: uniform among surviving weapons, then uniform among that
   // weapon's surviving styles. Preserves the Randomizer's distribution rather
@@ -551,6 +554,16 @@
   // table the way hardcoded numbers did. Shirt sizes rather than values: the
   // same vocabulary as Attack Up (S/M/L), and unlike a number a letter is free
   // to report the option's MEASURED effect rather than the arithmetic behind it.
+  // The cap labels used to spell out their own counts and went stale the moment
+  // the roster changed — they still read "15 combos" after Prowler left. Derived
+  // now, from the same function the ceiling uses.
+  function paintCapCounts() {
+    Object.entries(CFG_RADIOS.stylesPerWeapon).forEach(([cap, id]) => {
+      const el = $(id), out = el && el.closest("label").querySelector(".cap-n");
+      if (out) out.textContent = ceilingFor(+cap);
+    });
+  }
+
   function paintBadges() {
     const L = LEVERS;
     const set = (id, effect, suffix) => {
@@ -1479,6 +1492,7 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   paintBadges();
+  paintCapCounts();
   buildSwatches();
   const DEFAULT_THEME = "#07143C";            // Nightcloak Malfestio
   let savedTheme = DEFAULT_THEME;

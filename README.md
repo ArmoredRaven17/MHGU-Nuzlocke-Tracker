@@ -24,7 +24,7 @@ what happened and takes options away. For quest rolling, use the
 
 1. **Get a loadout** — the app hands you a surviving combo, or you pick one yourself.
    Fallen combos are never offered.
-2. **Name the quest** you're hunting, from a searchable list of 1,239 (Arena excluded).
+2. **Name the quest** you're hunting, from a searchable list of 1,136 (Arena and Prowler quests excluded).
 3. **Report the result** — Cleared, Carted, or Failed. Carted can be pressed more than
    once; it doesn't end the attempt.
 
@@ -79,8 +79,9 @@ ever get to spend.
 - **Reroll** — refuse a combo you were handed and draw another; the refused one goes
   back in the pool
 
-**Arena quests aren't part of a run.** They hand you a fixed set of five weapons, so
-there's no combo of yours to put at stake. They aren't listed.
+**Arena and Prowler quests aren't part of a run.** Arena hands you a fixed set of five
+weapons and a Prowler quest is hunted as a Palico, so neither puts one of your combos at
+stake. Neither is listed.
 
 **Clearing a quest spends it.** Fifty clears means fifty different quests, so a run is a
 route rather than the same quest fifty times. Only clearing spends one — fail and it

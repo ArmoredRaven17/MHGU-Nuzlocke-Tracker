@@ -67,12 +67,12 @@
           <p class="hint">How many styles per weapon you can use before it is removed
             from the pool. Fewer combos means a shorter run, so this scales your whole
             total rather than nudging it.</p>
-          <label class="chk"><input type="radio" name="cap" id="c_1">1 style &mdash; 15 combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles &mdash; 30 combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles &mdash; 45 combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; 60 combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; 75 combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; 90 combos<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_1">1 style &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
 
           <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>Randomized Weapon/Style combo<span class="w"></span></label>
@@ -223,6 +223,8 @@
        with that &mdash; the app would also have to make sure you can use at least one of
        the five sets offered before you could enter the quest. They were dropped since
        people tend to care more about non-Arena quests.</p>
+    <p><strong>Prowler quests aren't either.</strong> You hunt those as a Palico, so none
+       of your weapon/style combos is at stake on one. They aren't listed.</p>
     <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>. Combos
        you're still holding at the end pay a bonus on top of what you earned.</p>
 
@@ -351,6 +353,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=93"></script>
+<script src="app.js?v=95"></script>
 </body>
 </html>

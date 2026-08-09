@@ -26,7 +26,7 @@ Live at https://ArmoredRaven17.github.io/MHGU-Zenny-Gauntlet/, served from `docs
 | `docs/index.html` | Markup, sidebar panels, modals |
 | `docs/styles.css` | All styling; theme CSS variables are set at runtime |
 | `docs/app.js` | All logic (one IIFE, no modules) |
-| `docs/data.js` | `window.MHGU_QUESTS` — 1297 slimmed quest records (Arena filtered at load) |
+| `docs/data.js` | `window.MHGU_QUESTS` — 1297 slimmed quest records; Arena and Prowler filtered at load |
 
 **Critical:** the Pages CDN caches by full URL. Every push touching `styles.css`,
 `app.js` or `data.js` **must** increment the `?v=N` on its tag in `index.html`, or
@@ -85,8 +85,9 @@ while a run is live and `readCfgFromDom()` no-ops, so the difficulty you committ
 can't be softened the moment a condition is about to cost you something. They unlock
 again when the run ends.
 
-**Arena quests are filtered out of the pool** at the top of `app.js`, so `QUESTS` is
-1,239 rather than 1,297. An Arena quest hands you a fixed set of five weapons, so there
+**Arena and Prowler quests are filtered out of the pool** at the top of `app.js`, so
+`QUESTS` is 1,136 rather than 1,297 — 58 Arena and 103 Prowler.
+A Prowler quest is hunted as a Palico, so none of the 84 combos is at stake on one. An Arena quest hands you a fixed set of five weapons, so there
 is no combo of yours to put at stake; honouring that would mean granting an attempt per
 set, which is a different game. `isArena(q)` and the `counts` gate in `report()` survive
 as a guard for runs saved before the filter existed — without them, restoring such a run
@@ -99,7 +100,7 @@ demand a retry of a quest that no longer exists, and would stop `same quest fail
 from ever firing. The rule exists because farming the best-paying quest fifty times was
 worth **5.17×** playing at random — a larger score swing than any difficulty lever, and
 invisible to every simulation, since they all picked quests uniformly. It costs an
-ordinary player almost nothing: fifty draws from 1,239 collide about once per run.
+ordinary player almost nothing: fifty draws from 1,136 collide about once per run.
 
 ## Theme
 
