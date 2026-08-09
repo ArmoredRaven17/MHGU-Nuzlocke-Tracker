@@ -20,7 +20,7 @@ Live at https://ArmoredRaven17.github.io/MHGU-Nuzlocke-Tracker/, served from `do
 | `docs/index.html` | Markup, sidebar panels, modals |
 | `docs/styles.css` | All styling; theme CSS variables are set at runtime |
 | `docs/app.js` | All logic (one IIFE, no modules) |
-| `docs/data.js` | `window.MHGU_QUESTS` — 1297 slimmed quest records |
+| `docs/data.js` | `window.MHGU_QUESTS` — 1297 slimmed quest records (Arena filtered at load) |
 
 **Critical:** the Pages CDN caches by full URL. Every push touching `styles.css`,
 `app.js` or `data.js` **must** increment the `?v=N` on its tag in `index.html`, or
@@ -124,37 +124,53 @@ Clearing a quest earns its **real in-game zenny reward** (`q.r`) times the run's
 difficulty multiplier. Points only ever go up — a failure costs you a loadout, which
 is the punishment. Arena earns nothing, consistent with it costing nothing.
 
-The multiplier comes from two tables at the top of `app.js`, and **tuning the
-difficulty curve means editing those and nothing else**:
+**Every lever is a ratio and they multiply.** `LEVERS` at the top of `app.js` is the
+single table, and tuning the curve means editing it and nothing else. The reference run
+— carts and quest failures, 3 styles, `loadout: "hold"`, quest lock on, no revives or
+rerolls — is exactly `1.00`, which also means it pays each quest's real in-game zenny
+untouched.
 
-- `KILL_WEIGHT` — the chosen condition sets the base. Quest-failed is the 1× anchor;
-  carts-and-failures 3×, cart 2×, two-in-a-row 0.75×, same-quest-twice 0.5×.
-- `LEVER_WEIGHT` — every other lever, written as the multiplier it reads as.
-- `STYLE_CAP_MULT` — the styles-per-weapon cap. 3 is the reference at ×1; 1 is ×3.5 and
-  6 is ×0.5.
-- `SURVIVOR_BONUS` — how much finishing with combos in hand pays. 1.0, so a flawless
-  run doubles.
+Each option carries **two** numbers and the gap between them is the point:
 
-**Levers combine additively — except the styles cap, which multiplies.** Each lever is
-written as e.g. `0.75` and contributes its *distance from 1×*, so a 0.75 lever is −0.25
-off the total, not the total × 0.75. The 1× reference run is: app rolls your loadout,
-both locks on, no revives; each of those is exactly 1× and costs nothing.
+- `factor` — what earnings are multiplied by. Never displayed.
+- `effect` — what the option does to your final **score**. This is what the XS…XL badge
+  and the difficulty rating are built from.
 
-The cap is the exception because it has to express a *ratio* across five different
-kill-condition bases, and an additive delta cannot. Simulation put the break-even for
-one style per weapon at +6.17 against carts-and-failures and nowhere near that against
-the gentle conditions, so no single delta served both. As a multiplier it does:
-`summed × STYLE_CAP_MULT[cap]`. Runs that go to exhaustion now land within 15% of each
-other across all six caps, which is what "the cap is a pure ratio" looks like.
+They differ because a harder setting also makes the run shorter, so it banks fewer
+clears. One style per weapon needs an internal ×4.48 to land on a ×1.60 score. The old
+additive scheme showed that 4.48 to the player as a promise, which is exactly why it
+kept lying: **no single displayed number can be both the per-clear rate and the
+final-score ratio**, and that is mechanical, not a presentation choice.
 
-**The total is deliberately unbounded below.** This is a bonus multiplier, so a run
-soft enough to net out at zero earns nothing and one softer still is penalised —
-clearing quests then *subtracts* from the total. Both are intended, so don't add a
-floor. The sidebar label flips from "Difficulty Bonus" to "Difficulty Penalty" below
-zero, and the status strip and summary tile follow.
+`factor` is solved by fixed point — `factor = effect / measured relative length`,
+iterated to stability — in `scratchpad/sim-multiplicative.js`. Re-run it if you retune
+`effect`. Converges in two passes; every single-lever change then lands within 1% of
+target, and the inversion rate over 720 configurations is 0.42% against 1.70% for the
+additive scheme.
 
-Negative numbers use a typographic minus (−) rather than a hyphen in both `fmtMult`
-and `zenny`, so the multiplier and the earnings figure match.
+**Nothing numeric reaches the UI.** `badge(effect)` gives `+M` / `−XL` / `±0` using
+Attack Up's shirt-size vocabulary, and `ratingFor(difficulty(cfg))` gives Very Easy …
+Very Hard. `paintBadges()` writes every sidebar badge from `LEVERS` at init, so the
+markup holds empty `<span class="w">` and cannot drift from the table the way hardcoded
+numbers did.
+
+Watch the `sizeOf` boundaries: they compare against the table's own values, and
+`1.15 - 1` is `0.1499999999999999` in binary floating point, which silently demoted
+cycling from M to S. Hence the `1e-9` epsilon.
+
+**The rating bands are set from the real distribution**, not round numbers. Across all
+49,200 reachable configurations the median is 0.30 and **98% sit below the reference**,
+because the app has one lever that tightens a run (`loadout: "cycle"`) and roughly ten
+that loosen it. The defaults are genuinely Hard. That is a content fact, not a scaling
+problem — more levers shaped like cycling are what would populate the top.
+
+**The total can no longer go negative.** Under the additive scheme 28% of
+configurations scored as penalties; a product of positive ratios cannot. The only route
+below zero now is spending past your earnings on a buy-back, which `settle()` still
+permits deliberately.
+
+`zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
+`−M` in the sidebar and a negative total read as the same character.
 
 **The kill conditions are a radio group, not checkboxes** — `cfg.kill` is one of
 `both | cart | fail | streak | twice`.
@@ -205,7 +221,8 @@ key to its value→element-id table; `CFG_BOXES` covers the booleans.
   top of any resolution — reaching an outcome discharges the debt — and the fail
   branch immediately re-owes it, so consecutive failures still pin you to the quest.
 
-The multiplier is snapshotted into `run.mult` at Start Run, alongside `run.maxLosses`.
+Both `run.mult` (what earnings are multiplied by) and `run.diff` (what the run rates
+as) are snapshotted at Start Run, alongside `run.maxLosses` and `run.cfg`.
 Since the rules freeze for the run anyway this is belt-and-braces, but the rules unlock
 again the moment a run ends, so without it the summary would ask `cfg` about a
 configuration that is no longer selected.

@@ -68,81 +68,112 @@
   // cfg outlives individual runs, so starting a new one doesn't mean re-ticking
   // every box. run is wiped by Start Run.
   // Both locks default on: locked is the 1x reference run, unlocking is the
-  // discount. See LEVER_WEIGHT.
+  // discount. See LEVERS.
   const DEFAULT_CFG = {
     kill: "both",                        // "both" | "cart" | "fail" | "streak" | "twice"
     assign: "roll",                      // "roll" | "pick"
-    loadout: "hold",                     // "hold" | "cycle" | "free"; see LEVER_WEIGHT
+    loadout: "hold",                     // "hold" | "cycle" | "free"; see LEVERS
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
-    reviveCap: 5,                        // buy-backs allowed per run; see REVIVE_CAP_WEIGHT
-    revivePrice: 10000,                  // zenny for the first buy-back; see REVIVE_PRICE_WEIGHT
+    reviveCap: 5,                        // buy-backs allowed per run; see LEVERS.reviveCap
+    revivePrice: 10000,                  // zenny for the FIRST buy-back; it doubles
     rerollEnabled: false,
-    rerollPrice: 5000,                   // zenny for the first reroll; see REROLL_PRICE_WEIGHT
+    rerollPrice: 5000,                   // zenny for the FIRST reroll; it doubles
   };
   let cfg = Object.assign({}, DEFAULT_CFG);
 
-  // ── Difficulty multiplier ────────────────────────────────────────────────
-  // Quest failed is the 1x base; harsher conditions sit above it, gentler ones
-  // below. Tuning the difficulty curve means editing these two tables and
-  // nothing else.
-  // One condition, not a combination. A quest can fail WITHOUT carting — time
-  // out, or blow the sub-objective — so cart and quest-failed are genuinely
-  // independent triggers rather than one subsuming the other. "both" is their
-  // union and is offered explicitly, which is why a radio still works: every
-  // meaningful combination has its own entry, and the gentler rules below
-  // quest-failed can never fire while it is selected.
-  const KILL_WEIGHT = {
-    both:   3,      // a cart OR a quest failure takes it — nothing is forgiven
-    cart:   2,      // carts only; you can still lose a quest and keep the combo
-    fail:   1,      // failures only; carting your way to a clear costs nothing
-    streak: 0.75,   // the first failure is forgiven
-    twice:  0.5,    // needs the same quest to beat you twice
-  };
-  const killBase = (c) => KILL_WEIGHT[c.kill] || 0;
+  // ── Difficulty ───────────────────────────────────────────────────────────
+  // Every lever is a RATIO and they multiply. The reference run — carts and
+  // quest failures, 3 styles, hold until it falls, quest lock on, no revives or
+  // rerolls — is exactly 1.00, which also means it earns each quest's real
+  // in-game zenny untouched.
+  //
+  // Each option carries two numbers, and the gap between them is the whole
+  // reason this table exists:
+  //
+  //   effect  what the option does to your FINAL SCORE. This is the honest
+  //           number, measured over thousands of simulated runs, and it is what
+  //           the XS..XL badge and the difficulty rating are built from.
+  //   factor  what the maths actually multiplies by to deliver that effect.
+  //
+  // They differ because a harder setting also makes the run SHORTER, so it banks
+  // fewer clears. One style per weapon needs an internal x4.48 to land on a
+  // x1.60 score, because 15 combos buy far fewer hunts than 45. The old additive
+  // scheme showed that 4.48 to the player as a promise, which is precisely why
+  // it kept lying — you cannot have one displayed number be both the per-clear
+  // rate and the final-score ratio.
+  //
+  // Solved by fixed point: factor = effect / measured relative length, iterated
+  // until stable. Re-solve with scratch sim-multiplicative.js if you retune.
+  //
+  //                       factor  effect
+  const LEVERS = {
+    kill: {
+      both:   [1.000, 1.00],   // a cart OR a failure takes it — nothing forgiven
+      cart:   [0.713, 0.75],   // carts only; you can lose a quest and keep it
+      fail:   [0.408, 0.50],   // failures only; carting to a clear costs nothing
+      streak: [0.259, 0.38],   // the first failure is forgiven
+      twice:  [0.177, 0.26],   // needs the same quest to beat you twice
+    },
+    // The styles cap swings hardest because it decides how much of the board you
+    // ever get to spend. Its effects carry ~17% on top of the honest pool ratio,
+    // so restriction is high risk / high reward rather than merely break-even.
+    cap: {
+      1: [4.483, 1.60], 2: [1.851, 1.35], 3: [1.000, 1.00],
+      4: [0.747, 0.85], 5: [0.590, 0.72], 6: [0.470, 0.60],
+    },
+    assign:  { roll: [1, 1], pick: [0.850, 0.85] },
+    // cycle is the only option in the app that scores ABOVE the reference.
+    loadout: { hold: [1, 1], cycle: [1.150, 1.15], free: [0.850, 0.85] },
+    quest:   { on: [1, 1], off: [0.850, 0.85] },
 
-  // The kill condition sets the base; every other lever is written as the
-  // multiplier it reads as and contributes its distance from 1x, ADDITIVELY.
-  // A 0.75x lever is -0.25 off the total, not the total times 0.75.
-  //
-  // The 1x reference run is: the app rolls your loadout, both locks on, no
-  // revives — each of those is exactly 1x and so costs nothing.
-  const LEVER_WEIGHT = {
-    pickOwnLoadout:   0.75,   // choosing beats being handed one       -0.25
-    loadoutUnlocked:  0.75,   // free to swap weapon/style whenever    -0.25
-    questUnlocked:    0.75,   // free to walk away from a quest        -0.25
-    reviveAllowed:    0.75,   // a safety net at all                   -0.25
-    reviveOnce:       1.10,   // ...but only one each, so some of it back  +0.10
-    // Cycling is the only lever that sits ABOVE the reference, because it is
-    // the only one that takes something away rather than handing it back:
-    // holding lets you ride a combo you are good with for as long as it lives,
-    // and cycling ends that on every clear.
-    //
-    // Its size is a judgement call and cannot be otherwise. The simulation
-    // treats every combo as equally winnable — which is your call, and the
-    // right one — so a model in which combos are interchangeable can never
-    // measure a rule about WHICH combo you hold. Same wall as the loadout lock
-    // and Hunter's choice. See LEVER PLACEHOLDER in CLAUDE.md.
-    loadoutCycles:    1.15,   // a fresh combo after every clear       +0.15
+    reviveOn:    [0.780, 0.82],   // a safety net at all
+    reviveOnce:  [1.060, 1.06],   // ...but one each, so some of it back
+    // Costs double now (see reviveCost), which makes the price self-limiting:
+    // a dearer price just means fewer buy-backs, so total spend barely moves
+    // across the ladder. That is why these are small — they only have to price
+    // the residual, not the whole mechanic.
+    revivePrice: { 5000: [0.94, 0.94], 10000: [1, 1], 20000: [1.03, 1.03], 30000: [1.05, 1.05] },
+    reviveCap:   { 1: [1.05, 1.05], 3: [1.02, 1.02], 5: [1, 1], 10: [0.97, 0.97], 20: [0.94, 0.94] },
+    rerollOn:    [0.860, 0.86],
+    rerollPrice: { 2500: [0.96, 0.96], 5000: [1, 1], 10000: [1.02, 1.02], 20000: [1.04, 1.04] },
   };
-  // How many styles a weapon may lose before the whole weapon retires. This one
-  // MULTIPLIES the total rather than adding to it, and it is the only lever
-  // that does.
-  //
-  // That is not an inconsistency for its own sake — it is what the mechanic is.
-  // Score accrues per hunt and a run lasts until its pool is spent, so the pool
-  // scales earnings proportionally: 15 combos lasts ~34 hunts against ~102 for
-  // 45. The relationship is a ratio (45/15 = 3), and no additive constant can
-  // express a ratio across five different kill-condition bases — calibrate it
-  // for x3 and it over-rewards by 3x on x1, which is exactly what happened.
-  //
-  // So the loose end is the honest pool ratio, and the restrictive end carries
-  // ~17% on top so that restriction is high risk, high reward rather than
-  // merely break-even. Simulation over 4,000 runs per configuration.
-  const STYLE_CAP_MULT = { 1: 3.5, 2: 1.75, 3: 1, 4: 0.75, 5: 0.6, 6: 0.5 };
+  // LEVER PLACEHOLDER — assign, loadout and rerollOn cannot be measured. The
+  // simulator treats every combo as equally winnable (a deliberate design call),
+  // so a model where combos are interchangeable can say nothing about a rule
+  // governing WHICH combo you hold. Those three carry factor === effect.
 
-  // A completed run is its hunt limit, and finishing with combos still in hand
+  // Walk the chosen options once; i picks factor (0) or effect (1).
+  const legs = (c, i) => {
+    const L = LEVERS, out = [
+      (L.kill[c.kill] || [1, 1])[i],
+      (L.cap[c.stylesPerWeapon] || [1, 1])[i],
+      (L.assign[c.assign] || [1, 1])[i],
+      (L.loadout[c.loadout] || [1, 1])[i],
+      (c.lockQuest ? L.quest.on : L.quest.off)[i],
+    ];
+    if (c.reviveEnabled) {
+      out.push(L.reviveOn[i]);
+      if (c.reviveOnce) out.push(L.reviveOnce[i]);
+      out.push((L.revivePrice[c.revivePrice] || [1, 1])[i]);
+      out.push((L.reviveCap[c.reviveCap] || [1, 1])[i]);
+    }
+    if (c.rerollEnabled) {
+      out.push(L.rerollOn[i]);
+      out.push((L.rerollPrice[c.rerollPrice] || [1, 1])[i]);
+    }
+    return out;
+  };
+  const product = (a) => a.reduce((p, x) => p * x, 1);
+
+  // What earnings are multiplied by. Never displayed, never negative.
+  const multiplier = (c) => Math.round(product(legs(c, 0)) * 1000) / 1000;
+  // What the run is worth relative to the reference — the honest figure, and
+  // the only one a player ever sees, as a rating.
+  const difficulty = (c) => product(legs(c, 1));
+
+  // A completed run is its clear limit, and finishing with combos still in hand
   // is the point — so surviving pays.
   //
   // Awarded as a share of what you earned, not a flat pot per combo. A flat pot
@@ -155,90 +186,79 @@
   // At 1.0 a flawless run doubles and a wipe adds nothing.
   const SURVIVOR_BONUS = 1.0;
 
-  // What the first buy-back costs, and what charging that is worth. A cheap
-  // safety net makes the run easier; a dear one barely helps. 10,000z is the
-  // reference and costs nothing. Only applies when revives are switched on.
-  //
-  // The top bonus is deliberately small. Having no safety net at all must beat
-  // having an expensive one, and "no revives" contributes exactly 0 — so the
-  // best revive case (allowed -0.25, once-only +0.10, dearest price) has to
-  // stay below zero. That caps the dearest price under +0.15; +0.10 leaves the
-  // best possible revive run at -0.05. Raising it past +0.15 would invert the
-  // intent, so check REVIVE_NEVER_BEATS_OFF if you retune these.
-  const REVIVE_PRICE_WEIGHT = { 5000: 0.85, 10000: 1, 20000: 1.05, 30000: 1.10 };
+  // ── How difficulty reads ─────────────────────────────────────────────────
+  // Bands are set from the real distribution across all 49,200 reachable
+  // configurations: the median lands at 0.30 and 98% sit below the reference,
+  // because the app has one lever that tightens a run and roughly ten that
+  // loosen it. So the defaults are genuinely Hard, and that is not a display
+  // artefact — adding more levers shaped like "hold until you clear" is what
+  // would populate the top.
+  const RATINGS = [
+    [1.10, "Very Hard"],
+    [0.70, "Hard"],
+    [0.40, "Normal"],
+    [0.20, "Easy"],
+    [0,    "Very Easy"],
+  ];
+  const ratingFor = (d) => (RATINGS.find(([min]) => d >= min) || RATINGS[RATINGS.length - 1])[1];
 
-  // How many buy-backs a run gets. Measured against no revives at all: 3 lands
-  // at 1.03x, 5 at 1.04x, 10 at 1.09x, 20 at 1.17x — so the weights track the
-  // advantage each allowance actually confers. 5 is the reference.
-  const REVIVE_CAP_WEIGHT = { 1: 1.10, 3: 1.03, 5: 1, 10: 0.95, 20: 0.88 };
-
-  // Rerolling lets you refuse a combo you were handed, so allowing it is a
-  // discount for the same reason revives are. Same shape: charging more for it
-  // claws some back, capped so that forbidding rerolls always beats allowing
-  // them at any price. Placeholder values pending balance.
-  const REROLL_ALLOWED_WEIGHT = 0.80;   // -0.20 for having the escape hatch at all
-  const REROLL_PRICE_WEIGHT = { 2500: 0.90, 5000: 1, 10000: 1.05, 20000: 1.10 };
-
-  // The total is deliberately unbounded below. This is a bonus multiplier, so a
-  // run soft enough to net out at zero earns nothing, and one softer still is
-  // penalised — both are legitimate outcomes rather than something to clamp.
-
-  const leverDeltas = (c) => {
-    const L = LEVER_WEIGHT, d = [];
-    if (c.assign === "pick") d.push(L.pickOwnLoadout);
-    if (c.loadout === "free")   d.push(L.loadoutUnlocked);
-    if (c.loadout === "cycle")  d.push(L.loadoutCycles);
-    if (!c.lockQuest)        d.push(L.questUnlocked);
-    // Two independent values that stack: allowing revives at all is -0.25,
-    // and capping them at one per combo gives +0.10 of it back.
-    if (c.reviveEnabled) {
-      d.push(L.reviveAllowed);
-      if (c.reviveOnce) d.push(L.reviveOnce);
-      const price = REVIVE_PRICE_WEIGHT[c.revivePrice];
-      if (price != null && price !== 1) d.push(price);
-      const capW = REVIVE_CAP_WEIGHT[c.reviveCap];
-      if (capW != null && capW !== 1) d.push(capW);
-    }
-    if (c.rerollEnabled) {
-      d.push(REROLL_ALLOWED_WEIGHT);
-      const price = REROLL_PRICE_WEIGHT[c.rerollPrice];
-      if (price != null && price !== 1) d.push(price);
-    }
-    return d;
-  };
-
-  // Kill condition sets the base, the other levers add to or subtract from it,
-  // then the styles cap scales the lot.
-  function multiplier(c) {
-    const summed = leverDeltas(c).reduce((sum, w) => sum - (1 - w), killBase(c));
-    const cap = STYLE_CAP_MULT[c.stylesPerWeapon];
-    return Math.round(summed * (cap == null ? 1 : cap) * 100) / 100;
+  // A single option's size, as a shirt size rather than a number — the same
+  // vocabulary as Attack Up (S/M/L). Built from `effect`, so it says what the
+  // option really does rather than what the arithmetic needed.
+  const SIZE_STEPS = [[0.60, "XL"], [0.30, "L"], [0.15, "M"], [0.05, "S"]];
+  function sizeOf(effect) {
+    const away = Math.abs(effect - 1);
+    // Epsilon because the boundaries ARE the table values: 1.15 - 1 comes out
+    // as 0.1499999999999999 in binary floating point, which silently demoted
+    // cycling from M to S while 0.85 landed on M correctly.
+    const step = SIZE_STEPS.find(([min]) => away >= min - 1e-9);
+    return (step ? step[1] : "XS");
+  }
+  // "+M" reads as a bonus, "−M" as a cost. A bare letter says neither.
+  function badge(effect) {
+    if (Math.abs(effect - 1) < 0.005) return "±0";
+    return (effect > 1 ? "+" : "−") + sizeOf(effect);
   }
 
-  // Invariant: no safety net must always beat having one, however dearly it is
-  // priced. Checked rather than assumed, because it depends on three separate
-  // weights and is easy to break by nudging any of them.
+  // Invariant: having no safety net must beat having one, however dearly it is
+  // priced. Checked rather than assumed — it depends on four separate numbers
+  // and the last version of this broke when the cap weights were added.
   (function assertReviveNeverBeatsOff() {
     const base = { kill: "fail", assign: "roll", loadout: "hold", lockQuest: true,
-                   stylesPerWeapon: 3 };
-    const off = multiplier(Object.assign({}, base, { reviveEnabled: false }));
-    const best = Math.max(...Object.keys(REVIVE_PRICE_WEIGHT).map(p =>
-      Math.max(...[true, false].map(once =>
-        multiplier(Object.assign({}, base,
-          { reviveEnabled: true, reviveOnce: once, revivePrice: +p }))))));
+                   stylesPerWeapon: 3, rerollEnabled: false, rerollPrice: 5000 };
+    const off = difficulty(Object.assign({}, base, { reviveEnabled: false }));
+    let best = -Infinity, at = "";
+    for (const once of [true, false])
+      for (const p of Object.keys(LEVERS.revivePrice))
+        for (const k of Object.keys(LEVERS.reviveCap)) {
+          const d = difficulty(Object.assign({}, base, { reviveEnabled: true,
+            reviveOnce: once, revivePrice: +p, reviveCap: +k }));
+          if (d > best) { best = d; at = `${once ? "once" : "repeat"} ${p}z cap ${k}`; }
+        }
     if (best >= off) {
-      console.warn("Revive weights inverted: best revive run scores " + best +
-        ", which is not below the " + off + " for allowing none. " +
-        "Lower the dearest REVIVE_PRICE_WEIGHT or LEVER_WEIGHT.reviveOnce.");
+      console.warn(`Revive weights inverted: the best revive run (${at}) rates ` +
+        `${best.toFixed(3)}, which is not below the ${off.toFixed(3)} for allowing ` +
+        `none. Lower LEVERS.reviveOnce, or the dearest revivePrice / reviveCap.`);
     }
   })();
-  // Typographic minus, not a hyphen — "×-0.75" reads as a typo.
-  const fmtMult = (m) => "×" + m.toFixed(2).replace("-", "−");
 
   // ── Revive economy ───────────────────────────────────────────────────────
-  // Cost climbs in flat steps of the chosen price: the Nth buy-back of a run
-  // costs N x price. The price itself is a lever — see REVIVE_PRICE_WEIGHT.
-  const reviveCost = (used) => cfg.revivePrice * (Math.max(0, used) + 1);
+  // Cost DOUBLES per buy-back and scales with the run's multiplier.
+  //
+  // Both halves are load-bearing. Flat linear pricing never stops anyone, so at
+  // one style per weapon a player simply bought twenty extra combos for pocket
+  // change and doubled their run — revives were worth +82% there while the
+  // weights charged −0.52, and no single number could cover a swing that moved
+  // 2.45x across settings. Doubling makes the player stop of their own accord
+  // (5k, 10k, 20k, 40k, 80k — a rational hunter quits around the fifth), and
+  // scaling by the multiplier stops a buy-back being nearly free exactly where
+  // it is strongest, since earnings scale but a flat price does not.
+  //
+  // Together they pull the swing down to 1.16x, which a single factor CAN price.
+  const costScale = () => Math.max(0.25, (run.mult || multiplier(cfg)));
+  const stepCost = (price, used) =>
+    Math.round(price * Math.pow(2, Math.max(0, used)) * costScale());
+  const reviveCost = (used) => stepCost(cfg.revivePrice, used);
 
   const emptyRun = () => ({
     active: false, finished: false,
@@ -259,7 +279,8 @@
     rerollLog: [],         // {weapon, style, cost}
     zennySpent: 0,         // paid out of score rather than materials
     earned: 0,             // zenny rewards of quests cleared, x the run's multiplier
-    mult: 1,               // snapshotted at Start Run; rules are frozen anyway
+    mult: 1,               // what earnings are multiplied by; snapshotted at Start Run
+    diff: 1,               // what the run RATES as — the figure behind "Hard"
     maxLosses: 0,          // likewise — the rules unlock again once the run ends,
                            // so the summary can't ask cfg what the cap was
     cfg: null,             // the whole lever set, for the summary's Rules panel
@@ -287,10 +308,14 @@
     run.revives < reviveAllowance() &&
     !(cfg.reviveOnce && (run.revived[comboKey(w, s)] || 0) >= 1);
 
-  // Settling by zenny comes straight off the score. It may take the total
-  // negative — that's allowed, same as a negative multiplier.
-  // The only payment route: straight off the run's score. May take the total
-  // negative, same as a negative multiplier can.
+  // The only payment route: straight off the run's score. There is deliberately
+  // no affordability gate, so a buy-back can take the total negative.
+  //
+  // NOTE: that used to be justified by "same as a negative multiplier can" —
+  // which no longer holds. The multiplicative scheme cannot produce a negative
+  // multiplier, so going into debt for a revive is now the ONLY way a run ends
+  // below zero. Left as-is because it is a real cost honestly paid, but it is a
+  // design call rather than a consequence, and worth revisiting.
   function settle(option) {
     run.earned -= option.total;
     run.zennySpent += option.total;
@@ -314,7 +339,7 @@
     run.active && !run.finished && !!run.combo &&
     isAlive(run.combo.weapon, run.combo.style) && legalCombos().length > 1;
 
-  const rerollCost = (used) => cfg.rerollPrice * (Math.max(0, used) + 1);
+  const rerollCost = (used) => stepCost(cfg.rerollPrice, used);
 
   function doReroll(option) {
     if (!canReroll()) return;
@@ -466,7 +491,7 @@
     if (d && d.cfg) {
       cfg = Object.assign({}, DEFAULT_CFG);
       Object.keys(DEFAULT_CFG).forEach(k => { if (k in d.cfg) cfg[k] = d.cfg[k]; });
-      if (!KILL_WEIGHT[cfg.kill]) cfg.kill = DEFAULT_CFG.kill;
+      if (!LEVERS.kill[cfg.kill]) cfg.kill = DEFAULT_CFG.kill;
       migrateLoadout(cfg, d.cfg);
     }
     if (d && d.run) {
@@ -516,6 +541,32 @@
     const w = label.querySelector(".w");
     if (w) w.remove();
     return label.textContent.trim();
+  }
+
+  // Every badge is painted from LEVERS, so the sidebar cannot drift from the
+  // table the way hardcoded numbers did. Shirt sizes rather than values: the
+  // same vocabulary as Attack Up (S/M/L), and unlike a number a letter is free
+  // to report the option's MEASURED effect rather than the arithmetic behind it.
+  function paintBadges() {
+    const L = LEVERS;
+    const set = (id, effect, suffix) => {
+      const el = $(id);
+      if (!el) return;
+      const w = el.closest("label") && el.closest("label").querySelector(".w");
+      if (w) w.textContent = badge(effect) + (suffix || "");
+    };
+    Object.entries(CFG_RADIOS.kill).forEach(([v, id]) => set(id, L.kill[v][1]));
+    Object.entries(CFG_RADIOS.stylesPerWeapon).forEach(([v, id]) => set(id, L.cap[v][1]));
+    Object.entries(CFG_RADIOS.assign).forEach(([v, id]) => set(id, L.assign[v][1]));
+    Object.entries(CFG_RADIOS.loadout).forEach(([v, id]) => set(id, L.loadout[v][1]));
+    Object.entries(CFG_RADIOS.reviveCap).forEach(([v, id]) => set(id, L.reviveCap[v][1]));
+    Object.entries(CFG_RADIOS.revivePrice).forEach(([v, id]) => set(id, L.revivePrice[v][1]));
+    Object.entries(CFG_RADIOS.rerollPrice).forEach(([v, id]) => set(id, L.rerollPrice[v][1]));
+    // Checkboxes read as "what happens if you change this", so they say so.
+    set("l_quest", L.quest.off[1], " if off");
+    set("r_enabled", L.reviveOn[1], " if on");
+    set("r_once", L.reviveOnce[1]);
+    set("rr_enabled", L.rerollOn[1], " if on");
   }
 
   function writeCfgToDom() {
@@ -664,6 +715,7 @@
     run.active = true;
     run.startedAt = Date.now();
     run.mult = multiplier(cfg);
+    run.diff = difficulty(cfg);      // the rating, snapshotted alongside it
     run.maxLosses = maxLosses();
     run.cfg = Object.assign({}, cfg);
     rebuildDeadKeys();
@@ -775,8 +827,7 @@
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
       `<span class="stat">Carts <b>${run.carts}</b></span>` +
       `<span class="stat earned">Earned <b>${zenny(run.earned)}</b></span>` +
-      `<span class="stat${run.mult < 0 ? " dead" : ""}">` +
-      `${run.mult < 0 ? "Penalty" : "Bonus"} <b>${fmtMult(run.mult)}</b></span>` +
+      `<span class="stat">Difficulty <b>${ratingFor(run.diff || difficulty(cfg))}</b></span>` +
       (cfg.reviveEnabled
         ? `<span class="stat">Next revive <b>${zenny(reviveCost(run.revives))}</b></span>` : "");
     if (cfg.kill === "streak") html += `<span class="stat">Streak <b>${run.failStreak}</b></span>`;
@@ -924,7 +975,7 @@
     // built it comes next, then how the run went, then what it cost you.
     // "Lost" is absent deliberately — Survived carries the same information.
     const scoring = [
-      [fmtMult(run.mult), "Difficulty"],
+      [ratingFor(run.diff != null ? run.diff : difficulty(cfg)), "Difficulty"],
       [zennyShort(run.earned), "Earned", "", zenny(run.earned)],
       [(runMax() - run.deaths.length) + "/" + runMax(), "Survived", "",
         Math.round(survivorRate() * 100) + "% of the run's combos still standing"],
@@ -1007,13 +1058,12 @@
     $("startBtn").textContent = run.deaths.length || run.active ? "Start New Run" : "Start Run";
 
     // Live while you're tuning; frozen to the run's snapshot once it starts.
-    // May legitimately be zero or negative, so format it unconditionally.
-    const m = cfgLocked() ? run.mult : multiplier(cfg);
-    $("multValue").textContent = fmtMult(m);
-    // A soft enough run nets out below zero, at which point it stops being a
-    // bonus and starts costing you.
-    $("multLabel").textContent = m < 0 ? "Difficulty Penalty" : "Difficulty Bonus";
-    $("multBox").classList.toggle("negative", m < 0);
+    // The rating, not the number behind it — see LEVERS for why the number was
+    // never something a player could act on.
+    const d = cfgLocked() ? (run.diff != null ? run.diff : difficulty(cfg)) : difficulty(cfg);
+    $("multValue").textContent = ratingFor(d);
+    $("multLabel").textContent = "Difficulty";
+    $("multBox").classList.toggle("negative", false);
     $("multBox").classList.toggle("locked", cfgLocked());
 
     // Counts are on the labels now; this only explains the one number that
@@ -1337,6 +1387,7 @@
   });
 
   // ── Init ─────────────────────────────────────────────────────────────────
+  paintBadges();
   buildSwatches();
   const DEFAULT_THEME = "#07143C";            // Nightcloak Malfestio
   let savedTheme = DEFAULT_THEME;

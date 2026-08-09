@@ -44,27 +44,27 @@ Everything is a lever — set the run as gentle or as brutal as you like.
 explicitly, and everything below quest-failed is already covered by it, so there's
 nothing to gain from stacking them.
 
-| Condition | | Difficulty |
+| Condition | | |
 |---|---|---|
-| Carts and quest failures | Either one takes the loadout | ×3 |
-| Cart | Carts only — you can lose a quest and keep the combo | ×2 |
-| Quest failed | Failures only — you can cart your way to a clear for free | ×1 |
-| Two quest failures in a row | The first is forgiven; a clear resets the streak | ×0.75 |
-| Same quest failed twice | Cumulative, not necessarily consecutive | ×0.5 |
+| Carts and quest failures | Either one takes the loadout | the baseline |
+| Cart | Carts only — you can lose a quest and keep the combo | −M |
+| Quest failed | Failures only — you can cart your way to a clear for free | −L |
+| Two quest failures in a row | The first is forgiven; a clear resets the streak | −XL |
+| Same quest failed twice | Cumulative, not necessarily consecutive | −XL |
 
 **Styles per weapon** — how many styles a weapon may lose before the whole weapon
 retires and its surviving styles leave the pool. This is the only lever that *scales*
 your whole total rather than nudging it, because it decides how much of the board you
 ever get to spend.
 
-| Styles | Loadouts in the run | Difficulty |
+| Styles | Loadouts in the run | |
 |---|---|---|
-| 1 | 15 | ×3.5 |
-| 2 | 30 | ×1.75 |
-| 3 *(default)* | 45 | ×1 |
-| 4 | 60 | ×0.75 |
-| 5 | 75 | ×0.6 |
-| 6 | 90 | ×0.5 |
+| 1 | 15 | +XL |
+| 2 | 30 | +L |
+| 3 *(default)* | 45 | the baseline |
+| 4 | 60 | −M |
+| 5 | 75 | −M |
+| 6 | 90 | −L |
 
 **Other levers:**
 
@@ -79,17 +79,6 @@ ever get to spend.
 - **Reroll** — refuse a combo you were handed and draw another; the refused one goes
   back in the pool
 
-### Buying a loadout back
-
-With revives on, click a struck-through cell on the board. The cost climbs by the
-price you set every time — at the 10,000z default the first buy-back is 10,000z, the
-second 20,000z — and it comes straight out of your earned zenny, so rescuing a run
-costs you score. A per-run cap bounds how far that can go.
-
-Holding until a combo falls, and the quest lock, are the baseline the difficulty scale
-is measured against. Loosening either is a discount; cycling on every clear is the one
-option that tightens it.
-
 **Arena quests aren't part of a run.** They hand you a fixed set of five weapons, so
 there's no combo of yours to put at stake. They aren't listed.
 
@@ -103,28 +92,43 @@ Clearing a quest earns its **real in-game zenny reward**, pulled from the game's
 quest data — 300z for `Find the Ferns`, 78,600z for `Path of the Hunter`. Points only
 go up; a failure already costs you a loadout.
 
-That's then scaled by how hard you set the run. Your kill condition sets the base (see
-the table above), every other lever adds to or subtracts from it, and the styles cap
-scales the lot:
+That total is then scaled by how hard you set the run. **Every lever is a ratio and
+they multiply**, and the reference run — carts and quest failures, 3 styles, hold until
+it falls, quest lock on, no revives or rerolls — is exactly 1.00, so it pays each
+quest's real zenny untouched.
 
-| Lever | |
-|---|---|
-| You pick your own loadout | −0.25 |
-| Hold until you clear | **+0.15** |
-| Swap whenever you like | −0.25 |
-| Quest lock off | −0.25 |
-| Revives allowed | −0.25 |
-| …but only once per combo | +0.10 back |
-| Rerolls allowed | −0.20 |
+**You never see the number.** Each option carries a shirt size instead — the same
+vocabulary as Attack Up (S/M/L) — and the run as a whole gets a rating:
 
-So the harshest run with everything at baseline is ×3.00; unlocking both locks brings
-it to ×2.50, and dropping to one style per weapon takes ×3.00 up to ×10.50. The total
-is shown while you set up and locks in when you press Start Run. It can go negative —
-stack enough discounts on a gentle kill condition and the run scores as a penalty.
+| Rating | | |
+|---|---|---|
+| Very Hard | 1 or 2 styles per weapon | |
+| Hard | **the defaults** | |
+| Normal | | |
+| Easy | | |
+| Very Easy | | |
+
+That's deliberate rather than coy. A displayed multiplier has to be arithmetic you can
+add up, which forces it to report each lever's *nominal weight* — and the nominal
+weight is not what the lever does to your score, because a harder setting also makes
+the run shorter and so banks fewer clears. One style per weapon multiplies earnings by
+4.48 and finishes at 1.60× the reference; showing either number alone would be a lie.
+A letter is free to report the measured effect, so it does.
 
 **Finishing with combos in hand pays again.** Whatever share of your allowance you
 still hold at the end is paid as a bonus on your earnings — keep 5 of 15 and it scores
-like keeping 15 of 45. It's a bonus only, never applied to a negative total.
+like keeping 15 of 45. Keep everything and your score doubles.
+
+### Buying a loadout back
+
+With revives on, click a struck-through cell on the board. **The cost doubles every
+time and scales with your difficulty**, so at the 10,000z setting on a ×2 run the
+buy-backs run 20,000z, 40,000z, 80,000z. It comes straight out of your earned zenny.
+
+Both halves matter. Flat pricing never stops anyone — at one style per weapon a player
+could buy twenty extra combos for pocket change and double their run — and a flat price
+gets relatively cheaper exactly where earnings are highest. Doubling makes you stop of
+your own accord; scaling keeps a buy-back the same share of a hunt at any difficulty.
 
 ## Development
 
