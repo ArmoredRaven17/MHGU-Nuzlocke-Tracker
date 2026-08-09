@@ -847,7 +847,8 @@
       html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
               `<img src="${weaponIcon(w)}" alt="">${escapeHtml(WEAPON_ABBREV[w] || w)}</div>`;
       STYLES.forEach(s => {
-        html += `<div class="${cellClass(w, s)}"${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}"></div>`;
+        html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]}"` +
+                `${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}"></div>`;
       });
     });
     html += "</div>";
@@ -858,7 +859,8 @@
     html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
             `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">Prowler</div>`;
     BIAS_NAMES.forEach(b => {
-      html += `<div class="${cellClass("Prowler", b)}"${cellTitle("Prowler", b)} data-w="Prowler" data-s="${escapeHtml(b)}"></div>`;
+      html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler}"` +
+              `${cellTitle("Prowler", b)} data-w="Prowler" data-s="${escapeHtml(b)}"></div>`;
     });
     html += "</div>";
 
