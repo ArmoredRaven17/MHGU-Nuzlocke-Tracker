@@ -1357,11 +1357,18 @@
   }
 
   // ── Wiring ───────────────────────────────────────────────────────────────
-  // Generic accordion — any .panel-head toggles its own panel.
+  // One panel open at a time. The bodies are long enough that two at once pushes
+  // the rest off the bottom of the sidebar, so opening one shuts the others.
+  // Clicking an open panel still closes it, leaving them all shut.
   document.querySelectorAll(".panel-head").forEach(h => {
     h.addEventListener("click", () => {
       const p = h.parentElement;
-      p.dataset.open = p.dataset.open === "true" ? "false" : "true";
+      const opening = p.dataset.open !== "true";
+      document.querySelectorAll(".panel").forEach(o => { o.dataset.open = "false"; });
+      p.dataset.open = opening ? "true" : "false";
+      // Bring the header into view, or opening a panel low in the sidebar can
+      // leave you looking at the middle of it.
+      if (opening) h.scrollIntoView({ block: "nearest" });
     });
   });
 
