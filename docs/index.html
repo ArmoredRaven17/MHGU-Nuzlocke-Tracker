@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=23">
+<link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body>
 <div id="app">
@@ -79,7 +79,7 @@
           <label class="chk"><input type="radio" name="ld" id="ld_cycle">Until you clear &mdash; a failure keeps it<span class="w"></span></label>
           <label class="chk"><input type="radio" name="ld" id="ld_free">Swap whenever you like<span class="w"></span></label>
           <p class="hint" style="margin-top:8px">Locks &mdash; base restrictions you can remove.</p>
-          <label class="chk"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; must do a retry when you fail a quest<span class="w"></span></label>
+          <label class="chk applies-off"><input type="checkbox" id="l_quest" checked>Quest lock &mdash; must do a retry when you fail a quest<span class="w"></span></label>
         </div>
       </section>
 
@@ -293,6 +293,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=61"></script>
+<script src="app.js?v=62"></script>
 </body>
 </html>

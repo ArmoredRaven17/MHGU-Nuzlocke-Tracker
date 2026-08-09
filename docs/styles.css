@@ -105,9 +105,15 @@ body{
 
 .sub-note{margin:2px 0 6px 24px;font-size:11px;opacity:.6;font-style:italic}
 
-/* Difficulty weight badge on a rule */
+/* Difficulty badge on a rule. It lights up exactly when the modifier is being
+   applied, so the highlight and the label always agree. */
 .chk .w{margin-left:auto;padding-left:8px;font-size:11px;opacity:.6;white-space:nowrap}
 .chk:has(input:checked) .w{opacity:1;color:var(--accent-hover);font-weight:600}
+/* The exception: a rule that is ON by default, where UNTICKING is what costs
+   you. Highlighting on tick there would light the badge precisely when its
+   modifier is not in play. */
+.chk.applies-off:has(input:checked) .w{opacity:.6;color:inherit;font-weight:400}
+.chk.applies-off:has(input:not(:checked)) .w{opacity:1;color:var(--accent-hover);font-weight:600}
 
 .hint{color:var(--text-dim);opacity:.75;font-size:12px;margin:4px 0;line-height:1.45}
 .row{display:flex;align-items:center}
