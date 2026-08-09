@@ -24,6 +24,21 @@
     "Heavy Bowgun":"#f8899c","Bow":"#55edc4","Prowler":"#c29930",
   };
 
+  // Solid weapon blocks need their own text colour: the palette runs from
+  // near-white (Insect Glaive) to strong orange (Charge Blade), so neither black
+  // nor white works for all fifteen. Picks whichever wins on WCAG contrast, and
+  // reports it so the icon can be flipped to match.
+  const relLum = (hex) => {
+    const v = [1, 3, 5].map(i => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  };
+  // Contrast against white is (1.05)/(L+0.05); against black it is (L+0.05)/0.05.
+  const onLight = (hex) => relLum(hex) > 0.179;   // black text wins above this
+  const inkFor = (hex) => onLight(hex) ? "#101010" : "#ffffff";
+
   const STYLES = ["Guild","Striker","Adept","Aerial","Valor","Alchemy"];
 
   const WEAPON_ABBREV = {
@@ -844,7 +859,9 @@
     html += '<div class="bh corner"></div>';
     STYLES.forEach(s => { html += `<div class="bh">${escapeHtml(s)}</div>`; });
     WEAPONS.forEach(w => {
-      html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
+      const wc = WEAPON_COLORS[w];
+      html += `<div class="brow-label${onLight(wc) ? " on-light" : ""}"` +
+              ` style="background:${wc};color:${inkFor(wc)}">` +
               `<img src="${weaponIcon(w)}" alt="">${escapeHtml(WEAPON_ABBREV[w] || w)}</div>`;
       STYLES.forEach(s => {
         html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]}"` +
@@ -856,7 +873,9 @@
     html += '<div class="board-grid prowler">';
     html += '<div class="bh corner"></div>';
     BIAS_NAMES.forEach(b => { html += `<div class="bh">${escapeHtml(b)}</div>`; });
-    html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
+    const pwc = WEAPON_COLORS.Prowler;
+    html += `<div class="brow-label${onLight(pwc) ? " on-light" : ""}"` +
+            ` style="background:${pwc};color:${inkFor(pwc)}">` +
             `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">Prowler</div>`;
     BIAS_NAMES.forEach(b => {
       html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler}"` +

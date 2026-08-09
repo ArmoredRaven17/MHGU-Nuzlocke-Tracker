@@ -219,9 +219,15 @@ body{
 .bh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;
   display:flex;align-items:center;justify-content:center;padding:2px;text-align:center}
 .bh.corner{opacity:0}
-.brow-label{display:flex;align-items:center;gap:6px;padding:0 8px 0 2px;
-  font-size:12px;font-weight:600;white-space:nowrap}
+/* Solid weapon block. Text colour and .on-light are chosen per weapon in
+   renderBoard by WCAG contrast — the palette spans near-white to strong orange,
+   so a single ink colour cannot serve all fifteen. */
+.brow-label{display:flex;align-items:center;gap:6px;padding:2px 8px;
+  font-size:12px;font-weight:700;white-space:nowrap;border-radius:5px;
+  margin-right:4px}
 .brow-label img{width:20px;height:20px;object-fit:contain}
+/* The weapon icons are light-tinted, so on a pale block they'd vanish into it. */
+.brow-label.on-light img{filter:brightness(0);opacity:.8}
 /* Each row is tinted with its weapon's colour — the same one already used on the
    row label — so a row is identifiable without reading across to the label.
    --wc is set per cell in renderBoard. Kept low: the tint is for orientation,
