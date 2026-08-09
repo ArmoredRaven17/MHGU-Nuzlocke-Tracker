@@ -151,10 +151,6 @@ body{
   border-radius:8px;background:var(--card);font-size:13px}
 .stat b{font-size:15px}
 .stat.dead b{color:var(--dead)}
-.lock-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;
-  border:1px solid var(--accent);border-radius:20px;font-size:12px;background:#ffffff0d}
-.lock-chip.fallen{border-color:var(--fallen-line);background:var(--fallen-fill);
-  color:var(--fallen-text)}
 
 /* ── Hunt bar ───────────────────────────────────────────────────────── */
 .hunt-bar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;

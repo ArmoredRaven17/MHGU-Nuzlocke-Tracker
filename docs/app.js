@@ -889,19 +889,12 @@
         ? `<span class="stat">Next revive <b>${zenny(reviveCost(run.revives))}</b></span>` : "");
     if (cfg.kill === "streak") html += `<span class="stat">Streak <b>${run.failStreak}</b></span>`;
 
-    if (cfg.loadout !== "free" && run.combo) {
-      // A cart can kill the combo without ending the attempt, so the held
-      // loadout may already be dead — say so rather than "until it falls".
-      const dead = !isAlive(run.combo.weapon, run.combo.style);
-      html += `<span class="lock-chip${dead ? " fallen" : ""}">${LOCK_ICON} ` +
-        `${escapeHtml(WEAPON_ABBREV[run.combo.weapon] || run.combo.weapon)} + ` +
-        `${escapeHtml(run.combo.style)} &mdash; ` +
-        (dead ? "fallen; finish the hunt to move on"
-              : cfg.loadout === "cycle" ? "until you clear" : "until it falls") + `</span>`;
-    }
-    if (run.lockQuest) {
-      html += `<span class="lock-chip">${LOCK_ICON} ${escapeHtml(run.lockQuest.n)} &mdash; owed a retry</span>`;
-    }
+    // No lock chips here. Both were saying something already said closer to where
+    // it matters: the quest card carries the lock icon and "you owe this quest a
+    // retry" (and hides the search box), and a held loadout is enforced by the
+    // roll/pick controls themselves. The one case the combo chip covered alone —
+    // a cart killing the combo mid-attempt — is in the outcome hint, which sits
+    // beside the buttons you press next.
     strip.innerHTML = html;
   }
 
