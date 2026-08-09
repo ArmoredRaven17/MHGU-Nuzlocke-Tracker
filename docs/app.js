@@ -1123,6 +1123,13 @@
     // there greyed.
     $("reviveOpts").classList.toggle("hidden", !cfg.reviveEnabled);
     $("rerollOpts").classList.toggle("hidden", !cfg.rerollEnabled);
+    // ...and say so on the panel header, because both default to collapsed and
+    // a shut panel otherwise gives no clue which way its switch is set.
+    [["reviveState", cfg.reviveEnabled], ["rerollState", cfg.rerollEnabled]]
+      .forEach(([id, isOn]) => {
+        $(id).textContent = isOn ? "On" : "Off";
+        $(id).classList.toggle("on", !!isOn);
+      });
     $("multBox").classList.toggle("negative", false);
     $("multBox").classList.toggle("locked", cfgLocked());
 

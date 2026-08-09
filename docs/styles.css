@@ -85,6 +85,12 @@ body{
   background-size:auto 100%;background-position:left center;background-repeat:repeat;
 }
 .panel-head:hover{background-color:#ffffff0d}
+/* State on a collapsed panel. A shut panel used to look identical whether the
+   thing inside it was on or off, so "collapsed" read as "disabled" — which is
+   exactly how someone ends up running with rerolls on by accident. */
+.panel-state{margin-left:auto;margin-right:10px;font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.06em;opacity:.45}
+.panel-state.on{opacity:1;color:var(--accent-hover)}
 .chev{transition:transform .15s;font-size:20px;font-weight:700;color:transparent}
 .panel[data-open="true"] .chev{transform:rotate(180deg)}
 .panel-body{display:none;padding:6px 12px 12px;flex-direction:column;gap:4px;

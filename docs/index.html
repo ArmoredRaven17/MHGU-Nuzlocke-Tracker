@@ -6,7 +6,7 @@
 <title>MHGU Nuzlocke Tracker</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=28">
+<link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 <div id="app">
@@ -88,7 +88,7 @@
       </section>
 
       <section class="panel" data-open="false">
-        <button class="panel-head">Revive <span class="chev">&#9662;</span></button>
+        <button class="panel-head">Revive <span class="panel-state" id="reviveState"></span><span class="chev">&#9662;</span></button>
         <div class="panel-body">
           <p class="hint">You may pay to revive a fallen Weapon/Style combo to make
             things easier, but it comes with a penalty that can be reduced.</p>
@@ -114,7 +114,7 @@
       </section>
 
       <section class="panel" data-open="false">
-        <button class="panel-head">Reroll <span class="chev">&#9662;</span></button>
+        <button class="panel-head">Reroll <span class="panel-state" id="rerollState"></span><span class="chev">&#9662;</span></button>
         <div class="panel-body">
           <p class="hint">You may pay to refuse a Weapon/Style combo you were handed and
             draw another. The refused combo goes back in the pool.</p>
@@ -334,6 +334,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=65"></script>
+<script src="app.js?v=66"></script>
 </body>
 </html>
