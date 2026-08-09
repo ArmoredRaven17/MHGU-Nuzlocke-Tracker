@@ -157,6 +157,13 @@ body{
   padding:12px;margin-bottom:14px;border:1px solid var(--line);
   border-radius:8px;background:var(--card)}
 .hunt-loadout,.hunt-quest,.hunt-outcome{display:flex;flex-direction:column;gap:6px}
+/* Loadout and result stack in one column, quest beside them: the two things you
+   act on are the combo and then the outcome for it, so they belong together. */
+.hunt-col{display:flex;flex-direction:column;gap:12px}
+/* The hint appears and disappears as the state changes. With the outcome now in
+   the taller column it drives the whole bar's height, so it holds one line's
+   worth of space whether or not it has anything to say. */
+#outcomeHint{min-height:17px;margin:2px 0 0}
 .hunt-quest{flex:1;min-width:240px;position:relative}
 .hl-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.6}
 .hl-value{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;min-height:26px}
@@ -179,13 +186,25 @@ body{
   text-overflow:ellipsis;white-space:nowrap}
 .quest-results .qr-worth{font-size:11px;color:var(--accent-hover);white-space:nowrap}
 .quest-results .qr-none{opacity:.55;padding:6px 10px;margin:0;font-size:12px}
-.quest-chosen{font-size:14px;font-weight:600;padding:4px 0}
+/* Sized and bordered up front so nothing moves later: the border and padding are
+   always present and merely transparent until the lock engages, and the box
+   holds two lines of title whether or not a quest has been named. Between them
+   they cover the two things that used to shift the hunt bar — naming a quest,
+   and failing one. */
+.quest-chosen{font-size:14px;font-weight:600;border:1px solid transparent;
+  border-radius:6px;padding:6px 10px;min-height:50px;
+  display:flex;align-items:center;flex-wrap:wrap}
+.quest-chosen.empty{visibility:hidden}
+#questSearch:disabled{opacity:.5;cursor:not-allowed}
 .quest-chosen .qc-arena{color:var(--accent-hover);font-size:11px;font-weight:400}
-.quest-chosen.locked{border:1px solid var(--accent);border-radius:6px;
-  padding:6px 10px;background:#ffffff0d}
+.quest-chosen.locked{border-color:var(--accent);background:#ffffff0d}
 /* Training Codex, used wherever the run has something locked */
 .lock-icon{width:16px;height:16px;object-fit:contain;vertical-align:-3px;flex-shrink:0}
-.quest-chosen .qc-note{display:block;font-size:11px;font-weight:400;opacity:.6;margin-top:2px}
+/* Inline, not block — a block note added a line on activation. Hidden rather
+   than removed when the lock is off, so the space stays reserved either way. */
+.quest-chosen .qc-note{font-size:11px;font-weight:400;opacity:.85;
+  color:var(--accent-hover);margin-left:8px;white-space:nowrap}
+.quest-chosen .qc-note.off{visibility:hidden}
 
 /* Difficulty multiplier */
 .mult-box{display:flex;flex-direction:column;gap:2px;
@@ -219,41 +238,67 @@ body{
 .bh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;
   display:flex;align-items:center;justify-content:center;padding:2px;text-align:center}
 .bh.corner{opacity:0}
-/* Solid weapon block. Text colour and .on-light are chosen per weapon in
-   renderBoard by WCAG contrast — the palette spans near-white to strong orange,
-   so a single ink colour cannot serve all fifteen. */
-.brow-label{display:flex;align-items:center;gap:6px;padding:2px 8px;
-  font-size:12px;font-weight:700;white-space:nowrap;border-radius:5px;
-  margin-right:4px}
-.brow-label img{width:20px;height:20px;object-fit:contain}
-/* The weapon icons are light-tinted, so on a pale block they'd vanish into it. */
-.brow-label.on-light img{filter:brightness(0);opacity:.8}
+/* Thin dark outline so the weapon colour reads at any lightness — Insect Glaive
+   is near white and Switch Axe grey, both of which wash out against the board
+   without it. Four-way text-shadow, the same trick .btn.accent already uses. */
+.brow-label{display:flex;align-items:center;gap:6px;padding:0 8px 0 2px;
+  font-size:12px;font-weight:700;white-space:nowrap;
+  text-shadow:-1px 0 rgba(0,0,0,.85),1px 0 rgba(0,0,0,.85),
+              0 -1px rgba(0,0,0,.85),0 1px rgba(0,0,0,.85)}
+.brow-label img{width:calc(var(--cell-h, 34px) * .6);
+  height:calc(var(--cell-h, 34px) * .6);object-fit:contain;max-width:20px;max-height:20px}
+/* Row height scales with the window rather than sitting at a fixed 34px: fifteen
+   rows plus the hunt bar and status strip overflowed a 720px-tall screen by
+   171px, and the board is the thing you are meant to be able to see at a glance.
+   Tall screens still get the full 34px — reached around 1250px — and short ones
+   shrink to fit instead of scrolling. Everything inside a row is sized off the
+   same variable, so the bone and weapon icons come down with it rather than
+   setting a floor. Retuned when the result buttons moved under the loadout,
+   which made the hunt bar 41px taller. */
+.board{--cell-h:clamp(19px, 2.72vh, 34px)}
 /* Each row is tinted with its weapon's colour — the same one already used on the
    row label — so a row is identifiable without reading across to the label.
    --wc is set per cell in renderBoard. Kept low: the tint is for orientation,
    and it must not compete with the states drawn on top of it. */
+/* A live cell is its weapon's colour, solid. --wc is set per cell in
+   renderBoard from the same palette the row labels use. */
 .cell{border:1px solid var(--line);border-radius:5px;
-  background:color-mix(in srgb, var(--wc, transparent) 20%, var(--card));
-  min-height:34px;display:flex;align-items:center;justify-content:center;
+  background:var(--wc, var(--card));
+  min-height:var(--cell-h, 34px);display:flex;align-items:center;justify-content:center;
   font-size:11px;opacity:.95;transition:background .12s,border-color .12s}
-.cell.alive{cursor:default;border-color:color-mix(in srgb, var(--wc, transparent) 35%, var(--line))}
+.cell.alive{cursor:default;border-color:rgba(0,0,0,.35)}
 /* Board cells are empty divs — the weapon and style come from their position in
-   the grid — so text-decoration:line-through had nothing to strike and the text
-   colour coloured nothing. The strike is drawn instead.
-   A fallen cell keeps its row tint and strikes in the row's own colour, so the
-   weapon stays identifiable after it is lost. That puts the whole burden of
-   "this is gone" on the line, so it is drawn at full strength and thicker than
-   a text strike would be. The muted --fallen-fill sits underneath to take the
-   tint down without draining it. */
-.cell.dead{background:color-mix(in srgb, var(--wc, transparent) 12%, var(--fallen-fill));
-  border-color:color-mix(in srgb, var(--wc, transparent) 30%, var(--fallen-line));
-  opacity:.85;position:relative}
-.cell.dead::after{content:"";position:absolute;left:3px;right:3px;top:calc(50% - 1.5px);
-  height:3px;border-radius:2px;background:var(--wc, var(--dead));
-  box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+   the grid — so a fallen cell has to be marked by the box itself.
+   Fallen is drained rather than darkened, and carries a bone. Retired is the
+   darkened treatment with nothing on it. The pairing is deliberate: the two
+   states differ by brightness AND by whether anything sits in the slot, so
+   neither reading depends on the other. */
+.cell.dead{background-color:color-mix(in srgb, var(--wc, transparent) 13%, transparent);
+  border-style:dotted;border-color:rgba(255,255,255,.13);position:relative}
+/* The bone takes the weapon's colour without losing its linework.
+   The asset is a black-outlined white bone — 1124 black pixels to 677 white —
+   so masking it flattened every opaque pixel to one colour and the outlines
+   went with them. Instead the icon is multiplied over a solid --wc: white x
+   colour is the colour, black x colour is black, so the body tints and the
+   lines stay. The mask is still there, but only to clip the colour layer to the
+   bone's silhouette rather than leaving an 18px square behind it.
+   The cell's fade lives in its background colours rather than in opacity, which
+   would have taken the bone down with it: it is the only thing marking the cell
+   lost. */
+.cell.dead::after{content:"";position:absolute;left:50%;top:50%;
+  width:calc(var(--cell-h, 34px) * .62);height:calc(var(--cell-h, 34px) * .62);
+  transform:translate(-50%,-50%);
+  background-image:url('assets/ItemIcons/MH4G-Bone_Icon_White.webp'),
+                   linear-gradient(var(--wc, #ffffff), var(--wc, #ffffff));
+  background-size:contain;background-repeat:no-repeat;background-position:center;
+  background-blend-mode:multiply;
+  -webkit-mask:url('assets/ItemIcons/MH4G-Bone_Icon_White.webp') center / contain no-repeat;
+  mask:url('assets/ItemIcons/MH4G-Bone_Icon_White.webp') center / contain no-repeat;}
 .cell.revived{border-color:#c9a227;background:#c9a2271a}
-/* Alive, but its weapon spent its style allowance — out of the pool, not lost */
-.cell.retired{opacity:.22;border-style:dotted}
+/* Alive, but its weapon spent its style allowance — out of the pool, not lost.
+   Same hue, mixed down towards black: dimmed out of play rather than marked. */
+.cell.retired{background:color-mix(in srgb, var(--wc, transparent) 28%, #05070d);
+  border-color:rgba(0,0,0,.5);opacity:1}
 /* A fallen combo you can still buy back */
 .cell.dead.revivable{cursor:pointer;opacity:.65;border-style:dashed;border-color:#c9a227}
 .cell.dead.revivable:hover{opacity:1;background:#c9a2272e;
@@ -275,9 +320,20 @@ body{
 .revive-opt.pay-zenny:hover,.revive-opt.pay-zenny:focus-visible{border-color:var(--dead);background:#ff2a2a14}
 .revive-opt.pay-zenny .ro-total{color:var(--dead)}
 .ro-note{font-size:11px;opacity:.6}
-.cell.current{border-color:var(--accent-hover);background:#ffffff26;
-  box-shadow:0 0 0 1px var(--accent-hover) inset;font-weight:700}
-.board-legend{display:flex;gap:16px;font-size:11px;opacity:.6;flex-wrap:wrap}
+/* Bright yellow marks the combo you're on, and it glows.
+   The glow does the work a flat ring couldn't: yellow has no contrast against
+   this palette — every one of the fifteen weapon colours sits under 3:1 against
+   it, Long Sword at 1.09 — so brightness alone cannot separate them. A halo
+   spilling past the cell edge is read as light rather than as colour, which no
+   neighbouring cell can imitate whatever its hue.
+   The cell keeps its ordinary border — the glow is the whole marker — and
+   z-index lifts it over its neighbours instead of under them. */
+.cell.current{position:relative;z-index:2;
+  box-shadow:0 0 14px 4px rgba(255,232,20,.6),
+             0 0 5px 1px rgba(255,232,20,.95);
+  font-weight:700}
+.board-legend{display:flex;gap:16px;font-size:11px;opacity:.6;flex-wrap:wrap;
+  margin-bottom:10px}
 
 /* ── Placeholder / summary ──────────────────────────────────────────── */
 

@@ -24,21 +24,6 @@
     "Heavy Bowgun":"#f8899c","Bow":"#55edc4","Prowler":"#c29930",
   };
 
-  // Solid weapon blocks need their own text colour: the palette runs from
-  // near-white (Insect Glaive) to strong orange (Charge Blade), so neither black
-  // nor white works for all fifteen. Picks whichever wins on WCAG contrast, and
-  // reports it so the icon can be flipped to match.
-  const relLum = (hex) => {
-    const v = [1, 3, 5].map(i => {
-      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
-      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
-  };
-  // Contrast against white is (1.05)/(L+0.05); against black it is (L+0.05)/0.05.
-  const onLight = (hex) => relLum(hex) > 0.179;   // black text wins above this
-  const inkFor = (hex) => onLight(hex) ? "#101010" : "#ffffff";
-
   const STYLES = ["Guild","Striker","Adept","Aerial","Valor","Alchemy"];
 
   const WEAPON_ABBREV = {
@@ -799,6 +784,10 @@
   let searchResults = [];
   function renderQuestResults(term) {
     const box = $("questResults");
+    // The input is disabled while a retry is owed, so this cannot normally be
+    // reached — but the guard belongs on the list itself rather than on the one
+    // control that happens to open it.
+    if (run.lockQuest) { box.classList.add("hidden"); return; }
     const t = term.trim().toLowerCase();
     if (!t) { box.classList.add("hidden"); return; }
     // Cleared quests are gone for the run, so they are absent rather than
@@ -855,13 +844,23 @@
     const cellTitle = (w, s) => canRevive(w, s)
       ? ` title="Buy back for ${zenny(reviveCost(run.revives))}"` : "";
 
-    let html = '<div class="board-grid">';
+    // Legend first: below the board it sat under 92 cells and nobody reached it.
+    // It explains how to read the grid, so it has to come before the grid.
+    // Kept in step with the cell styles. Fallen and retired are the pair worth
+    // spelling out — one you lost, the other you never lost, its weapon having
+    // spent its style allowance and taken the survivors out of the pool with it.
+    let html = '<div class="board-legend">' +
+      '<span>Full colour &mdash; available</span>' +
+      '<span>Bone &mdash; fallen, gone for the run</span>' +
+      '<span>Darkened &mdash; weapon retired; these were never lost, ' +
+        'just out of the pool</span>' +
+      '<span>Outlined &mdash; the combo you are on</span></div>';
+
+    html += '<div class="board-grid">';
     html += '<div class="bh corner"></div>';
     STYLES.forEach(s => { html += `<div class="bh">${escapeHtml(s)}</div>`; });
     WEAPONS.forEach(w => {
-      const wc = WEAPON_COLORS[w];
-      html += `<div class="brow-label${onLight(wc) ? " on-light" : ""}"` +
-              ` style="background:${wc};color:${inkFor(wc)}">` +
+      html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
               `<img src="${weaponIcon(w)}" alt="">${escapeHtml(WEAPON_ABBREV[w] || w)}</div>`;
       STYLES.forEach(s => {
         html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]}"` +
@@ -873,9 +872,7 @@
     html += '<div class="board-grid prowler">';
     html += '<div class="bh corner"></div>';
     BIAS_NAMES.forEach(b => { html += `<div class="bh">${escapeHtml(b)}</div>`; });
-    const pwc = WEAPON_COLORS.Prowler;
-    html += `<div class="brow-label${onLight(pwc) ? " on-light" : ""}"` +
-            ` style="background:${pwc};color:${inkFor(pwc)}">` +
+    html += `<div class="brow-label" style="color:${WEAPON_COLORS.Prowler}">` +
             `<img src="${prowlerIcon(BIAS_FILE.Charisma)}" alt="">Prowler</div>`;
     BIAS_NAMES.forEach(b => {
       html += `<div class="${cellClass("Prowler", b)}" style="--wc:${WEAPON_COLORS.Prowler}"` +
@@ -883,10 +880,6 @@
     });
     html += "</div>";
 
-    html += '<div class="board-legend"><span>Solid = available</span>' +
-            '<span style="color:var(--dead)">Struck through = fallen</span>' +
-            '<span>Faded = weapon retired, allowance spent</span>' +
-            '<span>Outlined = current combo</span></div>';
     board.innerHTML = html;
   }
 
@@ -943,18 +936,25 @@
       const heldDead = held && !isAlive(held.weapon, held.style);
       const weapons = legalWeapons();
       if (heldDead && !weapons.includes(held.weapon)) weapons.unshift(held.weapon);
-      const curW = held && weapons.includes(held.weapon) ? held.weapon : weapons[0];
+      // With nothing committed, the selects are the only record of what you were
+      // part-way through choosing, so a re-render must not throw it away.
+      const draftW = !held && weapons.includes(wSel.value) ? wSel.value : null;
+      const curW = draftW || (held && weapons.includes(held.weapon) ? held.weapon : weapons[0]);
       wSel.innerHTML = weapons.map(w =>
         `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}>${escapeHtml(w)}</option>`).join("");
 
       const styles = curW ? legalStyles(curW).slice() : [];
       if (heldDead && held.weapon === curW && !styles.includes(held.style)) styles.unshift(held.style);
-      const curS = held && styles.includes(held.style) ? held.style : styles[0];
+      const draftS = !held && styles.includes(sSel.value) ? sSel.value : null;
+      const curS = draftS || (held && styles.includes(held.style) ? held.style : styles[0]);
       sSel.innerHTML = styles.map(s =>
         `<option value="${escapeHtml(s)}"${s === curS ? " selected" : ""}>${escapeHtml(s)}</option>`).join("");
 
-      // Only seed a loadout when there isn't one; never overwrite an existing.
-      if (!run.combo && curW && curS) run.combo = { weapon: curW, style: curS };
+      // Deliberately does NOT seed run.combo. It used to, which meant Hunter's
+      // Choice assigned you the first weapon in the list before you had touched
+      // anything — and under hold or cycle that combo was immediately locked, so
+      // the pickers vanished before they could be used. The selects now hold a
+      // draft and nothing is committed until Confirm.
       // Nothing to swap to until the hunt is reported.
       wSel.disabled = sSel.disabled = !!heldDead;
     } else {
@@ -977,19 +977,31 @@
     const q = run.quest;
     const qLocked = !!run.lockQuest;
     const chosen = $("questChosen");
-    chosen.classList.toggle("hidden", !q);
+    // Kept in the layout when empty rather than display:none — otherwise the
+    // hunt bar jumped 90px to 119px the moment you named a quest.
+    chosen.classList.toggle("empty", !q);
     chosen.classList.toggle("locked", qLocked);
     if (q) {
+      // The lock marker is always rendered and merely hidden when it does not
+      // apply, so engaging the lock cannot change the card's size. It used to be
+      // a block-level note below the title, which added a whole line the moment
+      // you failed a quest — the card grew exactly when you were reading it.
       chosen.innerHTML =
-        (qLocked ? LOCK_ICON + " " : "") +
         escapeHtml(q.n) +
         (isArena(q)
           ? ' <span class="qc-arena">Arena &mdash; nothing at stake</span>'
           : ` <span class="qc-worth">${zenny(q.r || 0)}</span>`) +
-        (qLocked ? '<span class="qc-note">Locked &mdash; you owe this quest a retry</span>' : "");
+        `<span class="qc-note${qLocked ? "" : " off"}">${LOCK_ICON} Retry Enforced</span>`;
     }
-    // The search box would be a lie while the quest is locked — you can't pick.
-    $("questSearch").classList.toggle("hidden", qLocked);
+    // Disabled rather than hidden while the quest is locked: it stays visible so
+    // you can see the control exists and is simply unavailable, it holds its own
+    // space so the hunt bar doesn't resize, and the browser takes it out of the
+    // tab order for free.
+    $("questSearch").disabled = qLocked;
+    $("questSearch").placeholder = qLocked
+      ? "Retry enforced — finish this quest first"
+      : "Search quests…";
+    if (qLocked) $("questSearch").value = "";
     if (qLocked) $("questResults").classList.add("hidden");
 
     const ready = !!(run.combo && run.quest);
@@ -1426,9 +1438,14 @@
     run.combo = { weapon: w, style };
     save(); renderAll();
   };
-  $("pickWeapon").addEventListener("change", () =>
-    setPickedCombo($("pickWeapon").value, null));
-  $("pickStyle").addEventListener("change", () =>
+  // Changing the weapon only refreshes which styles are on offer — it commits
+  // nothing, so you can look through the options before settling.
+  $("pickWeapon").addEventListener("change", () => {
+    const w = $("pickWeapon").value, sSel = $("pickStyle");
+    sSel.innerHTML = legalStyles(w).map(st =>
+      `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join("");
+  });
+  $("pickConfirm").addEventListener("click", () =>
     setPickedCombo($("pickWeapon").value, $("pickStyle").value));
 
   $("questSearch").addEventListener("input", (e) => renderQuestResults(e.target.value));
