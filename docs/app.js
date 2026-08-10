@@ -121,12 +121,23 @@
     // cycle is the only option in the app that scores ABOVE the reference.
     // Four rules, ordered by how much continuity you give up: free lets you
     // change mid-quest, hold takes that away, cycle additionally takes every
-    // combo you succeed with, and rotate takes all of it, always. Even steps
-    // because these are priced by the restriction accepted rather than by any
-    // measured outcome — see LEVER PLACEHOLDER below — and even steps also keep
-    // all four badges distinct (0, +M, +L, -M), which matters after two options
-    // once shared a badge while moving the rating a whole band.
-    loadout: { hold: [1, 1], cycle: [1.150, 1.15], rotate: [1.300, 1.30],
+    // combo you succeed with, and rotate takes all of it, always. Priced by the
+    // restriction accepted rather than by measured outcome — see LEVER
+    // PLACEHOLDER below — and spaced so all four badges stay distinct
+    // (±0, +M, +L, −M), which matters after two options once shared a badge
+    // while moving the rating a whole band.
+    //
+    // rotate's 1.35 is a BET, and scratchpad/sim-rotate-breakeven.js states it:
+    // the model is blind to this lever, so its score tracks the weight exactly,
+    // and the weight is only fair if never settling on a weapon really does make
+    // you worse. At 1.35 it breaks even when a rotate player clears 12.2 points
+    // worse than someone holding one combo (0.598 against 0.720); cycle's 1.15
+    // asks for 6.4. Clear better than that and it is a net advantage — which it
+    // will be for anyone comfortable on all fourteen weapons, and that is a skill
+    // difference no weight can price. Moving it 1.30 -> 1.40 shifts the reachable
+    // distribution barely at all (median 0.528, Very Hard 44 -> 45 of 384), so
+    // this is a safe number to retune, not a structural one.
+    loadout: { hold: [1, 1], cycle: [1.150, 1.15], rotate: [1.350, 1.35],
                free: [0.850, 0.85] },
     quest:   { on: [1, 1], off: [0.850, 0.85] },
 
