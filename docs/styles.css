@@ -300,8 +300,23 @@ body{
    and clipped rather than shrinking with the space they had.
    The column minimums are low so the board keeps shrinking rather than pushing
    a horizontal scrollbar — at 150% zoom a 40px floor was already overflowing. */
+/* The 1px gap, and the cells' square corners, are about the Hermann grid
+   illusion — bright patches on a dark field separated by narrow dark corridors
+   make illusory grey blobs flicker at every crossing. Three things drove it:
+     - rounded corners. At radius 5 with a 3px gap, four cells meeting opened
+       the corridor into a ~13px plaza: over 4x the corridor width, and it is
+       that widening at the crossings that produces the blob.
+     - corridor width. Effect strength falls off sharply as the corridor thins,
+       so 3px -> 1px does most of the rest.
+     - contrast. Weapon colours ran up to 13.7:1 against the near-black board,
+       and the illusion is driven by luminance difference.
+   The first two are geometry and are fixed here. Contrast is left alone: it is
+   the weakest of the three, and lightening the corridors means giving the grid
+   its own background, which would repaint the headers and row labels too.
+   That lever is still there if any shimmer survives. Do not reintroduce a
+   border-radius on .cell — it is what created the plazas. */
 .board-grid{display:grid;grid-template-columns:auto repeat(6,minmax(36px,1fr));
-  gap:3px;align-items:stretch;container-type:inline-size}
+  gap:1px;align-items:stretch;container-type:inline-size}
 
 .bh{font-size:clamp(7px, 1.5cqi, 11px);text-transform:uppercase;letter-spacing:.04em;
   opacity:.6;display:flex;align-items:center;justify-content:center;padding:2px;
@@ -331,7 +346,8 @@ body{
    and it must not compete with the states drawn on top of it. */
 /* A live cell is its weapon's colour, solid. --wc is set per cell in
    renderBoard from the same palette the row labels use. */
-.cell{border:1px solid var(--line);border-radius:5px;
+/* Square corners are load-bearing — see the Hermann grid note on .board-grid. */
+.cell{border:1px solid var(--line);border-radius:0;
   background:var(--wc, var(--card));
   min-height:var(--cell-h, 34px);display:flex;align-items:center;justify-content:center;
   font-size:11px;opacity:.95;transition:background .12s,border-color .12s}
