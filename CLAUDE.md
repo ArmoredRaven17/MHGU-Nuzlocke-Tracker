@@ -221,6 +221,24 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
+**The crosshair is drawn as its own shapes**, not by restyling the cells it passes over
+— three empty divs placed as grid items (`.cross-row`, `.cross-col`, `.cross-hit`). That
+keeps the cells free to say what they *are* (available, fallen, retired) while the
+crosshair says where you *are*, and because the shapes span the 1px gaps each arm reads
+as one unbroken rectangle rather than a row of separate outlines.
+
+Two traps, both of which bit:
+
+- **Every grid item is placed explicitly.** Auto-placement flows *around* items carrying
+  a fixed position, so adding the overlays pushed the auto-placed cells down a row and
+  the arms landed one row out. Headers, labels and cells all name their `grid-row` and
+  `grid-column` now.
+- **End lines are spelled out, never `-1`.** That only reaches the end of the *explicit*
+  grid; with rows created implicitly it collapsed the column band to a single row.
+
+`pointer-events: none` on all three — a fallen cell under an arm is still clickable to
+buy back, and an overlay would otherwise swallow it.
+
 **`autoRoll` is convenience, not a lever.** It decides whether the app hands you a combo
 the moment one is needed or waits for the button, and it is deliberately absent from
 `LEVERS` — it changes how many clicks a run costs, never what the run is worth. It lives

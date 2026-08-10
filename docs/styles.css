@@ -469,20 +469,23 @@ body{
    2.1:1 on Great Sword and Charge Blade.
 
    box-shadow does not merge across rules, so the combinations are spelled out. */
-/* Every cell on an arm gets its own rectangle drawn round it: blue along the
-   row, red down the column, purple where they meet. Boxes rather than rails,
-   so each cell in the crosshair is individually outlined.
-   Drawn with BORDERS rather than inset shadows. box-sizing is border-box, so
-   widening to 2px eats into the cell instead of moving the grid, and border
-   colour is a single declaration per state instead of four shadows.
-   The dark ring underneath keeps the vivid hues legible on their own weapon --
-   red on Great Sword measures 2.1:1 unaided. .cell.current overrides it, which
-   is correct: the committed combo has its own outline and glow. */
-.cell.row-on,.cell.col-on{border-width:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.55)}
-.cell.row-on{border-color:#1a3ce8}
-.cell.col-on{border-color:#e10000}
-/* 0,3,0, so the crossing beats both single-arm rules whatever order they sit in. */
-.cell.row-on.col-on{border-color:#a020e0}
+/* The crosshair is its OWN shapes, laid over the grid — three empty divs placed
+   as grid items, not styling borrowed from the cells they pass over. That keeps
+   the cells free to say what they are (available, fallen, retired) while the
+   crosshair says where you are, and it means the shapes span the 1px gaps, so
+   each arm is one unbroken rectangle instead of a row of separate outlines.
+   pointer-events:none matters — a fallen cell under the arm is still clickable
+   to buy back, and an overlay would otherwise swallow that.
+   The dark ring outside the border keeps the vivid hues legible against their
+   own weapon: red on Great Sword measures 2.1:1 unaided. */
+.cross-row,.cross-col,.cross-hit{
+  pointer-events:none;border:2px solid;border-radius:1px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.55)}
+.cross-row{border-color:#1a3ce8;z-index:2}
+.cross-col{border-color:#e10000;z-index:2}
+/* Above both arms, so the square they share reads as the answer rather than as
+   the place two lines happen to overlap. */
+.cross-hit{border-color:#a020e0;z-index:3}
 /* The headers take the arm's colour too, so each arm is identifiable from the
    edge of the board rather than only where it crosses. */
 .bh.col-on{opacity:1;color:#ff5a5a;font-weight:700}

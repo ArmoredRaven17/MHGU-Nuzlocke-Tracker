@@ -942,19 +942,17 @@
     const hlS = cur ? cur.style  : (picking ? $("pickStyle").value  : null);
     // The arms of the crosshair. Applied to every cell, alive or not, so the
     // line does not break where a combo has fallen.
-    const cross = (w, s) => (w === hlW ? " row-on" : "") + (s === hlS ? " col-on" : "");
     const isCurrent = (w, s) => cur && cur.weapon === w && cur.style === s;
     const cellClass = (w, s) => {
       if (!isAlive(w, s)) {
-        return "cell dead" + (canRevive(w, s) ? " revivable" : "") + cross(w, s);
+        return "cell dead" + (canRevive(w, s) ? " revivable" : "");
       }
       // Alive, but its weapon spent its style allowance — out of the pool
       // without ever having been lost. A different thing from fallen.
-      if (isRetired(w)) return "cell retired" + cross(w, s);
+      if (isRetired(w)) return "cell retired";
       // Back from the dead — worth marking, it cost something.
       const back = (run.revived[comboKey(w, s)] || 0) > 0;
-      return "cell alive" + (back ? " revived" : "") + cross(w, s) +
-             (isCurrent(w, s) ? " current" : "");
+      return "cell alive" + (back ? " revived" : "") + (isCurrent(w, s) ? " current" : "");
     };
     // The row label doubles as the weapon's status. Retired and Selected are the
     // two states you cannot read off a single cell — retired is a property of the
@@ -970,24 +968,49 @@
     // No legend. Retired and Selected now say so on the row label, and the board
     // marks the rest by what sits in the slot rather than by colour, which the
     // help modal covers. A key nobody needs is just height the grid wanted.
+    // EVERY item is placed explicitly. Auto-placement flows around items that
+    // carry a fixed position, so adding the crosshair overlays below pushed the
+    // auto-placed cells down a row and the arms landed one row out. Placing the
+    // lot removes auto-placement from the picture entirely.
     let html = '<div class="board-grid">';
-    html += '<div class="bh corner"></div>';
-    STYLES.forEach(s => {
-      html += `<div class="bh${s === hlS ? ' col-on' : ''}">${escapeHtml(s)}</div>`;
+    html += '<div class="bh corner" style="grid-row:1;grid-column:1"></div>';
+    STYLES.forEach((s, j) => {
+      html += `<div class="bh${s === hlS ? ' col-on' : ''}" ` +
+              `style="grid-row:1;grid-column:${j + 2}">${escapeHtml(s)}</div>`;
     });
-    WEAPONS.forEach(w => {
+    WEAPONS.forEach((w, i) => {
       // The text is wrapped so it can reserve the width of the widest label it
       // will ever hold — see .bl-t. Without that the column grows the moment
       // something is selected and the whole grid shifts under the cursor.
-      html += `<div class="brow-label${w === hlW ? ' row-on' : ''}" style="color:${WEAPON_COLORS[w]}">` +
+      html += `<div class="brow-label${w === hlW ? ' row-on' : ''}" ` +
+              `style="color:${WEAPON_COLORS[w]};grid-row:${i + 2};grid-column:1">` +
               `<img src="${weaponIcon(w)}" alt="">` +
               `<span class="bl-t">${escapeHtml(rowLabel(w))}</span></div>`;
-      STYLES.forEach(s => {
+      STYLES.forEach((s, j) => {
         html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]};` +
-                `--wi:url('${weaponIcon(w)}')"` +
+                `--wi:url('${weaponIcon(w)}');grid-row:${i + 2};grid-column:${j + 2}"` +
                 `${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}"></div>`;
       });
     });
+
+    // The crosshair is drawn as its own shapes laid over the grid rather than by
+    // restyling the cells it passes through. Placing them as grid items means
+    // the browser does the arithmetic: a band spanning every style column of one
+    // weapon's row, another spanning every weapon row of one style column, and a
+    // box on the square they share. They cover the 1px gaps too, so each reads
+    // as one continuous rectangle instead of a run of separate outlines.
+    //
+    // Track maths: row 1 is the header strip and column 1 the row labels, so a
+    // weapon at index i sits on grid row i + 2 and a style at index j on grid
+    // column j + 2. End lines are spelled out rather than using -1, which only
+    // reaches the end of the EXPLICIT grid -- with rows created implicitly it
+    // collapsed the column band to a single row.
+    const wi = WEAPONS.indexOf(hlW), si = STYLES.indexOf(hlS);
+    const lastCol = STYLES.length + 2, lastRow = WEAPONS.length + 2;
+    if (wi >= 0) html += `<div class="cross-row" style="grid-row:${wi + 2};grid-column:2/${lastCol}"></div>`;
+    if (si >= 0) html += `<div class="cross-col" style="grid-column:${si + 2};grid-row:2/${lastRow}"></div>`;
+    if (wi >= 0 && si >= 0)
+      html += `<div class="cross-hit" style="grid-row:${wi + 2};grid-column:${si + 2}"></div>`;
     html += "</div>";
 
     board.innerHTML = html;
