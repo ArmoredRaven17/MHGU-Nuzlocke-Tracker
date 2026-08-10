@@ -1091,7 +1091,7 @@
       ["Weapons/Styles",    ruleLabel("stylesPerWeapon", rcfg.stylesPerWeapon)],
       ["Loadout",           ruleLabel("assign", rcfg.assign)],
       ["Weapon/Style hold", ruleLabel("loadout", rcfg.loadout)],
-      ["Quest lock",        rcfg.lockQuest ? "On" : "Off"],
+      ["Quest Retry Lock",  rcfg.lockQuest ? "On" : "Off"],
       ["Revives",           rcfg.reviveEnabled
         ? [zenny(rcfg.revivePrice), rcfg.reviveCap + " max",
            rcfg.reviveOnce ? "one per combo" : "repeatable"].join(" · ")
