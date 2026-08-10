@@ -371,7 +371,7 @@ body{
    rectangle instead of the weapon.
    Square corners are load-bearing — see the Hermann grid note on .board-grid. */
 .cell{border:1px solid rgba(255,255,255,.045);border-radius:0;
-  background:transparent;position:relative;
+  background:var(--wc, #232a3c);position:relative;
   min-height:var(--cell-h, 34px);display:flex;align-items:center;justify-content:center;
   font-size:11px;transition:background .12s,border-color .12s}
 .cell::before{content:"";position:absolute;inset:0;
@@ -384,7 +384,9 @@ body{
    pick up the theme behind it, which is the rule for everything in this grid.
    .cell.revived overrides this on purpose: gold outranks the weapon colour,
    because having bought a combo back is the more useful thing to know. */
-.cell.alive{cursor:default;border-color:color-mix(in srgb, var(--wc, #ffffff) 62%, #0b0f18)}
+.cell.alive{cursor:default;
+  background:color-mix(in srgb, var(--wc, #ffffff) 82%, #ffffff);
+  border-color:color-mix(in srgb, var(--wc, #ffffff) 62%, #0b0f18)}
 
 /* Fallen: the icon is gone and a bone sits in its place. Removing the weapon
    entirely is the point — the slot reads empty-and-marked rather than dimmed,
@@ -394,7 +396,8 @@ body{
    two states on its own, and a second signal only competed with it. Dashed is
    left to mean one thing — this one can be bought back. */
 .cell.dead::before{display:none}
-.cell.dead{border-color:rgba(0,0,0,.5)}
+.cell.dead{background:color-mix(in srgb, var(--wc, #ffffff) 45%, #000000);
+  border-color:rgba(0,0,0,.5)}
 /* The bone takes the weapon's colour without losing its linework.
    The asset is a black-outlined white bone — 1124 black pixels to 677 white —
    so masking it flattened every opaque pixel to one colour and the outlines
@@ -419,23 +422,25 @@ body{
    so the dimming only has to be enough to read as out-of-play — pushed too far
    and the slot looks empty, which is the fallen reading. */
 .cell.retired::before{filter:grayscale(1) brightness(.42)}
-.cell.retired{border-color:rgba(0,0,0,.5)}
+.cell.retired{background:color-mix(in srgb, var(--wc, #ffffff) 76%, #000000);
+  border-color:rgba(0,0,0,.5)}
 
-/* Selected: the icon lights up in its own colour. Two stacked drop-shadows give
-   a tight core and a soft halo, and drop-shadow traces the icon's alpha, so the
-   glow follows the weapon's outline rather than its cell. */
-.cell.current{z-index:1}
-.cell.current::before{
-  filter:brightness(1.25) saturate(1.15)
-         drop-shadow(0 0 2px var(--wc, #fff))
-         drop-shadow(0 0 6px var(--wc, #fff))
-         drop-shadow(0 0 12px var(--wc, #fff));
-  animation:cell-pulse 1.9s ease-in-out infinite}
-@keyframes cell-pulse{50%{filter:brightness(1.4) saturate(1.25)
-         drop-shadow(0 0 3px var(--wc, #fff))
-         drop-shadow(0 0 9px var(--wc, #fff))
-         drop-shadow(0 0 18px var(--wc, #fff))}}
-@media (prefers-reduced-motion: reduce){ .cell.current::before{animation:none} }
+/* Selected. The glow used to be drawn in var(--wc), which worked while cells
+   were bare — but the cell is now that same colour lightened, so a same-colour
+   glow has nothing to separate from: measured across the palette it ran 1.02:1
+   to 1.19:1, i.e. invisible. That is the same wall every colour-based version of
+   this marker hit, and the answer is the same one: use a SHAPE.
+   A dark ring inset into the cell reads on all fourteen hues because every
+   available cell is now LIGHT — against the palest, Insect Glaive, black is
+   19.6:1, and against the darkest, Great Sword, still 7.8:1. The ring breathes
+   rather than the colour, so "selected" is still the thing moving on the board. */
+.cell.current{z-index:1;
+  box-shadow:inset 0 0 0 2px #0a0e16, inset 0 0 0 3px rgba(255,255,255,.75);
+  animation:cell-ring 1.9s ease-in-out infinite}
+.cell.current::before{filter:brightness(1.08) saturate(1.1)}
+@keyframes cell-ring{
+  50%{box-shadow:inset 0 0 0 3px #0a0e16, inset 0 0 0 5px rgba(255,255,255,.95)}}
+@media (prefers-reduced-motion: reduce){ .cell.current{animation:none} }
 
 .cell.revived{border-color:#c9a227}
 /* A fallen combo you can still buy back */
