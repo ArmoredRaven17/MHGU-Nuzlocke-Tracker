@@ -221,6 +221,16 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
+**Retirement is judged against the cap the RUN started with**, via `runCap()`, not
+against live `cfg`. Reading live cfg let a finished run be brought back to life from the
+sidebar: the rules unlock the moment a run ends, and raising the styles cap un-retired
+every weapon, so `legalCombos()` went non-empty and `runOver()` — derived, not latched —
+flipped back to false. The tell was that fallen combos stayed fallen while retired ones
+returned, because deaths are real data and retirement is computed from the cap.
+
+Derived-not-latched is deliberate and stays: a revive removes a death and *should* be
+able to reopen a run. What must not reopen it is editing the rules afterwards.
+
 **The crosshair is drawn as its own shapes**, not by restyling the cells it passes over
 — three empty divs placed as grid items (`.cross-row`, `.cross-col`, `.cross-hit`). That
 keeps the cells free to say what they *are* (available, fallen, retired) while the

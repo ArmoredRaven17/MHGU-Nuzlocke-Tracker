@@ -451,7 +451,20 @@
   // its surviving styles out of the pool with it. Counted from run.deaths, so a
   // revive (which removes a death) can bring a retired weapon back.
   const stylesLost = (w) => run.deaths.reduce((n, d) => n + (d.weapon === w ? 1 : 0), 0);
-  const isRetired  = (w) => stylesLost(w) >= cfg.stylesPerWeapon;
+  // Judged against the cap the RUN started with, not the live one. Reading live
+  // cfg meant a finished run could be brought back to life from the sidebar:
+  // the rules unlock the moment a run ends, and raising the styles cap
+  // un-retired every weapon, so legalCombos() went non-empty and runOver() --
+  // which is derived rather than latched -- flipped back to false. The run
+  // resumed with all its old deaths still on the board, which is exactly what
+  // it looked like: fallen combos still fallen, retired ones back in play.
+  //
+  // Derived rather than latched is deliberate and stays that way: a revive
+  // removes a death and SHOULD be able to reopen a run. What must not reopen it
+  // is editing the rules afterwards.
+  const runCap = () => !run.active ? cfg.stylesPerWeapon
+    : ((run.cfg && run.cfg.stylesPerWeapon) || capForCeiling(runMax()) || cfg.stylesPerWeapon);
+  const isRetired  = (w) => stylesLost(w) >= runCap();
 
   const legalStyles  = (w) => isRetired(w) ? [] : stylesFor(w).filter(s => isAlive(w, s));
   const legalWeapons = () => ALL_WEAPONS.filter(w => legalStyles(w).length > 0);
