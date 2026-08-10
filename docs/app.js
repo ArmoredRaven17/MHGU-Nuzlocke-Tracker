@@ -587,7 +587,7 @@
 
   // ── Config <-> DOM ───────────────────────────────────────────────────────
   const CFG_BOXES = {
-    lockQuest: "l_quest", autoRoll: "l_autoroll",
+    lockQuest: "l_quest",
     reviveEnabled: "r_enabled", reviveOnce: "r_once",
     rerollEnabled: "rr_enabled",
   };
@@ -699,6 +699,7 @@
 
   function writeCfgToDom() {
     Object.entries(CFG_BOXES).forEach(([k, id]) => { $(id).checked = !!cfg[k]; });
+    $("s_autoroll").checked = !!cfg.autoRoll;
     // Object keys are strings, but some cfg values are numbers (stylesPerWeapon),
     // so compare as strings and convert back on the way in.
     Object.entries(CFG_RADIOS).forEach(([k, maping]) => {
@@ -729,6 +730,11 @@
   function applyCfgLockState() {
     const locked = cfgLocked();
     CFG_INPUTS().forEach(el => { el.disabled = locked; });
+    // Auto-roll is a preference, not one of the run's rules, so the run lock
+    // does not touch it — only whether there is anything to automate. Its own
+    // handler writes cfg directly for the same reason: readCfgFromDom bails out
+    // while a run is on, and this must stay changeable mid-run.
+    $("s_autoroll").disabled = cfg.assign !== "roll";
     if (!locked) syncDependentBoxes();
     $("cfgLockNote").classList.toggle("hidden", !locked);
   }
@@ -741,8 +747,6 @@
     Object.values(CFG_RADIOS.reviveCap).forEach(id => { $(id).disabled = off; });
     const rrOff = !cfg.rerollEnabled;
     Object.values(CFG_RADIOS.rerollPrice).forEach(id => { $(id).disabled = rrOff; });
-    // Nothing to roll automatically when you are choosing for yourself.
-    $("l_autoroll").disabled = cfg.assign !== "roll";
   }
 
   // ── Kill / revive ────────────────────────────────────────────────────────
@@ -1579,6 +1583,10 @@
   $("helpBtn").addEventListener("click", () => $("helpModal").classList.remove("hidden"));
   $("helpClose").addEventListener("click", () => $("helpModal").classList.add("hidden"));
   $("themeBtn").addEventListener("click", () => $("themeModal").classList.remove("hidden"));
+  $("s_autoroll").addEventListener("change", (e) => {
+    cfg.autoRoll = e.target.checked;
+    afterMutation();      // saves, and deals a combo straight away if one is due
+  });
   $("themeClose").addEventListener("click", () => $("themeModal").classList.add("hidden"));
   $("linksBtn").addEventListener("click", () => $("linksModal").classList.remove("hidden"));
   $("linksClose").addEventListener("click", () => $("linksModal").classList.add("hidden"));

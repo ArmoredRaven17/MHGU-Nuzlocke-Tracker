@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=99">
+<link rel="stylesheet" href="styles.css?v=100">
 </head>
 <body>
 <div id="app">
@@ -86,7 +86,6 @@
           <p class="hint" style="margin-top:8px">Where your next weapon and style come from.</p>
           <label class="chk"><input type="radio" name="assign" id="a_roll" checked>Randomized Weapon/Style combo<span class="w"></span></label>
           <label class="chk"><input type="radio" name="assign" id="a_pick">Hunter's choice<span class="w"></span></label>
-          <label class="chk"><input type="checkbox" id="l_autoroll">Roll automatically &mdash; don't wait for the button</label>
           <p class="hint" style="margin-top:8px">How long you hold a weapon/style.</p>
           <label class="chk"><input type="radio" name="ld" id="ld_hold" checked>Until it falls<span class="w"></span></label>
           <label class="chk"><input type="radio" name="ld" id="ld_cycle">Until you clear a quest<span class="w"></span></label>
@@ -336,8 +335,14 @@
 
 <div id="themeModal" class="modal hidden">
   <div class="modal-card">
-    <h2>Theme</h2>
+    <h2>Settings</h2>
+    <h3>Theme</h3>
     <div id="swatches" class="swatches"></div>
+    <h3>Hunting</h3>
+    <label class="chk"><input type="checkbox" id="s_autoroll">Roll the next combo automatically</label>
+    <p class="hint" id="autoRollNote">Skips pressing Roll Combo. Only applies while the app
+      is rolling for you &mdash; on Hunter&rsquo;s choice there is nothing to automate. This is a
+      preference, not a rule: it does not affect difficulty and can be changed mid-run.</p>
     <div class="row end"><button id="themeClose" class="btn tiny">Close</button></div>
   </div>
 </div>
@@ -364,6 +369,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=118"></script>
+<script src="app.js?v=119"></script>
 </body>
 </html>
