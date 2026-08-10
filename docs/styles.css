@@ -373,36 +373,37 @@ body{
    row label — so a row is identifiable without reading across to the label.
    --wc is set per cell in renderBoard. Kept low: the tint is for orientation,
    and it must not compete with the states drawn on top of it. */
-/* A live cell is its weapon's colour, solid. --wc is set per cell in
-   renderBoard from the same palette the row labels use. */
-/* Square corners are load-bearing — see the Hermann grid note on .board-grid.
-   The border and the background fallback are fixed rather than themed for the
-   same reason as the bed: a cell should not change appearance because the
-   sidebar changed colour. Every state below already overrode both with fixed
-   values; these two were the last themed leaks. */
-.cell{border:1px solid rgba(0,0,0,.35);border-radius:0;
-  background:var(--wc, #232a3c);
+/* A cell IS its weapon's icon rather than a block of its colour. The _tinted
+   assets already carry each weapon's own palette (great sword red, hammer
+   lavender) with black linework, so they can be used directly instead of being
+   masked to a silhouette the way the bone has to be.
+   Every state now acts on the ICON rather than on the box, which is why the
+   icon lives on ::before with the box left as a plain bed: a filter on .cell
+   would take the bed and the border with it, and drop-shadow would trace the
+   rectangle instead of the weapon.
+   Square corners are load-bearing — see the Hermann grid note on .board-grid. */
+.cell{border:1px solid rgba(255,255,255,.045);border-radius:0;
+  background:transparent;position:relative;
   min-height:var(--cell-h, 34px);display:flex;align-items:center;justify-content:center;
-  font-size:11px;opacity:.95;transition:background .12s,border-color .12s}
-.cell.alive{cursor:default;border-color:rgba(0,0,0,.35)}
-/* Board cells are empty divs — the weapon and style come from their position in
-   the grid — so a fallen cell has to be marked by the box itself.
-   Fallen is drained rather than darkened, and carries a bone. Retired is the
-   darkened treatment with nothing on it. The pairing is deliberate: the two
-   states differ by brightness AND by whether anything sits in the slot, so
-   neither reading depends on the other. */
-.cell.dead{background-color:color-mix(in srgb, var(--wc, transparent) 13%, transparent);
-  border-style:dotted;border-color:rgba(255,255,255,.13);position:relative}
+  font-size:11px;transition:background .12s,border-color .12s}
+.cell::before{content:"";position:absolute;inset:0;
+  background-image:var(--wi);background-repeat:no-repeat;background-position:center;
+  background-size:auto calc(var(--cell-h, 34px) * .74);
+  transition:filter .12s,opacity .12s}
+.cell.alive{cursor:default}
+
+/* Fallen: the icon is gone and a bone sits in its place. Removing the weapon
+   entirely is the point — the slot reads empty-and-marked rather than dimmed,
+   so it cannot be confused with retired. */
+.cell.dead::before{display:none}
+.cell.dead{border-style:dotted;border-color:rgba(255,255,255,.13)}
 /* The bone takes the weapon's colour without losing its linework.
    The asset is a black-outlined white bone — 1124 black pixels to 677 white —
    so masking it flattened every opaque pixel to one colour and the outlines
    went with them. Instead the icon is multiplied over a solid --wc: white x
    colour is the colour, black x colour is black, so the body tints and the
    lines stay. The mask is still there, but only to clip the colour layer to the
-   bone's silhouette rather than leaving an 18px square behind it.
-   The cell's fade lives in its background colours rather than in opacity, which
-   would have taken the bone down with it: it is the only thing marking the cell
-   lost. */
+   bone's silhouette rather than leaving an 18px square behind it. */
 .cell.dead::after{content:"";position:absolute;left:50%;top:50%;
   width:calc(var(--cell-h, 34px) * .62);height:calc(var(--cell-h, 34px) * .62);
   transform:translate(-50%,-50%);
@@ -412,15 +413,38 @@ body{
   background-blend-mode:multiply;
   -webkit-mask:url('assets/ItemIcons/MH4G-Bone_Icon_White.webp') center / contain no-repeat;
   mask:url('assets/ItemIcons/MH4G-Bone_Icon_White.webp') center / contain no-repeat;}
-.cell.revived{border-color:#c9a227;background:#c9a2271a}
-/* Alive, but its weapon spent its style allowance — out of the pool, not lost.
-   Same hue, mixed down towards black: dimmed out of play rather than marked. */
-.cell.retired{background:color-mix(in srgb, var(--wc, transparent) 28%, #05070d);
-  border-color:rgba(0,0,0,.5);opacity:1}
+
+/* Retired: still there, out of play. Desaturated and pushed down rather than
+   removed, which is what separates it from fallen — one slot is empty and
+   marked, the other is full but dulled.
+   Grayscale is doing most of the separating, since every live icon is coloured,
+   so the dimming only has to be enough to read as out-of-play — pushed too far
+   and the slot looks empty, which is the fallen reading. */
+.cell.retired::before{filter:grayscale(1) brightness(.8);opacity:.5}
+.cell.retired{border-color:rgba(0,0,0,.5)}
+
+/* Selected: the icon lights up in its own colour. Two stacked drop-shadows give
+   a tight core and a soft halo, and drop-shadow traces the icon's alpha, so the
+   glow follows the weapon's outline rather than its cell. */
+.cell.current{z-index:1}
+.cell.current::before{
+  filter:brightness(1.25) saturate(1.15)
+         drop-shadow(0 0 2px var(--wc, #fff))
+         drop-shadow(0 0 6px var(--wc, #fff))
+         drop-shadow(0 0 12px var(--wc, #fff));
+  animation:cell-pulse 1.9s ease-in-out infinite}
+@keyframes cell-pulse{50%{filter:brightness(1.4) saturate(1.25)
+         drop-shadow(0 0 3px var(--wc, #fff))
+         drop-shadow(0 0 9px var(--wc, #fff))
+         drop-shadow(0 0 18px var(--wc, #fff))}}
+@media (prefers-reduced-motion: reduce){ .cell.current::before{animation:none} }
+
+.cell.revived{border-color:#c9a227}
 /* A fallen combo you can still buy back */
-.cell.dead.revivable{cursor:pointer;opacity:.65;border-style:dashed;border-color:#c9a227}
-.cell.dead.revivable:hover{opacity:1;background:#c9a2272e;
-  box-shadow:0 0 0 1px #c9a227 inset}
+.cell.dead.revivable{cursor:pointer;border-style:dashed;border-color:#c9a227}
+.cell.dead.revivable::after{opacity:.65}
+.cell.dead.revivable:hover::after{opacity:1}
+.cell.dead.revivable:hover{background:#c9a2272e;box-shadow:0 0 0 1px #c9a227 inset}
 
 /* Revive options */
 .revive-options{display:flex;flex-direction:column;gap:8px;margin:10px 0 14px}
@@ -438,23 +462,13 @@ body{
 .revive-opt.pay-zenny:hover,.revive-opt.pay-zenny:focus-visible{border-color:var(--dead);background:#ff2a2a14}
 .revive-opt.pay-zenny .ro-total{color:var(--dead)}
 .ro-note{font-size:11px;opacity:.6}
-/* Same shape as a completed line in MHGU Bingo (.cell.line): an inset white
-   ring plus an outer glow in the square's own colour.
-/* The cell you're on keeps its weapon colour and carries its row's weapon icon.
-   The icon is the marker that actually works, because it is a SHAPE — it does
-   not have to out-contrast anything, so the cell is free to stay the colour its
-   row already is. Every colour-based attempt failed on some row: a same-colour
-   glow had nothing to separate from, no fixed accent beats all fifteen hues,
-   and a white fill sat at 1.09:1 against Insect Glaive's near-white row.
-   Drawn as a silhouette rather than in the source art's own light tint, which
-   is made for a dark background and would vanish on the paler weapons. Black
-   clears 4:1 against every colour in the palette, the darkest being Charge
-   Blade. It reads as an icon in the slot, not as the darkened retired cells. */
-.cell.current{position:relative;font-weight:700}
-.cell.current::after{content:"";position:absolute;inset:0;
-  background-image:var(--wi);background-repeat:no-repeat;background-position:center;
-  background-size:auto calc(var(--cell-h, 34px) * .72);
-  filter:brightness(0);opacity:.8}
+/* The history here is worth keeping: this marker went through a colour-based
+   design first and every version failed on some row. A same-colour glow had
+   nothing to separate from, no fixed accent beat all the hues, and a white fill
+   sat at 1.09:1 against Insect Glaive. What worked was a SHAPE — it does not
+   have to out-contrast anything. That finding is why the board is icons now, so
+   the marker no longer has to fight the cell it sits on: it glows in the
+   weapon's own colour, which used to be the one thing that could not work. */
 
 /* ── Placeholder / summary ──────────────────────────────────────────── */
 
