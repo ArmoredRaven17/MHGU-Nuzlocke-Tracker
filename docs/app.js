@@ -901,8 +901,12 @@
     html += '<div class="bh corner"></div>';
     STYLES.forEach(s => { html += `<div class="bh">${escapeHtml(s)}</div>`; });
     WEAPONS.forEach(w => {
+      // The text is wrapped so it can reserve the width of the widest label it
+      // will ever hold — see .bl-t. Without that the column grows the moment
+      // something is selected and the whole grid shifts under the cursor.
       html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
-              `<img src="${weaponIcon(w)}" alt="">${escapeHtml(rowLabel(w))}</div>`;
+              `<img src="${weaponIcon(w)}" alt="">` +
+              `<span class="bl-t">${escapeHtml(rowLabel(w))}</span></div>`;
       STYLES.forEach(s => {
         html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]};` +
                 `--wi:url('${weaponIcon(w)}')"` +

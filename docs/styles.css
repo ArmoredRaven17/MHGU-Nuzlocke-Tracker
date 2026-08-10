@@ -331,6 +331,18 @@ body{
               0 -1px rgba(0,0,0,.85),0 1px rgba(0,0,0,.85)}
 .brow-label img{width:calc(var(--cell-h, 34px) * .6);
   height:calc(var(--cell-h, 34px) * .6);object-fit:contain;max-width:20px;max-height:20px}
+/* A row label swaps between the weapon's abbreviation, "Retired" and
+   "Selected". "Selected" is the widest of the three — 51px against 47px for the
+   longest abbreviation, Hammer — and the label column is auto-sized, so the
+   first time anything was selected the column grew and shifted the whole grid
+   sideways mid-run.
+   The invisible ::after reserves that width. Doing it this way rather than with
+   a hardcoded min-width means the gutter is measured in the real MHFU font at
+   the real size, so it stays correct if the font, size or wording changes. The
+   flex column takes the widest of its items for width while the zero-height
+   sizer contributes nothing to the row's height. */
+.bl-t{display:inline-flex;flex-direction:column}
+.bl-t::after{content:"Selected";height:0;overflow:hidden;visibility:hidden}
 /* Row height scales with the window rather than sitting at a fixed 34px: fifteen
    rows plus the hunt bar and status strip overflowed a 720px-tall screen by
    171px, and the board is the thing you are meant to be able to see at a glance.
