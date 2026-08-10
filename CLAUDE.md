@@ -221,6 +221,21 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
+**The loadout rule has four options, ordered by continuity given up.** `free` lets you
+change mid-quest; `hold` takes that away; `cycle` additionally hands in every combo you
+succeed with; `rotate` hands it in win or lose, so you never keep one, not even for the
+retry the quest lock owes you. Two pairs look alike and are not:
+
+- `rotate` and `free` share the same roll-over — both hand the combo in every hunt — and
+  differ in `renderHuntBar`, where only `free` leaves the pickers live during a quest.
+- `cycle` and `rotate` share the clear path and differ on failure: `cycle` keeps.
+
+Weights step evenly (1.00 / 1.15 / 1.30 / 0.85) because these are priced by the
+restriction accepted, not by measured outcome — the simulator treats every combo as
+equally winnable, so it can say nothing about which one you hold. Even steps also keep
+all four badges distinct (±0 / +M / +L / −M), which matters given what happened the last
+time two options shared a badge while moving the rating a whole band.
+
 **The kill conditions are a radio group, not checkboxes** — `cfg.kill` is one of
 `both | cart | fail | streak`.
 

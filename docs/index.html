@@ -89,7 +89,8 @@
           <p class="hint" style="margin-top:8px">How long you hold a weapon/style.</p>
           <label class="chk"><input type="radio" name="ld" id="ld_hold" checked>Until it falls<span class="w"></span></label>
           <label class="chk"><input type="radio" name="ld" id="ld_cycle">Until you clear a quest &mdash; a failure keeps it<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="ld" id="ld_free">Swap once per quest<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="ld" id="ld_rotate">Changes each quest<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="ld" id="ld_free">May swap once per quest<span class="w"></span></label>
           <p class="hint" style="margin-top:8px">Whether you are forced to retry a failed quest or not</p>
           <label class="chk"><input type="checkbox" id="l_quest" checked>Quest Retry Lock<span class="w"></span></label>
         </div>
@@ -281,10 +282,11 @@
        baseline: you keep it through clears as well as failures, until it dies.
        <em>Until you clear a quest</em> hands it in every time you succeed, but a failure
        keeps it, so you can take the quest that beat you again with the same combo.
-       That's harder than the baseline and is the one setting that pays <em>more</em>
-       than it.
-       <em>Swap once per quest</em> is the easy option: nothing carries over, so you
-       pick a fresh combo for each hunt.</p>
+       <em>Changes each quest</em> is harsher still, because it hands the combo in win
+       or lose &mdash; you never get to keep one, not even for the retry you are owed.
+       Those two are the only settings that pay <em>more</em> than the baseline.
+       <em>May swap once per quest</em> is the easy option: nothing carries over, and
+       you can still change your mind before you report the result.</p>
     <p><strong>The quest lock</strong> means a quest that beat you is owed one retry
        &mdash; your next hunt has to be that quest, win or lose. It's on by default;
        turning it off makes the run easier and pays less.</p>
@@ -364,6 +366,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=104"></script>
+<script src="app.js?v=105"></script>
 </body>
 </html>

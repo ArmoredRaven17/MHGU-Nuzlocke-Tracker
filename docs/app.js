@@ -63,7 +63,7 @@
   const DEFAULT_CFG = {
     kill: "both",                        // "both" | "cart" | "fail" | "streak"
     assign: "roll",                      // "roll" | "pick"
-    loadout: "hold",                     // "hold" | "cycle" | "free"; see LEVERS
+    loadout: "hold",                     // "hold" | "cycle" | "rotate" | "free"
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
@@ -119,7 +119,15 @@
     },
     assign:  { roll: [1, 1], pick: [0.850, 0.85] },
     // cycle is the only option in the app that scores ABOVE the reference.
-    loadout: { hold: [1, 1], cycle: [1.150, 1.15], free: [0.850, 0.85] },
+    // Four rules, ordered by how much continuity you give up: free lets you
+    // change mid-quest, hold takes that away, cycle additionally takes every
+    // combo you succeed with, and rotate takes all of it, always. Even steps
+    // because these are priced by the restriction accepted rather than by any
+    // measured outcome — see LEVER PLACEHOLDER below — and even steps also keep
+    // all four badges distinct (0, +M, +L, -M), which matters after two options
+    // once shared a badge while moving the rating a whole band.
+    loadout: { hold: [1, 1], cycle: [1.150, 1.15], rotate: [1.300, 1.30],
+               free: [0.850, 0.85] },
     quest:   { on: [1, 1], off: [0.850, 0.85] },
 
     reviveOn:    [0.775, 0.82],   // a safety net at all
@@ -570,7 +578,7 @@
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
     assign: { roll: "a_roll", pick: "a_pick" },
-    loadout: { hold: "ld_hold", cycle: "ld_cycle", free: "ld_free" },
+    loadout: { hold: "ld_hold", cycle: "ld_cycle", rotate: "ld_rotate", free: "ld_free" },
   };
 
   // How a radio's chosen value reads, taken from the sidebar label itself rather
@@ -785,11 +793,16 @@
     // Roll over into the next hunt. The loadout lock means exactly one thing:
     // you keep the combo until it dies — through clears as well as failures.
     run.attemptCarts = 0;
-    // hold  — keep it until it dies, through clears as well as failures
-    // cycle — a clear hands it in; a failure does not, so you can take the
-    //         quest that beat you again with the same combo (which is what the
-    //         quest lock is asking you to do)
-    // free  — pick again every hunt
+    // hold   — keep it until it dies, through clears as well as failures
+    // cycle  — a clear hands it in; a failure does not, so you can take the
+    //          quest that beat you again with the same combo (which is what the
+    //          quest lock is asking you to do)
+    // rotate — every quest hands it in, win or lose. Harsher than cycle: cycle
+    //          at least lets you keep a combo through the retry you are owed.
+    // free   — pick again every hunt, and you may change it mid-quest
+    //
+    // rotate and free agree here and differ in renderHuntBar: both hand the
+    // combo in every hunt, but only free leaves the pickers live during one.
     const keepCombo = cfg.loadout === "hold" ? true
                     : cfg.loadout === "cycle" ? outcome !== "clear"
                     : false;
