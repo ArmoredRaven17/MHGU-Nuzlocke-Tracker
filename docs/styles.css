@@ -441,23 +441,31 @@ body{
    the column, reads as one continuous rail instead. Inset shadows, so it costs
    no layout and cannot shift the grid.
 
-   The row is RED, the column is BLUE, and where they cross is PURPLE — the
+   The row is BLUE, the column is RED, and where they cross is PURPLE — the
    crossing looks like the two arms producing it rather than a third thing.
+
+   Red is on the COLUMN deliberately. A row runs the length of ONE weapon, so a
+   red row arm sat on red for the whole of Great Sword and Charge Blade; a
+   column crosses all fourteen, so red now meets a red cell twice out of
+   fourteen instead of for an entire row. Whichever hue an arm takes, the row is
+   the one that can collide completely, so it gets the colour that fewest
+   weapons are near.
+
    It is declared, not blended. True mixing would need mix-blend-mode and
    translucent arms, and translucent will not work here: the cells are opaque
-   weapon colours, so a see-through red bar reads orange over Sword & Shield and
-   pink over Insect Glaive, and the row would never read as red at all.
+   weapon colours, so a see-through bar takes their hue and the arm loses its
+   identity entirely.
 
    Vivid hues rather than the dark ones that would clear 3:1 unaided — a maroon
    does not read as "red", which is the entire point of the colour. They stay
    legible because the crosshair also darkens the cell BORDER, backing every
-   rail with a dark line at no extra thickness. Without that, red-on-red hits
-   2.1:1 on Great Sword and Charge Blade, the two red-orange weapons.
+   rail with a dark line at no extra thickness. Without it, red-on-red measures
+   2.1:1 on Great Sword and Charge Blade.
 
    box-shadow does not merge across rules, so the combinations are spelled out. */
 .cell.row-on,.cell.col-on{border-color:rgba(0,0,0,.75)}
-.cell.row-on:not(.col-on){box-shadow:inset 0 2px 0 0 #e10000, inset 0 -2px 0 0 #e10000}
-.cell.col-on:not(.row-on){box-shadow:inset 2px 0 0 0 #1a3ce8, inset -2px 0 0 0 #1a3ce8}
+.cell.row-on:not(.col-on){box-shadow:inset 0 2px 0 0 #1a3ce8, inset 0 -2px 0 0 #1a3ce8}
+.cell.col-on:not(.row-on){box-shadow:inset 2px 0 0 0 #e10000, inset -2px 0 0 0 #e10000}
 /* :not(.current) matters. This selector is 0,3,0 and .cell.current is only
    0,2,0, so without it the crossing rule outranks the selected marker whatever
    order they sit in, and the committed combo silently loses its outline and
@@ -467,8 +475,8 @@ body{
              inset 2px 0 0 0 #a020e0, inset -2px 0 0 0 #a020e0}
 /* The headers take the arm's colour too, so each arm is identifiable from the
    edge of the board rather than only where it crosses. */
-.bh.col-on{opacity:1;color:#6f8cff;font-weight:700}
-.brow-label.row-on .bl-t{color:#ff5a5a}
+.bh.col-on{opacity:1;color:#ff5a5a;font-weight:700}
+.brow-label.row-on .bl-t{color:#6f8cff}
 
 /* Selected: the crossing, committed. Purple, because that is what the red row
    and the blue column make where they meet — the marker is the arms arriving
