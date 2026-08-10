@@ -374,11 +374,10 @@ body{
   background:var(--wc, #232a3c);position:relative;
   min-height:var(--cell-h, 34px);display:flex;align-items:center;justify-content:center;
   font-size:11px;transition:background .12s,border-color .12s}
-/* The icon is OFF on an ordinary cell. A board of eighty-four weapon icons said
-   the same thing fourteen times over — every cell in a row carries the same
-   weapon, which the row label and the row's colour already tell you. Turning it
-   on for exactly one cell makes it information again: the icon means "this is
-   the one you are on". */
+/* The icon shows on cells that are still AVAILABLE, and nowhere else. It is off
+   by default and switched on by .alive, so the two states that are out of play
+   lose it without needing to say so: fallen carries a bone instead, retired
+   carries nothing. What is left on the board is what you can still use. */
 .cell::before{content:"";position:absolute;inset:0;display:none;
   background-image:var(--wi);background-repeat:no-repeat;background-position:center;
   background-size:auto calc(var(--cell-h, 34px) * .74);
@@ -389,6 +388,7 @@ body{
    pick up the theme behind it, which is the rule for everything in this grid.
    .cell.revived overrides this on purpose: gold outranks the weapon colour,
    because having bought a combo back is the more useful thing to know. */
+.cell.alive::before{display:block}
 .cell.alive{cursor:default;
   background:color-mix(in srgb, var(--wc, #ffffff) 82%, #ffffff);
   border-color:color-mix(in srgb, var(--wc, #ffffff) 62%, #0b0f18)}
@@ -502,7 +502,6 @@ body{
              inset 0 0 0 3px #b429f0,
              inset 0 0 0 4px rgba(0,0,0,.9),
              inset 0 0 12px 3px rgba(180,41,240,.85)}
-.cell.current::before{display:block}
 
 .cell.revived{border-color:#c9a227}
 /* A fallen combo you can still buy back */
