@@ -143,7 +143,7 @@ untouched.
 Each option carries **two** numbers and the gap between them is the point:
 
 - `factor` — what earnings are multiplied by. Never displayed.
-- `effect` — what the option does to your final **score**. This is what the XS…XL badge
+- `effect` — what the option does to your final **score**. This is what the XS…XXL badge
   and the difficulty rating are built from.
 
 They differ because a harder setting also makes the run shorter, so it banks fewer
@@ -167,6 +167,24 @@ numbers did.
 Watch the `sizeOf` boundaries: they compare against the table's own values, and
 `1.15 - 1` is `0.1499999999999999` in binary floating point, which silently demoted
 cycling from M to S. Hence the `1e-9` epsilon.
+
+**XXL is there because the badge saturated while the rating did not.** Size is the
+distance from 1, which on the costly side cannot exceed 1.00 however harsh an option
+gets; the two harshest kill conditions both sat past the 0.60 XL line (0.62 and 0.74)
+and read identically, while the rating — a product, with no ceiling — still moved a
+whole band between them. Switching from *two in a row* to *same quest twice* went
+Normal to Easy with both badges saying XL, hiding a real 32% difference.
+
+The ladder is symmetric: both signs read the same table, so `+XXL` is defined and
+reachable at effect ≥ 1.70. Nothing earns it because the largest bonus in the app is
+one style per weapon at 1.60. That is the same one-sidedness as the rating
+distribution — a content fact about which levers exist, not a display one.
+
+The ceiling has moved rather than gone. XXL covers 0.70…1.00 and is the last tier this
+metric can express, so anything harsher than *same quest twice* collides with it. The
+durable fix at that point is `|ln(effect)|` — the natural metric where every lever is a
+ratio, and unbounded both ways — but it re-bands 18 of the 34 badges, so it is not
+worth doing until something actually needs it.
 
 **The rating bands are set from the real distribution**, not round numbers. Across all
 49,200 reachable configurations the median is 0.30 and **98% sit below the reference**,

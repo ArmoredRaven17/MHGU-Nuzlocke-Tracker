@@ -212,7 +212,22 @@
   // A single option's size, as a shirt size rather than a number — the same
   // vocabulary as Attack Up (S/M/L). Built from `effect`, so it says what the
   // option really does rather than what the arithmetic needed.
-  const SIZE_STEPS = [[0.60, "XL"], [0.30, "L"], [0.15, "M"], [0.05, "S"]];
+  //
+  // XXL exists because the scale was saturating. Size is the distance from 1,
+  // which on the costly side can never exceed 1.00 however harsh an option is —
+  // so the two harshest kill conditions both sat past the 0.60 XL line and read
+  // identically (0.62 and 0.74) while the RATING, which is a product and has no
+  // such ceiling, still moved a whole band between them. Switching from "two in
+  // a row" to "same quest twice" went Normal to Easy with both badges saying
+  // XL. That was the badge failing to report a real 32% difference, not the
+  // rating misbehaving.
+  //
+  // The ceiling has moved, not gone: XXL covers 0.70..1.00, the last tier this
+  // metric can express. Anything harsher than "same quest twice" collides with
+  // it, and at that point the honest fix is to measure size as |ln(effect)| —
+  // the natural metric for a system where every lever is a ratio, unbounded in
+  // both directions. Costly, though: it re-bands 18 of the 34 badges.
+  const SIZE_STEPS = [[0.70, "XXL"], [0.60, "XL"], [0.30, "L"], [0.15, "M"], [0.05, "S"]];
   function sizeOf(effect) {
     const away = Math.abs(effect - 1);
     // Epsilon because the boundaries ARE the table values: 1.15 - 1 comes out
