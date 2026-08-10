@@ -326,6 +326,7 @@
     lockQuest: null,       // the quest you owe a retry on
     combo: null,           // the loadout for the hunt in progress
     swapUsed: false,       // free only: the one swap this quest allows, spent
+    used: {},              // comboKey -> true once you have HUNTED with it
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
     hunts: 0,              // resolved hunts; carts don't end one so don't count
@@ -821,6 +822,7 @@
     const keepCombo = cfg.loadout === "hold" || cfg.loadout === "free" ? true
                     : cfg.loadout === "cycle" ? outcome !== "clear"
                     : false;
+    run.used[comboKey(combo.weapon, combo.style)] = true;   // you have now hunted with it
     run.swapUsed = false;                       // a fresh swap for the next quest
     run.combo = (keepCombo && isAlive(combo.weapon, combo.style))
       ? { weapon: combo.weapon, style: combo.style } : null;
@@ -979,7 +981,16 @@
   // You may swap once per quest under `free`, and only when you already have a
   // combo — establishing one after a death is not a swap, it is the roll you
   // were owed anyway.
-  const canSwap = () => cfg.loadout === "free" && !!run.combo && !run.swapUsed;
+  //
+  // The swap must go to a combo you have never hunted with. That is what stops
+  // it being a free upgrade: you can bail out of a bad hand, but only into
+  // something untested, and you spend one of your remaining unknowns doing it.
+  // Without the constraint a rational player just holds their best combo and
+  // never swaps, which made this rule measure identical to "until it falls".
+  const isUsed = (w, s) => !!run.used[comboKey(w, s)];
+  const swapPool = () => legalCombos().filter(c => !isUsed(c.weapon, c.style));
+  const canSwap = () => cfg.loadout === "free" && !!run.combo && !run.swapUsed &&
+                        swapPool().length > 0;
 
   function renderHuntBar() {
     const bar = $("huntBar");
@@ -1004,7 +1015,14 @@
       // the failure report kills that one too.
       const held = run.combo;
       const heldDead = held && !isAlive(held.weapon, held.style);
-      const weapons = legalWeapons();
+      // A live held combo here means the pickers are open for the quest's one
+      // swap, and a swap may only go somewhere you have never hunted. Replacing
+      // a combo that just died is not a swap, so it sees the whole pool.
+      const swapping = !!held && !heldDead && canSwap();
+      const pool = swapping ? swapPool() : null;
+      const weapons = swapping
+        ? [...new Set(pool.map(c => c.weapon))]
+        : legalWeapons();
       if (heldDead && !weapons.includes(held.weapon)) weapons.unshift(held.weapon);
       // With nothing committed, the selects are the only record of what you were
       // part-way through choosing, so a re-render must not throw it away.
@@ -1013,7 +1031,9 @@
       wSel.innerHTML = weapons.map(w =>
         `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}>${escapeHtml(w)}</option>`).join("");
 
-      const styles = curW ? legalStyles(curW).slice() : [];
+      const styles = !curW ? []
+        : swapping ? pool.filter(c => c.weapon === curW).map(c => c.style)
+        : legalStyles(curW).slice();
       if (heldDead && held.weapon === curW && !styles.includes(held.style)) styles.unshift(held.style);
       const draftS = !held && styles.includes(sSel.value) ? sSel.value : null;
       const curS = draftS || (held && styles.includes(held.style) ? held.style : styles[0]);
@@ -1494,11 +1514,15 @@
   });
 
   $("rollBtn").addEventListener("click", () => {
-    if (run.combo && !canSwap()) return;
-    const c = rollCombo();
+    const swapping = !!run.combo;
+    if (swapping && !canSwap()) return;
+    // A swap draws from what you have never hunted with; a fresh roll after a
+    // death draws from everything still alive.
+    const pool = swapping ? swapPool() : null;
+    const c = pool ? pool[Math.floor(Math.random() * pool.length)] : rollCombo();
     if (!c) { renderAll(); return; }
-    if (run.combo) run.swapUsed = true;         // replacing one spends the swap
-    run.combo = c; save(); renderAll();
+    if (swapping) run.swapUsed = true;
+    run.combo = { weapon: c.weapon, style: c.style }; save(); renderAll();
   });
 
   // Only ever accept a combo that actually exists and is still alive — the
@@ -1519,7 +1543,13 @@
   // nothing, so you can look through the options before settling.
   $("pickWeapon").addEventListener("change", () => {
     const w = $("pickWeapon").value, sSel = $("pickStyle");
-    sSel.innerHTML = legalStyles(w).map(st =>
+    // Must apply the same restriction renderHuntBar does. It did not, so
+    // changing weapon mid-swap re-offered styles you had already hunted with
+    // and the "never used" rule could be walked straight around.
+    const styles = canSwap()
+      ? swapPool().filter(c => c.weapon === w).map(c => c.style)
+      : legalStyles(w);
+    sSel.innerHTML = styles.map(st =>
       `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join("");
   });
   $("pickConfirm").addEventListener("click", () =>

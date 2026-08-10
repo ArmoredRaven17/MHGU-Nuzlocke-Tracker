@@ -74,6 +74,7 @@ function simulate(profile, assign, loadout, kill, swap, rng) {
   const ceiling = profile.length;
   let losses=0, earned=0, hunts=0, clears=0, streak=0, owed=-1, cur=-1;
   const spent = new Uint8Array(QUESTS.length); let live = QUESTS.length;
+  const usedC = profile.map(() => false);          // hunted with, for the free swap
   const liveIdx = () => { const o=[]; for(let i=0;i<alive.length;i++) if(alive[i]) o.push(i); return o; };
   const bestOf = (o) => o.reduce((b,i) => profile[i].p > profile[b].p ? i : b, o[0]);
   const drawFor = (o) => assign === "pick" ? bestOf(o) : o[(rng()*o.length)|0];
@@ -83,15 +84,22 @@ function simulate(profile, assign, loadout, kill, swap, rng) {
     if (!opts.length) break;
     if (cur < 0 || !alive[cur]) cur = drawFor(opts);
     else if (loadout === "free") {
-      // The one swap this quest allows. Nobody plays this perfectly, so `swap`
-      // carries two rates: how often you take a swap that helps, and how often
-      // you take one that does not. Ranging over them is the point — a single
-      // "always optimal" policy flatters the option and prices it wrong.
-      const expected = assign === "pick"
-        ? profile[bestOf(opts)].p
-        : opts.reduce((t,i) => t + profile[i].p, 0) / opts.length;
-      const good = profile[cur].p < expected;
-      if (rng() < (good ? swap.onGood : swap.onBad)) cur = drawFor(opts);
+      // The one swap this quest allows, and it may only go to a combo you have
+      // NEVER hunted with. That constraint is what gives the option teeth: under
+      // Hunter's choice your best combos are exactly the ones you have already
+      // used, so a swap can only take you somewhere untested — you are trading a
+      // known hand for an unknown one, not upgrading.
+      const fresh = opts.filter(i => !usedC[i]);
+      if (fresh.length) {
+        // Nobody plays this perfectly, so `swap` carries two rates: how often you
+        // take a swap that helps, and how often you take one that does not.
+        const expected = assign === "pick"
+          ? profile[bestOf(fresh)].p
+          : fresh.reduce((t,i) => t + profile[i].p, 0) / fresh.length;
+        const good = profile[cur].p < expected;
+        if (rng() < (good ? swap.onGood : swap.onBad))
+          cur = assign === "pick" ? bestOf(fresh) : fresh[(rng()*fresh.length)|0];
+      }
     }
     hunts++;
     let qi;
@@ -99,6 +107,7 @@ function simulate(profile, assign, loadout, kill, swap, rng) {
     else { if (live <= 0) break; do { qi = (rng()*QUESTS.length)|0; } while (spent[qi]); }
     owed = -1;
 
+    usedC[cur] = true;                             // you have now hunted with it
     const cleared = rng() < profile[cur].p;
     const carted  = cleared ? rng() < 0.25 : rng() < 0.85;
     let died = false;

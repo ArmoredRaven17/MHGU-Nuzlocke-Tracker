@@ -221,14 +221,23 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
-**The loadout rule has four options, ordered by continuity given up.** `free` lets you
-change mid-quest; `hold` takes that away; `cycle` additionally hands in every combo you
-succeed with; `rotate` hands it in win or lose, so you never keep one, not even for the
-retry the quest lock owes you. Two pairs look alike and are not:
+**The loadout rule has four options.** `hold` keeps a combo until it dies; `cycle`
+hands it in on every clear but keeps it through a failure; `rotate` hands it in win or
+lose; `free` keeps it and offers **one swap per quest, to a combo you have never hunted
+with**, which you may decline.
 
-- `rotate` and `free` share the same roll-over — both hand the combo in every hunt — and
-  differ in `renderHuntBar`, where only `free` leaves the pickers live during a quest.
-- `cycle` and `rotate` share the clear path and differ on failure: `cycle` keeps.
+That last constraint is load-bearing. Without it a rational player under Hunter's choice
+simply holds their best combo and never swaps, so `free` measured identical to `hold`.
+With it, a swap can only take you somewhere untested — your best combos are exactly the
+ones you have already used — so it is a trade rather than an upgrade. It shows up
+immediately: a player who swaps at every opportunity under Hunter's choice loses 5.4%,
+where before the constraint they lost nothing.
+
+`run.used` records what you have hunted with, marked when a hunt resolves rather than
+when a combo is set, so establishing a combo you then swap away does not burn it.
+`swapPool()` is the alive-and-unused set, and it gates three places — the roll button,
+`renderHuntBar`'s selects, and the `pickWeapon` change handler. Miss that last one and
+changing weapon mid-swap re-offers used styles, walking straight around the rule.
 
 Weights step evenly (1.00 / 1.15 / 1.30 / 0.85) because these are priced by the
 restriction accepted, not by measured outcome — the simulator treats every combo as
