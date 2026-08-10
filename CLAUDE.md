@@ -240,9 +240,19 @@ is what stops Confirm looking broken. Because `used` is only marked on resolve, 
 after choosing a combo nothing was excluded, the picker still offered the style you were
 already on, and confirming it changed nothing and explained nothing.
 
-The pool gates three places — the roll button, `renderHuntBar`'s selects, and the
-`pickWeapon` change handler. Miss that last one and changing weapon mid-swap re-offers
-used styles, walking straight around the rule.
+The pool gates four places — the roll button, `renderHuntBar`'s selects, the
+`pickWeapon` change handler, and `setPickedCombo` as a last guard. Miss the change
+handler and swapping weapon mid-pick re-offers used styles, walking straight around the
+rule.
+
+**The selects disable rather than hide.** Everything alive is listed; what you cannot
+take is greyed out and says why — `— Unavailable` on a weapon whose styles are all
+spent, `— Used` on a style you have hunted, `— Selected` on the one you are standing on.
+Hiding them left you wondering where a weapon had gone. Two things this needs: defaults
+must land on an *enabled* option (a disabled one can otherwise be the browser's default
+and leaves the select showing something Confirm must refuse), and `setPickedCombo`
+re-checks the pool, since a stale value reaching it would commit a forbidden combo and
+spend the swap on it.
 
 **It resets when exhausted.** Once every surviving combo has been hunted with, `report()`
 clears `run.used`. Without that the swap silently disappears for the rest of the run,

@@ -1053,25 +1053,41 @@
       // a combo that just died is not a swap, so it sees the whole pool.
       const swapping = !!held && !heldDead && canSwap();
       const pool = swapping ? swapPool() : null;
-      const weapons = swapping
-        ? [...new Set(pool.map(c => c.weapon))]
-        : legalWeapons();
+      // Everything alive is LISTED while swapping; what you cannot take is
+      // disabled and says why. Dropping it from the list left you wondering
+      // where a weapon had gone, and a disabled option answers that without
+      // costing a click. Only the enabled ones can be chosen or defaulted to.
+      const weapons = legalWeapons();
       if (heldDead && !weapons.includes(held.weapon)) weapons.unshift(held.weapon);
+      const openW = swapping ? new Set(pool.map(c => c.weapon)) : null;
+      const wOpen = (w) => !swapping || openW.has(w);
+      const pickable = weapons.filter(wOpen);
       // With nothing committed, the selects are the only record of what you were
       // part-way through choosing, so a re-render must not throw it away.
-      const draftW = !held && weapons.includes(wSel.value) ? wSel.value : null;
-      const curW = draftW || (held && weapons.includes(held.weapon) ? held.weapon : weapons[0]);
+      const draftW = !held && pickable.includes(wSel.value) ? wSel.value : null;
+      const curW = draftW ||
+        (held && pickable.includes(held.weapon) ? held.weapon : pickable[0]);
       wSel.innerHTML = weapons.map(w =>
-        `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}>${escapeHtml(w)}</option>`).join("");
+        `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}` +
+        `${wOpen(w) ? "" : " disabled"}>${escapeHtml(w)}` +
+        `${wOpen(w) ? "" : " &mdash; Unavailable"}</option>`).join("");
 
-      const styles = !curW ? []
-        : swapping ? pool.filter(c => c.weapon === curW).map(c => c.style)
-        : legalStyles(curW).slice();
+      const styles = !curW ? [] : legalStyles(curW).slice();
       if (heldDead && held.weapon === curW && !styles.includes(held.style)) styles.unshift(held.style);
-      const draftS = !held && styles.includes(sSel.value) ? sSel.value : null;
-      const curS = draftS || (held && styles.includes(held.style) ? held.style : styles[0]);
-      sSel.innerHTML = styles.map(s =>
-        `<option value="${escapeHtml(s)}"${s === curS ? " selected" : ""}>${escapeHtml(s)}</option>`).join("");
+      const openS = swapping ? new Set(pool.filter(c => c.weapon === curW).map(c => c.style)) : null;
+      const sOpen = (st) => !swapping || openS.has(st);
+      // Why a style is closed is worth saying, because the two reasons are
+      // different: one you have spent, the other you are standing on.
+      const sWhy = (st) => held && curW === held.weapon && st === held.style
+        ? " &mdash; Selected" : " &mdash; Used";
+      const pickableS = styles.filter(sOpen);
+      const draftS = !held && pickableS.includes(sSel.value) ? sSel.value : null;
+      const curS = draftS ||
+        (held && pickableS.includes(held.style) ? held.style : pickableS[0]);
+      sSel.innerHTML = styles.map(st =>
+        `<option value="${escapeHtml(st)}"${st === curS ? " selected" : ""}` +
+        `${sOpen(st) ? "" : " disabled"}>${escapeHtml(st)}` +
+        `${sOpen(st) ? "" : sWhy(st)}</option>`).join("");
 
       // Deliberately does NOT seed run.combo. It used to, which meant Hunter's
       // Choice assigned you the first weapon in the list before you had touched
@@ -1567,6 +1583,10 @@
     const styles = legalStyles(w);
     const style = styles.includes(s) ? s : styles[0];
     if (!style) return;
+    // Defence in depth. The selects only offer takeable combos, but a stale
+    // value or a disabled option reaching here would otherwise commit a combo
+    // the rule forbids and spend the swap on it.
+    if (canSwap() && !swapPool().some(c => c.weapon === w && c.style === style)) return;
     if (run.combo && comboKey(run.combo.weapon, run.combo.style) !== comboKey(w, style))
       run.swapUsed = true;
     run.combo = { weapon: w, style };
@@ -1579,11 +1599,22 @@
     // Must apply the same restriction renderHuntBar does. It did not, so
     // changing weapon mid-swap re-offered styles you had already hunted with
     // and the "never used" rule could be walked straight around.
-    const styles = canSwap()
-      ? swapPool().filter(c => c.weapon === w).map(c => c.style)
-      : legalStyles(w);
-    sSel.innerHTML = styles.map(st =>
-      `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join("");
+    const swapping = canSwap();
+    const open = swapping
+      ? new Set(swapPool().filter(c => c.weapon === w).map(c => c.style))
+      : null;
+    const why = (st) => run.combo && w === run.combo.weapon && st === run.combo.style
+      ? " &mdash; Selected" : " &mdash; Used";
+    sSel.innerHTML = legalStyles(w).map(st => {
+      const ok = !swapping || open.has(st);
+      return `<option value="${escapeHtml(st)}"${ok ? "" : " disabled"}>` +
+             `${escapeHtml(st)}${ok ? "" : why(st)}</option>`;
+    }).join("");
+    // A disabled option can still be the browser's default pick, which would
+    // leave the select showing something Confirm must refuse. Land on the first
+    // one that is actually takeable.
+    const first = [...sSel.options].find(o => !o.disabled);
+    if (first) sSel.value = first.value;
     renderBoard();          // the row arm of the crosshair follows the picker
   });
   // The column arm. Choosing a style commits nothing either, so this only
