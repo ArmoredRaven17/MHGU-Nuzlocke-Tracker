@@ -221,52 +221,27 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
-**The loadout rule has four options.** `hold` keeps a combo until it dies; `cycle`
+**The loadout rule has three options.** `hold` keeps a combo until it dies; `cycle`
 hands it in on every clear but keeps it through a failure; `rotate` hands it in win or
-lose; `free` keeps it and offers **one swap per quest, to a combo you have never hunted
-with**, which you may decline.
+lose. `cycle` and `rotate` share the clear path and differ on failure, where `cycle`
+keeps.
 
-That last constraint is load-bearing. Without it a rational player under Hunter's choice
-simply holds their best combo and never swaps, so `free` measured identical to `hold`.
-With it, a swap can only take you somewhere untested — your best combos are exactly the
-ones you have already used — so it is a trade rather than an upgrade. It shows up
-immediately: a player who swaps at every opportunity under Hunter's choice loses 5.4%,
-where before the constraint they lost nothing.
+**"May swap once per quest" was retired**, and the reasoning generalises. It let you
+trade your combo once per quest for one you had never hunted with, and it went through
+several repairs — forced to optional, then constrained to unused combos, then opt-in
+behind a button with a Cancel — each fixing a real defect and none fixing the option.
+Two things settled it:
 
-`run.used` records what you have hunted with, marked when a hunt resolves rather than
-when a combo is set, so establishing a combo you then swap away does not burn it.
-`swapPool()` is alive, unused, **and not the combo currently held** — that last clause
-is what stops Confirm looking broken. Because `used` is only marked on resolve, straight
-after choosing a combo nothing was excluded, the picker still offered the style you were
-already on, and confirming it changed nothing and explained nothing.
+- It measured at **1.00**, exactly `hold`, so it was never the easier option it claimed
+  to be. Only a player using it perfectly gained anything (+1.6%); one who swapped
+  whenever offered *lost* 2.8%. A choice that punishes the people most likely to take it.
+- It strictly dominated the reroll lever. A reroll costs escalating zenny for a *random*
+  combo; the swap was free and let you *choose*. Both enabled, the paid one was never
+  worth using.
 
-The pool gates four places — the roll button, `renderHuntBar`'s selects, the
-`pickWeapon` change handler, and `setPickedCombo` as a last guard. Miss the change
-handler and swapping weapon mid-pick re-offers used styles, walking straight around the
-rule.
-
-**The selects disable rather than hide.** Everything alive is listed; what you cannot
-take is greyed out and says why — `— Unavailable` on a weapon whose styles are all
-spent, `— Used` on a style you have hunted, `— Selected` on the one you are standing on.
-Hiding them left you wondering where a weapon had gone. Two things this needs: defaults
-must land on an *enabled* option (a disabled one can otherwise be the browser's default
-and leaves the select showing something Confirm must refuse), and `setPickedCombo`
-re-checks the pool, since a stale value reaching it would commit a forbidden combo and
-spend the swap on it.
-
-**The swap is opt-in under Hunter's choice.** The pickers used to open on their own
-whenever a swap was available, which left no way to say "keep it" — the only exits were
-committing a different combo or re-picking the one you had, and the pool correctly
-refuses to offer that. So holding a combo shows a `Swap…` button, and opening the
-pickers adds a `Cancel` beside Confirm. Nothing is spent by opening; only confirming a
-*different* combo sets `run.swapUsed`. `swapOpen` is UI state and deliberately not
-persisted — an abandoned half-choice should not survive a reload — and it is cleared
-both on commit and when a hunt resolves. A rolled swap keeps its single click, since
-there is nothing to review before it happens.
-
-**It resets when exhausted.** Once every surviving combo has been hunted with, `report()`
-clears `run.used`. Without that the swap silently disappears for the rest of the run,
-and "one you have yet to use" stops meaning anything once you have used them all.
+Saved configs on `free` migrate to `hold` in `load()` — the same difficulty, so nobody
+is moved by losing it. Its whole apparatus went with it: `run.used`, `run.swapUsed`,
+`swapPool()`, `canSwap()`, the disabled-option labelling, and the Swap/Cancel buttons.
 
 Weights step evenly (1.00 / 1.15 / 1.30 / 0.85) because these are priced by the
 restriction accepted, not by measured outcome — the simulator treats every combo as

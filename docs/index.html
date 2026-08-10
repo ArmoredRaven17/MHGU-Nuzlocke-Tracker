@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=98">
+<link rel="stylesheet" href="styles.css?v=99">
 </head>
 <body>
 <div id="app">
@@ -90,8 +90,6 @@
           <label class="chk"><input type="radio" name="ld" id="ld_hold" checked>Until it falls<span class="w"></span></label>
           <label class="chk"><input type="radio" name="ld" id="ld_cycle">Until you clear a quest &mdash; a failure keeps it<span class="w"></span></label>
           <label class="chk"><input type="radio" name="ld" id="ld_rotate">Changes each quest<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="ld" id="ld_free">May swap once per quest<span class="w"></span></label>
-          <p class="hint sub">Must swap to a weapon/style combo you have yet to use</p>
           <p class="hint" style="margin-top:8px">Whether you are forced to retry a failed quest or not</p>
           <label class="chk"><input type="checkbox" id="l_quest" checked>Quest Retry Lock<span class="w"></span></label>
         </div>
@@ -175,12 +173,8 @@
             <div id="hlPick" class="hl-pick hidden">
               <select id="pickWeapon"></select>
               <select id="pickStyle"></select>
-              <div class="row gap">
-                <button id="pickConfirm" class="btn tiny accent">Confirm</button>
-                <button id="pickCancel" class="btn tiny hidden">Cancel</button>
-              </div>
+              <button id="pickConfirm" class="btn tiny accent">Confirm</button>
             </div>
-            <button id="swapBtn" class="btn tiny hidden">Swap&hellip;</button>
             <button id="rollBtn" class="btn tiny">Roll Combo</button>
             <button id="rerollBtn" class="btn tiny hidden">Reroll&hellip;</button>
           </div>
@@ -289,11 +283,7 @@
        keeps it, so you can take the quest that beat you again with the same combo.
        <em>Changes each quest</em> is harsher still, because it hands the combo in win
        or lose &mdash; you never get to keep one, not even for the retry you are owed.
-       Those two are the only settings that pay <em>more</em> than the baseline.
-       <em>May swap once per quest</em> keeps your combo like the baseline does, but
-       lets you trade it in once per quest &mdash; and the replacement has to be a combo
-       you have never hunted with. So you can bail out of a bad hand, at the price of
-       spending one of your remaining unknowns to do it. You may always decline.</p>
+       Both of those pay <em>more</em> than the baseline.</p>
     <p><strong>The quest lock</strong> means a quest that beat you is owed one retry
        &mdash; your next hunt has to be that quest, win or lose. It's on by default;
        turning it off makes the run easier and pays less.</p>
@@ -373,6 +363,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=115"></script>
+<script src="app.js?v=116"></script>
 </body>
 </html>

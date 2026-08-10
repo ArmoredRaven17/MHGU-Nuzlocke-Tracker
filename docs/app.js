@@ -63,7 +63,7 @@
   const DEFAULT_CFG = {
     kill: "both",                        // "both" | "cart" | "fail" | "streak"
     assign: "roll",                      // "roll" | "pick"
-    loadout: "hold",                     // "hold" | "cycle" | "rotate" | "free"
+    loadout: "hold",                     // "hold" | "cycle" | "rotate"
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
@@ -137,8 +137,7 @@
     // group should be a real difficulty lever, the fix is a bigger difference
     // between the RULES, not a bigger number here.
     assign:  { roll: [1, 1], pick: [0.930, 0.93] },
-    loadout: { hold: [1, 1], cycle: [1.040, 1.04], rotate: [1.030, 1.03],
-               free: [1, 1] },
+    loadout: { hold: [1, 1], cycle: [1.040, 1.04], rotate: [1.030, 1.03] },
     quest:   { on: [1, 1], off: [0.850, 0.85] },
 
     reviveOn:    [0.775, 0.82],   // a safety net at all
@@ -325,8 +324,6 @@
     questsDone: {},        // "Type|Name" -> true once CLEARED; see clearedQuest()
     lockQuest: null,       // the quest you owe a retry on
     combo: null,           // the loadout for the hunt in progress
-    swapUsed: false,       // free only: the one swap this quest allows, spent
-    used: {},              // comboKey -> true once you have HUNTED with it
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
     hunts: 0,              // resolved hunts; carts don't end one so don't count
@@ -540,7 +537,10 @@
   // silently skip every migration.
   function migrateLoadout(target, source) {
     if (source && typeof source.loadout === "string") return;
-    target.loadout = source && source.lockLoadout === false ? "free" : "hold";
+    // lockLoadout:false used to mean "swap whenever you like", which became
+    // `free` and is now retired. Both land on hold, which is what free
+    // measured as anyway.
+    target.loadout = "hold";
   }
   function load() {
     let d = null;
@@ -556,6 +556,10 @@
       // every percentile. Falling through to the guard below would have thrown
       // anyone on the gentlest condition onto the harshest one.
       if (cfg.kill === "twice") cfg.kill = "streak";
+      // "May swap once per quest" is retired. It maps to hold, which is what
+      // it measured as -- implied 1.00, identical to holding -- so nobody who
+      // had it selected is moved to a different difficulty by losing it.
+      if (cfg.loadout === "free") cfg.loadout = "hold";
       if (!LEVERS.kill[cfg.kill]) cfg.kill = DEFAULT_CFG.kill;
       migrateLoadout(cfg, d.cfg);
     }
@@ -591,7 +595,7 @@
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
     rerollPrice: { 2500: "rp_2500", 5000: "rp_5000", 10000: "rp_10000", 20000: "rp_20000" },
     assign: { roll: "a_roll", pick: "a_pick" },
-    loadout: { hold: "ld_hold", cycle: "ld_cycle", rotate: "ld_rotate", free: "ld_free" },
+    loadout: { hold: "ld_hold", cycle: "ld_cycle", rotate: "ld_rotate" },
   };
 
   // How a radio's chosen value reads, taken from the sidebar label itself rather
@@ -812,25 +816,14 @@
     //          quest lock is asking you to do)
     // rotate — every quest hands it in, win or lose. Harsher than cycle: cycle
     //          at least lets you keep a combo through the retry you are owed.
-    // free   — KEEP it, but you may swap once per quest if you want to. May,
-    //          not must: declining is always allowed, which is what makes this
-    //          the easy option rather than a differently-shaped restriction.
     //
-    // free used to hand the combo in like rotate, which forced the swap and
-    // made the two identical under random assignment — one behaviour wearing
-    // two names, and the simulator duly measured them the same.
-    const keepCombo = cfg.loadout === "hold" || cfg.loadout === "free" ? true
+    // There was a fourth, "may swap once per quest", and it is retired. It
+    // measured at 1.00 — exactly hold — so it was never the easier option it
+    // claimed to be, and a free choosable swap strictly dominated the paid
+    // random reroll, making that lever worse whenever both were enabled.
+    const keepCombo = cfg.loadout === "hold" ? true
                     : cfg.loadout === "cycle" ? outcome !== "clear"
                     : false;
-    run.used[comboKey(combo.weapon, combo.style)] = true;   // you have now hunted with it
-    // Once every surviving combo has been hunted with, the rule has nothing
-    // left to point at and the swap would silently disappear for the rest of
-    // the run. Reset instead: the cycle starts again and the whole board is
-    // available, which is the only reading of "one you have yet to use" that
-    // still means something once you have used them all.
-    if (legalCombos().every(c => isUsed(c.weapon, c.style))) run.used = {};
-    run.swapUsed = false;                       // a fresh swap for the next quest
-    swapOpen = false;                           // and it starts closed
     run.combo = (keepCombo && isAlive(combo.weapon, combo.style))
       ? { weapon: combo.weapon, style: combo.style } : null;
     run.quest = run.lockQuest || null;
@@ -1004,60 +997,21 @@
     strip.innerHTML = html;
   }
 
-  // You may swap once per quest under `free`, and only when you already have a
-  // combo — establishing one after a death is not a swap, it is the roll you
-  // were owed anyway.
-  //
-  // The swap must go to a combo you have never hunted with. That is what stops
-  // it being a free upgrade: you can bail out of a bad hand, but only into
-  // something untested, and you spend one of your remaining unknowns doing it.
-  // Without the constraint a rational player just holds their best combo and
-  // never swaps, which made this rule measure identical to "until it falls".
-  const isUsed = (w, s) => !!run.used[comboKey(w, s)];
-  // A swap target must be alive, never hunted with, and NOT the combo you are
-  // already holding. That last one is easy to forget and it is what made the
-  // Confirm button look broken: run.used is only marked when a hunt RESOLVES,
-  // so straight after choosing a combo nothing was excluded, the picker still
-  // offered the style you were on, and confirming it changed nothing and said
-  // nothing. You cannot swap to what you already have.
-  const swapPool = () => legalCombos().filter(c =>
-    !isUsed(c.weapon, c.style) &&
-    !(run.combo && c.weapon === run.combo.weapon && c.style === run.combo.style));
-  const canSwap = () => cfg.loadout === "free" && !!run.combo && !run.swapUsed &&
-                        swapPool().length > 0;
-  // Whether the swap pickers are showing. UI state only: it is never saved, and
-  // any change of combo or hunt closes it.
-  let swapOpen = false;
 
   function renderHuntBar() {
     const bar = $("huntBar");
     if (!run.active || runOver()) { bar.classList.add("hidden"); return; }
     bar.classList.remove("hidden");
 
-    // Two different reasons the pickers can be open, and they are not the same
-    // interaction. With nothing in hand you MUST choose — no way out, no cancel.
-    // Holding a combo under `free` you MAY swap, and the pickers opening on
-    // their own left no way to say "keep it": the only exits were committing a
-    // different combo or re-picking the one you had, which the swap pool now
-    // (correctly) refuses to offer. So the swap is opt-in behind a button, and
-    // once open it can be cancelled. swapOpen is deliberately not persisted —
-    // an abandoned half-choice should not survive a reload.
-    const mustChoose = !run.combo;
-    const offerSwap  = canSwap() && !swapOpen;
-    const swapping   = canSwap() && swapOpen;
-    const pickMode = cfg.assign === "pick" && (mustChoose || swapping);
+    // The pickers are open only when there is nothing in hand. Every loadout
+    // rule holds a live combo until the run takes it away, so a committed combo
+    // is never yours to change -- the pickers would be a lie.
+    const pickMode = cfg.assign === "pick" && !run.combo;
 
     $("hlPick").classList.toggle("hidden", !pickMode);
     $("hlRolled").classList.toggle("hidden", pickMode);
-    // rollBtn belongs to the ROLL flow only. Hiding it merely while the pickers
-    // were open left it on screen beside "Swap..." whenever a combo was held,
-    // reading "Swap (once)" and performing a RANDOM swap -- one click that threw
-    // away the whole premise of Hunter's choice.
+    // rollBtn belongs to the ROLL flow only.
     $("rollBtn").classList.toggle("hidden", cfg.assign === "pick");
-    // Only Hunter's choice needs the extra step. A rolled swap is one click and
-    // has nothing to review, so rollBtn keeps doing it directly.
-    $("swapBtn").classList.toggle("hidden", !(cfg.assign === "pick" && offerSwap));
-    $("pickCancel").classList.toggle("hidden", !swapping);
 
     if (pickMode) {
       const wSel = $("pickWeapon"), sSel = $("pickStyle");
@@ -1067,46 +1021,21 @@
       // the failure report kills that one too.
       const held = run.combo;
       const heldDead = held && !isAlive(held.weapon, held.style);
-      // A live held combo here means the pickers are open for the quest's one
-      // swap, and a swap may only go somewhere you have never hunted. Replacing
-      // a combo that just died is not a swap, so it sees the whole pool.
-      const swapping = !!held && !heldDead && canSwap();
-      const pool = swapping ? swapPool() : null;
-      // Everything alive is LISTED while swapping; what you cannot take is
-      // disabled and says why. Dropping it from the list left you wondering
-      // where a weapon had gone, and a disabled option answers that without
-      // costing a click. Only the enabled ones can be chosen or defaulted to.
       const weapons = legalWeapons();
       if (heldDead && !weapons.includes(held.weapon)) weapons.unshift(held.weapon);
-      const openW = swapping ? new Set(pool.map(c => c.weapon)) : null;
-      const wOpen = (w) => !swapping || openW.has(w);
-      const pickable = weapons.filter(wOpen);
       // With nothing committed, the selects are the only record of what you were
       // part-way through choosing, so a re-render must not throw it away.
-      const draftW = !held && pickable.includes(wSel.value) ? wSel.value : null;
-      const curW = draftW ||
-        (held && pickable.includes(held.weapon) ? held.weapon : pickable[0]);
+      const draftW = !held && weapons.includes(wSel.value) ? wSel.value : null;
+      const curW = draftW || (held && weapons.includes(held.weapon) ? held.weapon : weapons[0]);
       wSel.innerHTML = weapons.map(w =>
-        `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}` +
-        `${wOpen(w) ? "" : " disabled"}>${escapeHtml(w)}` +
-        `${wOpen(w) ? "" : " &mdash; Unavailable"}</option>`).join("");
+        `<option value="${escapeHtml(w)}"${w === curW ? " selected" : ""}>${escapeHtml(w)}</option>`).join("");
 
       const styles = !curW ? [] : legalStyles(curW).slice();
       if (heldDead && held.weapon === curW && !styles.includes(held.style)) styles.unshift(held.style);
-      const openS = swapping ? new Set(pool.filter(c => c.weapon === curW).map(c => c.style)) : null;
-      const sOpen = (st) => !swapping || openS.has(st);
-      // Why a style is closed is worth saying, because the two reasons are
-      // different: one you have spent, the other you are standing on.
-      const sWhy = (st) => held && curW === held.weapon && st === held.style
-        ? " &mdash; Selected" : " &mdash; Used";
-      const pickableS = styles.filter(sOpen);
-      const draftS = !held && pickableS.includes(sSel.value) ? sSel.value : null;
-      const curS = draftS ||
-        (held && pickableS.includes(held.style) ? held.style : pickableS[0]);
+      const draftS = !held && styles.includes(sSel.value) ? sSel.value : null;
+      const curS = draftS || (held && styles.includes(held.style) ? held.style : styles[0]);
       sSel.innerHTML = styles.map(st =>
-        `<option value="${escapeHtml(st)}"${st === curS ? " selected" : ""}` +
-        `${sOpen(st) ? "" : " disabled"}>${escapeHtml(st)}` +
-        `${sOpen(st) ? "" : sWhy(st)}</option>`).join("");
+        `<option value="${escapeHtml(st)}"${st === curS ? " selected" : ""}>${escapeHtml(st)}</option>`).join("");
 
       // Deliberately does NOT seed run.combo. It used to, which meant Hunter's
       // Choice assigned you the first weapon in the list before you had touched
@@ -1129,9 +1058,8 @@
       else icon.classList.add("hidden");
       // Blocked while a hunt is outstanding — otherwise the mode is opt-out per
       // roll and the locks mean nothing.
-      $("rollBtn").disabled = !!run.combo && !canSwap();
-      $("rollBtn").textContent = !run.combo ? "Roll Combo"
-                              : canSwap()  ? "Swap (once)" : "Combo set";
+      $("rollBtn").disabled = !!run.combo;
+      $("rollBtn").textContent = run.combo ? "Combo set" : "Roll Combo";
       const rr = canReroll();
       $("rerollBtn").classList.toggle("hidden", !rr);
       if (rr) $("rerollBtn").textContent = "Reroll — " + zenny(rerollCost(run.rerolls));
@@ -1582,15 +1510,10 @@
   });
 
   $("rollBtn").addEventListener("click", () => {
-    const swapping = !!run.combo;
-    if (swapping && !canSwap()) return;
-    // A swap draws from what you have never hunted with; a fresh roll after a
-    // death draws from everything still alive.
-    const pool = swapping ? swapPool() : null;
-    const c = pool ? pool[Math.floor(Math.random() * pool.length)] : rollCombo();
+    if (run.combo) return;
+    const c = rollCombo();
     if (!c) { renderAll(); return; }
-    if (swapping) run.swapUsed = true;
-    run.combo = { weapon: c.weapon, style: c.style }; save(); renderAll();
+    run.combo = c; save(); renderAll();
   });
 
   // Only ever accept a combo that actually exists and is still alive — the
@@ -1602,50 +1525,22 @@
     const styles = legalStyles(w);
     const style = styles.includes(s) ? s : styles[0];
     if (!style) return;
-    // Defence in depth. The selects only offer takeable combos, but a stale
-    // value or a disabled option reaching here would otherwise commit a combo
-    // the rule forbids and spend the swap on it.
-    if (canSwap() && !swapPool().some(c => c.weapon === w && c.style === style)) return;
-    if (run.combo && comboKey(run.combo.weapon, run.combo.style) !== comboKey(w, style))
-      run.swapUsed = true;
     run.combo = { weapon: w, style };
-    swapOpen = false;
     save(); renderAll();
   };
   // Changing the weapon only refreshes which styles are on offer — it commits
   // nothing, so you can look through the options before settling.
   $("pickWeapon").addEventListener("change", () => {
     const w = $("pickWeapon").value, sSel = $("pickStyle");
-    // Must apply the same restriction renderHuntBar does. It did not, so
-    // changing weapon mid-swap re-offered styles you had already hunted with
-    // and the "never used" rule could be walked straight around.
-    const swapping = canSwap();
-    const open = swapping
-      ? new Set(swapPool().filter(c => c.weapon === w).map(c => c.style))
-      : null;
-    const why = (st) => run.combo && w === run.combo.weapon && st === run.combo.style
-      ? " &mdash; Selected" : " &mdash; Used";
-    sSel.innerHTML = legalStyles(w).map(st => {
-      const ok = !swapping || open.has(st);
-      return `<option value="${escapeHtml(st)}"${ok ? "" : " disabled"}>` +
-             `${escapeHtml(st)}${ok ? "" : why(st)}</option>`;
-    }).join("");
-    // A disabled option can still be the browser's default pick, which would
-    // leave the select showing something Confirm must refuse. Land on the first
-    // one that is actually takeable.
-    const first = [...sSel.options].find(o => !o.disabled);
-    if (first) sSel.value = first.value;
+    sSel.innerHTML = legalStyles(w).map(st =>
+      `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join("");
     renderBoard();          // the row arm of the crosshair follows the picker
   });
-  // The column arm. Choosing a style commits nothing either, so this only
-  // redraws the board — the pair is committed by Confirm.
   $("pickStyle").addEventListener("change", renderBoard);
   $("pickConfirm").addEventListener("click", () =>
     setPickedCombo($("pickWeapon").value, $("pickStyle").value));
   // Opting in to the swap. Nothing is spent by opening it — the swap is only
   // used up by confirming a different combo.
-  $("swapBtn").addEventListener("click", () => { swapOpen = true; renderAll(); });
-  $("pickCancel").addEventListener("click", () => { swapOpen = false; renderAll(); });
 
   $("questSearch").addEventListener("input", (e) => renderQuestResults(e.target.value));
   $("questResults").addEventListener("click", (e) => {
