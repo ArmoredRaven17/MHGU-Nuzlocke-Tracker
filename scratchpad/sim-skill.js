@@ -146,3 +146,46 @@ for (const KILL of ["both", "cart", "streak"]) {
     console.log("");
   }
 }
+
+// ── How much exposure does any one combo actually get? ─────────────────────
+// The static-skill assumption is only wrong if a run gives you enough reps to
+// improve. Count them: distinct combos touched, and hunts per combo.
+{
+  console.log("############ exposure per combo ############");
+  console.log("If a run cannot give you enough reps on a weapon to get better at it,");
+  console.log("static skill is the right model and 'they would learn' is not a caveat.");
+  console.log("");
+  console.log("  assign  loadout   distinct combos used   hunts each   most-used combo");
+  for (const a of ["roll","pick"]) for (const l of ["hold","cycle","rotate","free"]) {
+    let distinct = 0, hunts = 0, top = 0, runs = 0;
+    for (const seed of SEEDS) {
+      const rng = mulberry(seed);
+      const prof = makeProfile(0.9, CAP, rng);
+      for (let i = 0; i < 300; i++) {
+        const use = new Map();
+        // Re-run the loop, tallying which combo each hunt was spent on.
+        const alive = prof.map(() => true); const ceiling = prof.length;
+        let losses=0, h=0, clears=0, streak=0, cur=-1;
+        while (losses < ceiling && clears < CLEAR_LIMIT && h < 4000) {
+          if (cur < 0 || !alive[cur]) { const opts=[];
+            for (let k=0;k<alive.length;k++) if (alive[k]) opts.push(k);
+            if (!opts.length) break;
+            cur = a === "pick" ? opts.reduce((b,i)=>prof[i].p>prof[b].p?i:b, opts[0])
+                               : opts[(rng()*opts.length)|0]; }
+          h++; use.set(cur, (use.get(cur)||0)+1);
+          const cleared = rng() < prof[cur].p;
+          let died = false;
+          if (cleared) { clears++; streak=0; died = rng() < 0.25; }
+          else { streak++; died = true; }
+          if (died) { alive[cur]=false; losses++; cur=-1; }
+          else if (l==="rotate" || l==="free" || (l==="cycle" && cleared)) cur=-1;
+        }
+        distinct += use.size; hunts += h; top += Math.max(...use.values()); runs++;
+      }
+    }
+    console.log("   " + a.padEnd(6) + "  " + l.padEnd(8) +
+      (distinct/runs).toFixed(1).padStart(14) + "        " +
+      (hunts/distinct).toFixed(2).padStart(6) + "       " +
+      (top/runs).toFixed(1) + " hunts");
+  }
+}
