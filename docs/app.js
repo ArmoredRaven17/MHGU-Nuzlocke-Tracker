@@ -61,7 +61,7 @@
   // Both locks default on: locked is the 1x reference run, unlocking is the
   // discount. See LEVERS.
   const DEFAULT_CFG = {
-    kill: "both",                        // "both" | "cart" | "fail" | "streak" | "twice"
+    kill: "both",                        // "both" | "cart" | "fail" | "streak"
     assign: "roll",                      // "roll" | "pick"
     loadout: "hold",                     // "hold" | "cycle" | "free"; see LEVERS
     lockQuest: true,
@@ -109,7 +109,6 @@
       cart:   [0.709, 0.75],   // carts only; you can lose a quest and keep it
       fail:   [0.400, 0.50],   // failures only; carting to a clear costs nothing
       streak: [0.250, 0.38],   // the first failure is forgiven
-      twice:  [0.171, 0.26],   // needs the same quest to beat you twice
     },
     // The styles cap swings hardest because it decides how much of the board you
     // ever get to spend. Its effects carry ~17% on top of the honest pool ratio,
@@ -134,10 +133,29 @@
     rerollOn:    [0.860, 0.86],
     rerollPrice: { 2500: [0.96, 0.96], 5000: [1, 1], 10000: [1.02, 1.02], 20000: [1.04, 1.04] },
   };
-  // LEVER PLACEHOLDER — assign, loadout and rerollOn cannot be measured. The
-  // simulator treats every combo as equally winnable (a deliberate design call),
-  // so a model where combos are interchangeable can say nothing about a rule
-  // governing WHICH combo you hold. Those three carry factor === effect.
+  // LEVER PLACEHOLDER — assign, loadout, quest and rerollOn cannot be measured.
+  // The simulator treats every combo as equally winnable (a deliberate design
+  // call), so a model where combos are interchangeable can say nothing about a
+  // rule governing WHICH combo you hold. Those four carry factor === effect.
+  //
+  // `quest` joined this list when "same quest failed twice" was retired, which
+  // had been its only measurable effect — the forced retry was the sole reason
+  // that rule ever fired. Against every remaining kill condition the degeneracy
+  // audit puts lock-on at KS 0.008..0.016 from lock-off: indistinguishable.
+  //
+  // That is the model being blind, not the lever being dead. The lock exists so
+  // you cannot dodge a difficult quest you chose and lost, and every quest in
+  // the simulator is equally winnable — so there is no such thing as a difficult
+  // quest to dodge, and nothing for the lock to prevent.
+  //
+  // Do not go looking for a net figure to replace 0.85. These levers push in
+  // BOTH directions at once and for different reasons — the retry is harder
+  // because that quest already beat you, and easier because you have now seen
+  // the fight and can prepare for it. Sweeping the retry win rate from 0.50 to
+  // 0.90 duly moves the lock between 0.84x and 1.08x, straddling 1.00: the net
+  // is whatever you assumed going in. So the four placeholders are not priced on
+  // outcome at all. They pay you for ACCEPTING A RESTRICTION, and what they are
+  // worth is what you gave up, which is a design decision and not a measurement.
 
   // Walk the chosen options once; i picks factor (0) or effect (1).
   const legs = (c, i) => {
@@ -213,21 +231,19 @@
   // vocabulary as Attack Up (S/M/L). Built from `effect`, so it says what the
   // option really does rather than what the arithmetic needed.
   //
-  // XXL exists because the scale was saturating. Size is the distance from 1,
-  // which on the costly side can never exceed 1.00 however harsh an option is —
-  // so the two harshest kill conditions both sat past the 0.60 XL line and read
-  // identically (0.62 and 0.74) while the RATING, which is a product and has no
-  // such ceiling, still moved a whole band between them. Switching from "two in
-  // a row" to "same quest twice" went Normal to Easy with both badges saying
-  // XL. That was the badge failing to report a real 32% difference, not the
-  // rating misbehaving.
+  // XXL was added here and then taken back out. It existed to separate the two
+  // harshest kill conditions, which both sat past the 0.60 XL line (0.62 and
+  // 0.74) and so read identically while the RATING, a product with no ceiling,
+  // still moved a whole band between them. Retiring "same quest failed twice"
+  // removed the collision instead, and the largest size left in the app is 0.62,
+  // so an XXL tier could never fire. An unreachable band is worse than none.
   //
-  // The ceiling has moved, not gone: XXL covers 0.70..1.00, the last tier this
-  // metric can express. Anything harsher than "same quest twice" collides with
-  // it, and at that point the honest fix is to measure size as |ln(effect)| —
-  // the natural metric for a system where every lever is a ratio, unbounded in
-  // both directions. Costly, though: it re-bands 18 of the 34 badges.
-  const SIZE_STEPS = [[0.70, "XXL"], [0.60, "XL"], [0.30, "L"], [0.15, "M"], [0.05, "S"]];
+  // The underlying ceiling is still there if a harsher lever ever arrives: size
+  // is the distance from 1, which on the costly side cannot exceed 1.00 however
+  // brutal the option. The durable fix at that point is |ln(effect)| — the
+  // natural metric where every lever is a ratio, and unbounded both ways — but
+  // it re-bands 18 of the 34 badges, so it is not worth doing pre-emptively.
+  const SIZE_STEPS = [[0.60, "XL"], [0.30, "L"], [0.15, "M"], [0.05, "S"]];
   function sizeOf(effect) {
     const away = Math.abs(effect - 1);
     // Epsilon because the boundaries ARE the table values: 1.15 - 1 comes out
@@ -287,7 +303,6 @@
     startedAt: 0, endedAt: 0,
     deaths: [],            // {weapon, style, reason, quest, n, reviveCount}
     failStreak: 0,         // run-global; carts never touch it
-    questFails: {},        // "Type|Name" -> cumulative failures
     questsDone: {},        // "Type|Name" -> true once CLEARED; see clearedQuest()
     lockQuest: null,       // the quest you owe a retry on
     combo: null,           // the loadout for the hunt in progress
@@ -398,10 +413,9 @@
   const questKey = (q) => q.t + "|" + q.n;
   const isArena = (q) => !!q && q.t === "Arena";
   // A quest is spent once you CLEAR it, and only then. Consuming it on any
-  // attempt would break two rules outright: the quest lock forces a retry of a
-  // quest that would no longer exist, and "same quest failed twice" could never
-  // fire at all. Failing leaves it on the board, which is also the natural
-  // reading — you haven't done it yet.
+  // attempt would break the quest lock outright, since it forces a retry of a
+  // quest that would no longer exist. Failing leaves it on the board, which is
+  // also the natural reading — you haven't done it yet.
   //
   // The rule exists because farming one quest fifty times was worth 5.17x
   // playing whatever you fancied, which was a bigger score swing than any
@@ -456,8 +470,8 @@
   // chosen. Both of those are load-bearing.
   //
   // It exists to stop the gentle kill conditions winning on sheer length —
-  // unbounded, "same quest twice" ran a median 1,384 hunts against 102 for the
-  // default and inverted the entire difficulty ordering. So it cannot be a
+  // unbounded, the gentlest condition ran a median 1,384 hunts against 102 for
+  // the default and inverted the entire difficulty ordering. So it cannot be a
   // scored lever (it only binds when a run would otherwise outlast it, so a
   // short configuration could take the tightest limit, never reach it, and
   // collect the bonus for free) and it cannot be opted out of.
@@ -515,6 +529,12 @@
     if (d && d.cfg) {
       cfg = Object.assign({}, DEFAULT_CFG);
       Object.keys(DEFAULT_CFG).forEach(k => { if (k in d.cfg) cfg[k] = d.cfg[k]; });
+      // "Same quest failed twice" is retired (see RETIRED_LABELS). It maps to
+      // two-in-a-row rather than to the default, because that is what it was:
+      // measured over 6,000 runs the two produced identical death counts at
+      // every percentile. Falling through to the guard below would have thrown
+      // anyone on the gentlest condition onto the harshest one.
+      if (cfg.kill === "twice") cfg.kill = "streak";
       if (!LEVERS.kill[cfg.kill]) cfg.kill = DEFAULT_CFG.kill;
       migrateLoadout(cfg, d.cfg);
     }
@@ -544,7 +564,7 @@
   };
   // Radio groups: cfg key -> value -> element id.
   const CFG_RADIOS = {
-    kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak", twice: "k_twice" },
+    kill:   { both: "k_both", cart: "k_cart", fail: "k_fail", streak: "k_streak" },
     stylesPerWeapon: { 1: "c_1", 2: "c_2", 3: "c_3", 4: "c_4", 5: "c_5", 6: "c_6" },
     revivePrice: { 5000: "p_5000", 10000: "p_10000", 20000: "p_20000", 30000: "p_30000" },
     reviveCap: { 1: "rc_1", 3: "rc_3", 5: "rc_5", 10: "rc_10", 20: "rc_20" },
@@ -557,10 +577,14 @@
   // than a second table — the summary's Rules panel then can't drift from the
   // control it is reporting on. The difficulty badge is dropped; the panel is a
   // record of what was played, and the weights are already on the tiles.
+  // A finished run keeps the rules it was played under, so a value whose control
+  // no longer exists still needs a name. Only the summary reads these; the live
+  // config is migrated on load and can never hold one.
+  const RETIRED_LABELS = { twice: "Same quest failed twice" };
   function ruleLabel(key, value) {
     const id = (CFG_RADIOS[key] || {})[value];
     const input = id && $(id);
-    if (!input || !input.closest("label")) return String(value);
+    if (!input || !input.closest("label")) return RETIRED_LABELS[value] || String(value);
     const label = input.closest("label").cloneNode(true);
     const w = label.querySelector(".w");
     if (w) w.remove();
@@ -750,13 +774,9 @@
     } else {                                        // "fail"
       run.failed++;
       if (counts) {
-        const qk = questKey(run.quest);
         run.failStreak++;                           // before the streak check
-        run.questFails[qk] = (run.questFails[qk] || 0) + 1;
-
-        if      (cfg.kill === "fail" || cfg.kill === "both")          kill(combo, "Quest failed");
-        else if (cfg.kill === "streak" && run.failStreak >= 2)        kill(combo, "Two failures in a row");
-        else if (cfg.kill === "twice"  && run.questFails[qk] >= 2)    kill(combo, "Quest failed twice");
+        if      (cfg.kill === "fail" || cfg.kill === "both")   kill(combo, "Quest failed");
+        else if (cfg.kill === "streak" && run.failStreak >= 2) kill(combo, "Two failures in a row");
 
         if (cfg.lockQuest && !wasRetry) run.lockQuest = run.quest;
       }

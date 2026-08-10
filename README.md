@@ -50,7 +50,6 @@ nothing to gain from stacking them.
 | Cart | Carts only — you can lose a quest and keep the combo | −M |
 | Quest failed | Failures only — you can cart your way to a clear for free | −L |
 | Two quest failures in a row | The first is forgiven; a clear resets the streak | −XL |
-| Same quest failed twice | Cumulative, not necessarily consecutive | −XXL |
 
 **Styles per weapon** — how many styles a weapon may lose before the whole weapon
 retires and its surviving styles leave the pool. This is the only lever that *scales*

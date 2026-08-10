@@ -93,11 +93,10 @@ set, which is a different game. `isArena(q)` and the `counts` gate in `report()`
 as a guard for runs saved before the filter existed — without them, restoring such a run
 would score a quest that was played on the understanding it counted for nothing.
 
-**Clearing a quest spends it for the run** (`run.questsDone`, keyed like `questFails`).
+**Clearing a quest spends it for the run** (`run.questsDone`, keyed `Type|Name`).
 Fifty clears means fifty different quests. Only a *clear* spends one, and that is
 load-bearing rather than flavour: consuming on any attempt would make the quest lock
-demand a retry of a quest that no longer exists, and would stop `same quest failed twice`
-from ever firing. The rule exists because farming the best-paying quest fifty times was
+demand a retry of a quest that no longer exists. The rule exists because farming the best-paying quest fifty times was
 worth **5.17×** playing at random — a larger score swing than any difficulty lever, and
 invisible to every simulation, since they all picked quests uniformly. It costs an
 ordinary player almost nothing: fifty draws from 1,136 collide about once per run.
@@ -143,7 +142,7 @@ untouched.
 Each option carries **two** numbers and the gap between them is the point:
 
 - `factor` — what earnings are multiplied by. Never displayed.
-- `effect` — what the option does to your final **score**. This is what the XS…XXL badge
+- `effect` — what the option does to your final **score**. This is what the XS…XL badge
   and the difficulty rating are built from.
 
 They differ because a harder setting also makes the run shorter, so it banks fewer
@@ -168,23 +167,44 @@ Watch the `sizeOf` boundaries: they compare against the table's own values, and
 `1.15 - 1` is `0.1499999999999999` in binary floating point, which silently demoted
 cycling from M to S. Hence the `1e-9` epsilon.
 
-**XXL is there because the badge saturated while the rating did not.** Size is the
-distance from 1, which on the costly side cannot exceed 1.00 however harsh an option
-gets; the two harshest kill conditions both sat past the 0.60 XL line (0.62 and 0.74)
-and read identically, while the rating — a product, with no ceiling — still moved a
-whole band between them. Switching from *two in a row* to *same quest twice* went
-Normal to Easy with both badges saying XL, hiding a real 32% difference.
+**The badge can saturate; the rating cannot.** Size is the distance from 1, which on the
+costly side can never exceed 1.00 however harsh an option is, while the rating is a
+product with no ceiling. An XXL tier was added to separate the two harshest kill
+conditions (0.62 and 0.74, both reading XL) and then removed again when retiring `same
+quest failed twice` dissolved the collision instead. The largest size left is 0.62, so
+XXL could never fire, and an unreachable band is worse than none. If a harsher lever
+ever lands, the durable fix is `|ln(effect)|` — the natural metric where every lever is
+a ratio, unbounded both ways — but it re-bands 18 of the 34 badges, so it is not worth
+doing pre-emptively.
 
-The ladder is symmetric: both signs read the same table, so `+XXL` is defined and
-reachable at effect ≥ 1.70. Nothing earns it because the largest bonus in the app is
-one style per weapon at 1.60. That is the same one-sidedness as the rating
-distribution — a content fact about which levers exist, not a display one.
+**Run the degeneracy audit before trusting a weight** (`scratchpad/sim-degeneracy.js`).
+Every earlier simulation compared final score, which the multiplier dominates, so an
+option whose rule did nothing still looked distinct from its neighbour — and the
+inversion audit then checked that against the same assumption baked into the weights.
+Self-consistent, and wrong. With revives off the multiplier has no effect on play, so
+the death distribution is a pure function of the rules: two options that produce the
+same distribution are the same rule, whatever we pay for them. That is what `twice`
+was, and nothing else found it.
 
-The ceiling has moved rather than gone. XXL covers 0.70…1.00 and is the last tier this
-metric can express, so anything harsher than *same quest twice* collides with it. The
-durable fix at that point is `|ln(effect)|` — the natural metric where every lever is a
-ratio, and unbounded both ways — but it re-bands 18 of the 34 badges, so it is not
-worth doing until something actually needs it.
+Two of its findings are *not* bugs and should not be "fixed":
+
+- **Caps 4/5/6 have identical death counts** but are not degenerate. Above cap 3 the
+  50-clear limit binds first, so the lever stops working through deaths and works
+  through survivor rate instead — `L` still climbs 71.5 → 77.2 → 81.0.
+- **The quest lock is indistinguishable from no lock** under every remaining kill
+  condition (KS 0.008–0.016). That is the model being blind, not the lever being dead.
+  The lock exists so you cannot dodge a difficult quest you chose and lost, and every
+  quest in the simulator is equally winnable — so there is no difficult quest to dodge
+  and nothing for the lock to prevent. Sweeping the retry win rate from 0.50 to 0.90
+  (`scratchpad/sim-questlock-sensitivity.js`) moves it between 0.84× and 1.08×,
+  straddling 1.00 and never reaching the 1.18× that charging 0.85 to remove it implies.
+  Do not hunt for a net figure to replace 0.85. These levers push **both ways at once
+  and for different reasons** — the retry is harder because that quest already beat you,
+  and easier because you have now seen the fight and can prepare for it — so the net is
+  whatever you assumed going in. The four LEVER PLACEHOLDER entries (`quest`, `assign`,
+  `loadout`, `rerollOn`) are deliberately not priced on outcome. They pay for **accepting
+  a restriction**, and what they are worth is what you gave up. That is a design
+  decision, and no amount of simulation will produce it.
 
 **The rating bands are set from the real distribution**, not round numbers. Across all
 49,200 reachable configurations the median is 0.30 and **98% sit below the reference**,
@@ -202,7 +222,23 @@ of the hole. Do not add an affordability gate.
 `−M` in the sidebar and a negative total read as the same character.
 
 **The kill conditions are a radio group, not checkboxes** — `cfg.kill` is one of
-`both | cart | fail | streak | twice`.
+`both | cart | fail | streak`.
+
+**`same quest failed twice` was retired**, and how it survived as long as it did is the
+more useful lesson. With the quest lock on, failing Q forces your next hunt to be Q, so
+every failure is followed by a retry of that same quest and "two failures in a row" and
+"the same quest twice" become the same event — and since a quest is spent on clear, a
+failure banked against a quest you later cleared can never be collected. Provable, and
+measured: identical death distributions at KS 0.0000 over 8,000 runs. It was paid 32%
+less for an identical run, so it was strictly dominated. With the lock off it fires
+almost never (0.17 mean deaths, 85% of runs lose nothing), because you would have to
+redraw a quest you already failed out of 1,136 in ~69 hunts. There is no setting at
+which the rule means anything of its own.
+
+Saved configs holding `twice` migrate to `streak` in `load()`, not to the default — they
+played identically, and falling through to the guard would have thrown someone on the
+gentlest condition onto the harshest. `RETIRED_LABELS` keeps a name for it so a run
+already finished under it still reports its own rules.
 
 Note what `both` exists for: **a quest can fail without carting** — you can time out or
 slay a capture target — and you can cart twice and still clear, so cart and quest-failed are
@@ -263,8 +299,8 @@ This is fixed, not a lever, and it counts clears rather than attempts. Both part
 load-bearing and neither should be softened without re-simulating:
 
 - **It cannot be optional.** Unbounded, the gentle kill conditions win on sheer length —
-  `same quest twice` ran a median 1,384 hunts against 102 for the default and scored
-  2.27× it, inverting the whole difficulty ordering.
+  the gentlest ran a median 1,384 hunts against 102 for the default and scored 2.27× it,
+  inverting the whole difficulty ordering.
 - **It cannot be a scored lever.** A limit only binds when a run would otherwise outlast
   it, so a short configuration could take the tightest limit, never reach it, and
   collect the bonus for free.
