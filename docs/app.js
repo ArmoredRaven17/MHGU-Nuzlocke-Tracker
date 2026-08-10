@@ -117,28 +117,28 @@
       1: [4.717, 1.60], 2: [1.944, 1.35], 3: [1.000, 1.00],
       4: [0.737, 0.85], 5: [0.578, 0.72], 6: [0.459, 0.60],
     },
-    assign:  { roll: [1, 1], pick: [0.850, 0.85] },
-    // cycle is the only option in the app that scores ABOVE the reference.
-    // Four rules, ordered by how much continuity you give up: free lets you
-    // change mid-quest, hold takes that away, cycle additionally takes every
-    // combo you succeed with, and rotate takes all of it, always. Priced by the
-    // restriction accepted rather than by measured outcome — see LEVER
-    // PLACEHOLDER below — and spaced so all four badges stay distinct
-    // (±0, +M, +L, −M), which matters after two options once shared a badge
-    // while moving the rating a whole band.
+    // assign and loadout are measured now, not judged. sim-skill.js gives each
+    // player a win rate per combo — without that there is no such thing as a
+    // good combo, so there was nothing for hold to protect or Hunter's choice to
+    // choose, and both sat in LEVER PLACEHOLDER on judgement alone.
     //
-    // rotate's 1.35 is a BET, and scratchpad/sim-rotate-breakeven.js states it:
-    // the model is blind to this lever, so its score tracks the weight exactly,
-    // and the weight is only fair if never settling on a weapon really does make
-    // you worse. At 1.35 it breaks even when a rotate player clears 12.2 points
-    // worse than someone holding one combo (0.598 against 0.720); cycle's 1.15
-    // asks for 6.4. Clear better than that and it is a net advantage — which it
-    // will be for anyone comfortable on all fourteen weapons, and that is a skill
-    // difference no weight can price. Moving it 1.30 -> 1.40 shifts the reachable
-    // distribution barely at all (median 0.528, Very Hard 44 -> 45 of 384), so
-    // this is a safe number to retune, not a structural one.
-    loadout: { hold: [1, 1], cycle: [1.150, 1.15], rotate: [1.350, 1.35],
-               free: [0.850, 0.85] },
+    // Two results shape the table below.
+    //
+    // Hunter's choice carries the whole effect. Under it all four loadout rules
+    // measure IDENTICAL, because picking your best combo and holding your best
+    // combo are the same thing. So `pick` is priced off the roll/pick gap and
+    // the loadout weights are read off the roll rows only; letting both claim it
+    // was double-counting, and paid 0.85 x 0.85 = 0.72 for a 0.93 effect.
+    //
+    // The loadout rule barely matters. Across 3 kill conditions x 3 skill
+    // profiles x 4 swap-play styles the whole group spans 1.00 to 1.04. Fifty
+    // hunts spread over ~40 combos at 1.7 hunts each is simply not enough
+    // exposure for which rule governs your combo to move the outcome. If that
+    // group should be a real difficulty lever, the fix is a bigger difference
+    // between the RULES, not a bigger number here.
+    assign:  { roll: [1, 1], pick: [0.930, 0.93] },
+    loadout: { hold: [1, 1], cycle: [1.040, 1.04], rotate: [1.030, 1.03],
+               free: [1, 1] },
     quest:   { on: [1, 1], off: [0.850, 0.85] },
 
     reviveOn:    [0.775, 0.82],   // a safety net at all

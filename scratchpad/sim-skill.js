@@ -27,7 +27,8 @@ eval(fs.readFileSync("C:/Coding Repos/MHGU Zenny Gauntlet/docs/data.js", "utf8")
 const QUESTS = window.MHGU_QUESTS.filter(q => q.t !== "Arena" && !q.p && q.r > 0);
 
 const WEAPONS = 14, STYLES = 6, CLEAR_LIMIT = 50, SURVIVOR_BONUS = 1.0;
-const MEAN_P = 0.72;                       // same average player as every other sim
+const MEAN_P_REF = { value: 0.72 };        // same average player as every other sim
+Object.defineProperty(globalThis, "MEAN_P", { get: () => MEAN_P_REF.value });
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
   t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const gauss = (rng) => {                   // Box-Muller
@@ -68,7 +69,7 @@ function makeProfile(breadth, cap, rng) {
 // behave) `free` is identical to `rotate` and comes out HARDER than holding.
 // Modelled as an option it can never be worse than holding, because declining is
 // always available.
-function simulate(profile, assign, loadout, kill, rng) {
+function simulate(profile, assign, loadout, kill, swap, rng) {
   const alive = profile.map(() => true);
   const ceiling = profile.length;
   let losses=0, earned=0, hunts=0, clears=0, streak=0, owed=-1, cur=-1;
@@ -82,11 +83,15 @@ function simulate(profile, assign, loadout, kill, rng) {
     if (!opts.length) break;
     if (cur < 0 || !alive[cur]) cur = drawFor(opts);
     else if (loadout === "free") {
-      // The one swap this quest allows, taken only when it should pay.
+      // The one swap this quest allows. Nobody plays this perfectly, so `swap`
+      // carries two rates: how often you take a swap that helps, and how often
+      // you take one that does not. Ranging over them is the point — a single
+      // "always optimal" policy flatters the option and prices it wrong.
       const expected = assign === "pick"
         ? profile[bestOf(opts)].p
         : opts.reduce((t,i) => t + profile[i].p, 0) / opts.length;
-      if (profile[cur].p < expected) cur = drawFor(opts);
+      const good = profile[cur].p < expected;
+      if (rng() < (good ? swap.onGood : swap.onBad)) cur = drawFor(opts);
     }
     hunts++;
     let qi;
@@ -115,92 +120,108 @@ function simulate(profile, assign, loadout, kill, rng) {
 }
 
 const mean = a => a.reduce((x,y)=>x+y,0)/a.length;
-function measure(profileSeed, breadth, cap, assign, loadout, kill, N) {
+function measure(profileSeed, breadth, cap, assign, loadout, kill, swap, N) {
   const rng = mulberry(profileSeed);
   const prof = makeProfile(breadth, cap, rng);
   const rs = [];
-  for (let i=0;i<N;i++) rs.push(simulate(prof, assign, loadout, kill, rng));
+  for (let i=0;i<N;i++) rs.push(simulate(prof, assign, loadout, kill, swap, rng));
   return { L: mean(rs.map(r=>r.L)), earned: mean(rs.map(r=>r.earned)),
            clears: mean(rs.map(r=>r.clears)), losses: mean(rs.map(r=>r.losses)) };
 }
 
-const N = 1200, CAP = 3;
+const N = 900, CAP = 3;
 const PROFILES = [["generalist", 0.35], ["typical", 0.9], ["specialist", 1.8]];
-const SEEDS = [11, 23, 37, 51, 67, 83, 97, 113];
+const SEEDS = [11, 23, 37, 51, 67, 83];
+const KILLS = ["both", "cart", "streak"];
+// Nobody plays the optional swap perfectly. Range over how well they do.
+const SWAPS = [
+  ["never",   { onGood: 0.00, onBad: 0.00 }],   // holds regardless
+  ["casual",  { onGood: 0.50, onBad: 0.15 }],   // sometimes takes it, sometimes wrongly
+  ["sharp",   { onGood: 1.00, onBad: 0.00 }],   // takes every swap that helps
+  ["fidgety", { onGood: 1.00, onBad: 1.00 }],   // swaps whenever allowed
+];
 const PAY = { hold:1.00, cycle:1.15, rotate:1.35, free:0.85 };
 
-console.log("Mean win rate is held at " + MEAN_P + " for every profile, so what varies");
-console.log("is the SHAPE of the player's skill, not how good they are.");
+const avg = (f) => { const v=[]; for (const k of KILLS) for (const [,b] of PROFILES)
+  for (const sd of SEEDS) v.push(f(k,b,sd)); return mean(v); };
+
+console.log("Averaged over " + KILLS.length + " kill conditions x " + PROFILES.length +
+            " skill profiles x " + SEEDS.length + " seeds x " + N + " runs.");
+console.log("Mean win rate is pinned at " + MEAN_P + " everywhere, so what varies is the");
+console.log("SHAPE of a player's skill and how well they use the optional swap.");
 console.log("");
-console.log("L = clears x (1 + survivor rate) - the gameplay term, before any multiplier.");
-console.log("'implied' is the weight that makes a rule score the same as roll+hold for");
-console.log("that player: L(roll,hold) / L(rule). Compare with what we actually pay.");
-console.log("");
-console.log("The kill condition matters. Under 'both' a failure always takes the combo,");
-console.log("so cycle's \"a failure keeps it\" can never fire and it collapses onto rotate.");
-console.log("It only separates where a failure is survivable.");
+console.log("implied = L(roll,hold) / L(rule): the weight that makes a rule score the");
+console.log("same as the baseline. That is the whole calibration.");
 console.log("");
 
-for (const KILL of ["both", "cart", "streak"]) {
-  console.log("############ kill = " + KILL + " ############");
-  for (const [pname, breadth] of PROFILES) {
-    const base = mean(SEEDS.map(s => measure(s, breadth, CAP, "roll", "hold", KILL, N).L));
-    console.log("  " + pname + " (breadth " + breadth + ")");
-    console.log("    assign  loadout      L     vs base   implied   we pay   verdict");
-    for (const a of ["roll","pick"]) for (const l of ["hold","cycle","rotate","free"]) {
-      const L = mean(SEEDS.map(s => measure(s, breadth, CAP, a, l, KILL, N).L));
-      const implied = base / L;
-      const pay = PAY[l] * (a === "pick" ? 0.85 : 1);
-      const off = pay / implied;
-      const verdict = Math.abs(off-1) < 0.06 ? "ok" :
-        (off > 1 ? "OVERPAID x" + off.toFixed(2) : "underpaid x" + off.toFixed(2));
-      console.log("     " + a.padEnd(6) + "  " + l.padEnd(8) +
-        L.toFixed(1).padStart(6) + "   " + (L/base).toFixed(3) + "x" +
-        "   " + implied.toFixed(3) + "     " + pay.toFixed(3) + "   " + verdict);
-    }
-    console.log("");
+const base = avg((k,b,sd) => measure(sd,b,CAP,"roll","hold",k,SWAPS[0][1],N).L);
+const implied = {};
+console.log("  assign  loadout   swap-play      L      implied   we pay");
+for (const a of ["roll","pick"]) for (const l of ["hold","cycle","rotate","free"]) {
+  // Only `free` cares how the swap is played; the rest are unaffected by it.
+  const rates = l === "free" ? SWAPS : [["n/a", SWAPS[0][1]]];
+  const per = [];
+  for (const [sname, sw] of rates) {
+    const L = avg((k,b,sd) => measure(sd,b,CAP,a,l,k,sw,N).L);
+    per.push([sname, L]);
+    console.log("   " + a.padEnd(6) + "  " + l.padEnd(8) + "  " + sname.padEnd(9) +
+      L.toFixed(1).padStart(6) + "    " + (base/L).toFixed(3) + "     " +
+      (PAY[l] * (a==="pick"?0.85:1)).toFixed(3));
   }
+  implied[a+"/"+l] = base / mean(per.map(x=>x[1]));   // across swap styles
 }
 
-// ── How much exposure does any one combo actually get? ─────────────────────
-// The static-skill assumption is only wrong if a run gives you enough reps to
-// improve. Count them: distinct combos touched, and hunts per combo.
+console.log("");
+console.log("── Recommended weights ──────────────────────────────────────────");
+console.log("Loadout is read off the roll rows, since under Hunter's choice all four");
+console.log("rules measure identical -- picking your best and holding your best are the");
+console.log("same thing -- so `pick` carries that effect on its own.");
+console.log("");
+const round = x => Math.round(x*100)/100;
+for (const l of ["hold","cycle","rotate","free"])
+  console.log("  loadout " + l.padEnd(7) + " -> " + round(implied["roll/"+l]).toFixed(2));
+console.log("  assign  pick    -> " + round(implied["pick/hold"]).toFixed(2));
+console.log("");
+console.log("Paste-ready, normalised so hold is exactly 1.00:");
+const h = implied["roll/hold"];
+const fmt = l => { const v = round(implied["roll/"+l]/h); return v.toFixed(3); };
+console.log("    loadout: { hold: [1, 1], cycle: [" + fmt("cycle") + ", " + fmt("cycle") + "],");
+console.log("               rotate: [" + fmt("rotate") + ", " + fmt("rotate") + "], free: [" +
+            fmt("free") + ", " + fmt("free") + "] },");
+console.log("    assign:  { roll: [1, 1], pick: [" + round(implied["pick/hold"]/h).toFixed(3) +
+            ", " + round(implied["pick/hold"]/h).toFixed(3) + "] },");
+console.log("");
+console.log("These are provisional by construction. Re-run this after any rule change:");
+console.log("    node scratchpad/sim-skill.js");
+
+// ── How much of a score is the settings, and how much is just skill? ───────
+// The weights only matter to the extent they move a score more than the player
+// does. Pin the configuration and vary how GOOD the player is (not the shape of
+// their skill, the level of it) to see which dominates.
 {
-  console.log("############ exposure per combo ############");
-  console.log("If a run cannot give you enough reps on a weapon to get better at it,");
-  console.log("static skill is the right model and 'they would learn' is not a caveat.");
   console.log("");
-  console.log("  assign  loadout   distinct combos used   hunts each   most-used combo");
-  for (const a of ["roll","pick"]) for (const l of ["hold","cycle","rotate","free"]) {
-    let distinct = 0, hunts = 0, top = 0, runs = 0;
-    for (const seed of SEEDS) {
-      const rng = mulberry(seed);
-      const prof = makeProfile(0.9, CAP, rng);
-      for (let i = 0; i < 300; i++) {
-        const use = new Map();
-        // Re-run the loop, tallying which combo each hunt was spent on.
-        const alive = prof.map(() => true); const ceiling = prof.length;
-        let losses=0, h=0, clears=0, streak=0, cur=-1;
-        while (losses < ceiling && clears < CLEAR_LIMIT && h < 4000) {
-          if (cur < 0 || !alive[cur]) { const opts=[];
-            for (let k=0;k<alive.length;k++) if (alive[k]) opts.push(k);
-            if (!opts.length) break;
-            cur = a === "pick" ? opts.reduce((b,i)=>prof[i].p>prof[b].p?i:b, opts[0])
-                               : opts[(rng()*opts.length)|0]; }
-          h++; use.set(cur, (use.get(cur)||0)+1);
-          const cleared = rng() < prof[cur].p;
-          let died = false;
-          if (cleared) { clears++; streak=0; died = rng() < 0.25; }
-          else { streak++; died = true; }
-          if (died) { alive[cur]=false; losses++; cur=-1; }
-          else if (l==="rotate" || l==="free" || (l==="cycle" && cleared)) cur=-1;
-        }
-        distinct += use.size; hunts += h; top += Math.max(...use.values()); runs++;
-      }
-    }
-    console.log("   " + a.padEnd(6) + "  " + l.padEnd(8) +
-      (distinct/runs).toFixed(1).padStart(14) + "        " +
-      (hunts/distinct).toFixed(2).padStart(6) + "       " +
-      (top/runs).toFixed(1) + " hunts");
+  console.log("############ skill level vs settings ############");
+  console.log("Reference configuration throughout; only the player changes.");
+  console.log("");
+  console.log("  mean win rate   deaths   clears   survivor rate   L      vs 0.72 player");
+  const at = (mp) => {
+    const saved = MEAN_P_REF.value; MEAN_P_REF.value = mp;
+    const v = [];
+    for (const sd of SEEDS) v.push(measure(sd, 0.9, CAP, "roll", "hold", "both", SWAPS[0][1], N));
+    MEAN_P_REF.value = saved;
+    return { L: mean(v.map(r=>r.L)), losses: mean(v.map(r=>r.losses)),
+             clears: mean(v.map(r=>r.clears)) };
+  };
+  const mid = at(0.72);
+  for (const mp of [0.55, 0.65, 0.72, 0.80, 0.88, 0.94]) {
+    const r = at(mp);
+    const rate = (42 - r.losses) / 42;
+    console.log("      " + mp.toFixed(2) + "        " + r.losses.toFixed(1).padStart(5) +
+      "    " + r.clears.toFixed(1).padStart(5) + "        " + rate.toFixed(3) +
+      "      " + r.L.toFixed(1).padStart(5) + "     " + (r.L/mid.L).toFixed(2) + "x");
   }
+  console.log("");
+  console.log("Compare that spread with the settings: the entire loadout group spans");
+  console.log("1.00-1.04, and the widest single lever in the app (styles per weapon)");
+  console.log("spans 0.60-1.60.");
 }
