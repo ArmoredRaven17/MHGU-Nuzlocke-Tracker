@@ -64,6 +64,10 @@
     kill: "both",                        // "both" | "cart" | "fail" | "streak"
     assign: "roll",                      // "roll" | "pick"
     loadout: "hold",                     // "hold" | "cycle" | "rotate"
+    // Convenience only, and deliberately absent from LEVERS: whether the app
+    // rolls for you the moment a combo is needed, or waits for the button.
+    // It changes how many clicks a run costs, never what the run is worth.
+    autoRoll: false,
     lockQuest: true,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
@@ -387,7 +391,7 @@
     run.revives++;
     settle(option);
     rebuildDeadKeys();
-    save(); renderAll();
+    afterMutation();     // hands out the first combo if auto-roll is on
   }
 
   // Refuse the combo you were handed and draw another. The refused one is not
@@ -583,7 +587,7 @@
 
   // ── Config <-> DOM ───────────────────────────────────────────────────────
   const CFG_BOXES = {
-    lockQuest: "l_quest",
+    lockQuest: "l_quest", autoRoll: "l_autoroll",
     reviveEnabled: "r_enabled", reviveOnce: "r_once",
     rerollEnabled: "rr_enabled",
   };
@@ -737,6 +741,8 @@
     Object.values(CFG_RADIOS.reviveCap).forEach(id => { $(id).disabled = off; });
     const rrOff = !cfg.rerollEnabled;
     Object.values(CFG_RADIOS.rerollPrice).forEach(id => { $(id).disabled = rrOff; });
+    // Nothing to roll automatically when you are choosing for yourself.
+    $("l_autoroll").disabled = cfg.assign !== "roll";
   }
 
   // ── Kill / revive ────────────────────────────────────────────────────────
@@ -831,8 +837,23 @@
   }
 
   function afterMutation() {
+    maybeAutoRoll();
     save();
     renderAll();
+  }
+
+  // Hand out a combo without waiting for the button. Only while the app is the
+  // one rolling -- under Hunter's choice there is nothing to automate, the
+  // choice is the point.
+  //
+  // Called from afterMutation rather than from a render, so state is never
+  // mutated while drawing. It is naturally idempotent: it does nothing once
+  // run.combo is set, and every path that clears run.combo runs through here.
+  function maybeAutoRoll() {
+    if (!cfg.autoRoll || cfg.assign !== "roll") return;
+    if (!run.active || runOver() || run.combo) return;
+    const c = rollCombo();
+    if (c) run.combo = c;
   }
 
   // ── Run lifecycle ────────────────────────────────────────────────────────
@@ -845,7 +866,7 @@
     run.maxLosses = maxLosses();
     run.cfg = Object.assign({}, cfg);
     rebuildDeadKeys();
-    save(); renderAll();
+    afterMutation();     // hands out the first combo if auto-roll is on
   }
   function endRun() {
     run.finished = true;

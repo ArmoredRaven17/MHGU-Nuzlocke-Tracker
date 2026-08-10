@@ -221,6 +221,17 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
+**`autoRoll` is convenience, not a lever.** It decides whether the app hands you a combo
+the moment one is needed or waits for the button, and it is deliberately absent from
+`LEVERS` — it changes how many clicks a run costs, never what the run is worth. It lives
+in `CFG_BOXES` so it persists, carries no badge, and is disabled under Hunter's choice
+where there is nothing to automate.
+
+`maybeAutoRoll()` runs from `afterMutation()` rather than from a render, so state is
+never mutated while drawing. It is idempotent — it returns early once `run.combo` is set
+— and every path that clears `run.combo` goes through `afterMutation`, including
+`startRun`, which is why starting a run deals the first combo too.
+
 **The loadout rule has three options.** `hold` keeps a combo until it dies; `cycle`
 hands it in on every clear but keeps it through a failure; `rotate` hands it in win or
 lose. `cycle` and `rotate` share the clear path and differ on failure, where `cycle`
