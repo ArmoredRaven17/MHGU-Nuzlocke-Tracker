@@ -1049,7 +1049,11 @@
 
     $("hlPick").classList.toggle("hidden", !pickMode);
     $("hlRolled").classList.toggle("hidden", pickMode);
-    $("rollBtn").classList.toggle("hidden", pickMode);
+    // rollBtn belongs to the ROLL flow only. Hiding it merely while the pickers
+    // were open left it on screen beside "Swap..." whenever a combo was held,
+    // reading "Swap (once)" and performing a RANDOM swap -- one click that threw
+    // away the whole premise of Hunter's choice.
+    $("rollBtn").classList.toggle("hidden", cfg.assign === "pick");
     // Only Hunter's choice needs the extra step. A rolled swap is one click and
     // has nothing to review, so rollBtn keeps doing it directly.
     $("swapBtn").classList.toggle("hidden", !(cfg.assign === "pick" && offerSwap));
