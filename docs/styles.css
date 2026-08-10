@@ -403,8 +403,17 @@ body{
    Shown where the icon is, on cells still in play. A fallen or retired cell is
    not something you are choosing between, and the tag would only crowd the bone.
    Dark, because every available cell is a lightened weapon colour: black clears
-   7.8:1 against the darkest of them, Great Sword. */
-.stag{position:absolute;right:2px;bottom:1px;line-height:1;pointer-events:none;
+   7.8:1 against the darkest of them, Great Sword.
+
+   Anchored to the ICON, not to the cell. Pinned to the cell's corner it drifted
+   badly: the icons are square and painted at .74 of the row height, so on a
+   93px-wide cell the icon's right edge is 34px inside the cell's, and the tag
+   sat out in empty colour. 50% is the icon's centre, .37 of the row height is
+   half its width, so that offset lands exactly on its edge -- and since the art
+   is square the same figure describes the vertical. */
+.stag{position:absolute;line-height:1;pointer-events:none;
+  right:calc(50% - var(--cell-h, 34px) * .40);
+  bottom:calc(var(--cell-h, 34px) * .09);
   font-size:clamp(7px, calc(var(--cell-h, 34px) * .3), 11px);
   font-weight:700;letter-spacing:-.02em;color:rgba(0,0,0,.72);display:none}
 .cell.alive .stag{display:block}
