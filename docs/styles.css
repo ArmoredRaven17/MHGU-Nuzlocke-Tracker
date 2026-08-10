@@ -312,28 +312,16 @@ body{
        and the illusion is driven by luminance difference.
    Do not reintroduce a border-radius on .cell — it is what created the plazas.
 
-   --board-bed is the third lever, and it is doing two jobs at once.
-
-   Theme consistency: a weapon's cell must look the same whatever theme is on.
-   Alive cells already did, being opaque weapon colours, but everything
-   translucent composited over the theme's --bg1 — and while all eighteen themes
-   are dark, their HUE swings hard (Nightcloak navy rgb(6,16,48), Dreadking dark
-   red rgb(49,10,4), Boltreaver teal rgb(11,67,69)). So a fallen cell, which is
-   13% weapon colour over whatever is behind it, changed hue per theme, and so
-   did the 1px lattice. Painting the grid on a fixed bed makes every one of them
-   theme-independent by construction rather than by remembering to hardcode each
-   new rule.
-
-   Contrast: the bed is lifted well off black, which cuts the cell-to-corridor
-   luminance difference that drives the illusion. That was the one lever left
-   after the geometry was fixed.
-
-   It does repaint behind the headers and row labels, which is the trade. They
-   sit on the bed now and read as one surface. */
+   The grid deliberately has NO background of its own. A fixed bed was tried, to
+   stop translucent states picking up the theme, and it worked but turned the
+   board into one flat slab. Theme independence is achieved a better way now:
+   nothing in the grid is translucent. Every dimmed state is dimmed with a
+   FILTER over opaque pixels rather than with alpha, so there is nothing for the
+   theme behind to show through, and the board keeps sitting on the page instead
+   of on a panel. Keep it that way — reach for brightness()/grayscale(), never
+   opacity, on anything in here. */
 .board-grid{display:grid;grid-template-columns:auto repeat(6,minmax(36px,1fr));
-  gap:1px;align-items:stretch;container-type:inline-size;
-  --board-bed:#171d2b;
-  background:var(--board-bed);padding:1px;border-radius:6px;overflow:clip}
+  gap:1px;align-items:stretch;container-type:inline-size}
 
 .bh{font-size:clamp(7px, 1.5cqi, 11px);text-transform:uppercase;letter-spacing:.04em;
   opacity:.6;display:flex;align-items:center;justify-content:center;padding:2px;
@@ -389,7 +377,7 @@ body{
 .cell::before{content:"";position:absolute;inset:0;
   background-image:var(--wi);background-repeat:no-repeat;background-position:center;
   background-size:auto calc(var(--cell-h, 34px) * .74);
-  transition:filter .12s,opacity .12s}
+  transition:filter .12s}
 .cell.alive{cursor:default}
 
 /* Fallen: the icon is gone and a bone sits in its place. Removing the weapon
@@ -420,7 +408,7 @@ body{
    Grayscale is doing most of the separating, since every live icon is coloured,
    so the dimming only has to be enough to read as out-of-play — pushed too far
    and the slot looks empty, which is the fallen reading. */
-.cell.retired::before{filter:grayscale(1) brightness(.8);opacity:.5}
+.cell.retired::before{filter:grayscale(1) brightness(.42)}
 .cell.retired{border-color:rgba(0,0,0,.5)}
 
 /* Selected: the icon lights up in its own colour. Two stacked drop-shadows give
@@ -442,8 +430,8 @@ body{
 .cell.revived{border-color:#c9a227}
 /* A fallen combo you can still buy back */
 .cell.dead.revivable{cursor:pointer;border-style:dashed;border-color:#c9a227}
-.cell.dead.revivable::after{opacity:.65}
-.cell.dead.revivable:hover::after{opacity:1}
+.cell.dead.revivable::after{filter:brightness(.7)}
+.cell.dead.revivable:hover::after{filter:none}
 .cell.dead.revivable:hover{background:#c9a2272e;box-shadow:0 0 0 1px #c9a227 inset}
 
 /* Revive options */
