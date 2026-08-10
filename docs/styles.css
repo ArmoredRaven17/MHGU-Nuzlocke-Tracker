@@ -382,9 +382,13 @@ body{
 
 /* Fallen: the icon is gone and a bone sits in its place. Removing the weapon
    entirely is the point — the slot reads empty-and-marked rather than dimmed,
-   so it cannot be confused with retired. */
+   so it cannot be confused with retired.
+   The border matches retired exactly. It used to be dotted, which made the
+   frame do work the contents already do: bone versus dulled icon separates the
+   two states on its own, and a second signal only competed with it. Dashed is
+   left to mean one thing — this one can be bought back. */
 .cell.dead::before{display:none}
-.cell.dead{border-style:dotted;border-color:rgba(255,255,255,.13)}
+.cell.dead{border-color:rgba(0,0,0,.5)}
 /* The bone takes the weapon's colour without losing its linework.
    The asset is a black-outlined white bone — 1124 black pixels to 677 white —
    so masking it flattened every opaque pixel to one colour and the outlines
