@@ -425,22 +425,25 @@ body{
 .cell.retired{background:color-mix(in srgb, var(--wc, #ffffff) 76%, #000000);
   border-color:rgba(0,0,0,.5)}
 
-/* Selected. The glow used to be drawn in var(--wc), which worked while cells
-   were bare — but the cell is now that same colour lightened, so a same-colour
-   glow has nothing to separate from: measured across the palette it ran 1.02:1
-   to 1.19:1, i.e. invisible. That is the same wall every colour-based version of
-   this marker hit, and the answer is the same one: use a SHAPE.
-   A dark ring inset into the cell reads on all fourteen hues because every
-   available cell is now LIGHT — against the palest, Insect Glaive, black is
-   19.6:1, and against the darkest, Great Sword, still 7.8:1. The ring breathes
-   rather than the colour, so "selected" is still the thing moving on the board. */
+/* Selected: a bright yellow outline, and no glow. The glow went through two
+   failures worth remembering. In var(--wc) it was invisible once cells took the
+   weapon colour — 1.02:1 on Insect Glaive, never better than 1.19:1 anywhere,
+   because a colour cannot separate from itself.
+   Yellow alone would repeat that on the yellow weapons: bare #ffe100 measures
+   1.09:1 against an available Sword & Shield cell. So the yellow is SANDWICHED
+   between two dark lines. The dark does the separating on every hue and the
+   yellow does the identifying, which is the same trick .brow-label uses to keep
+   a pale weapon name legible.
+   The glow is back, but INSET — a blur radius on an inset shadow lights the cell
+   inward from its own edges. That is what the old outer glow could never do: it
+   bled across the 1px gap onto the neighbouring cells, and on a full row of them
+   it merged into a band. Contained inside the cell, it reads as one lit square. */
 .cell.current{z-index:1;
-  box-shadow:inset 0 0 0 2px #0a0e16, inset 0 0 0 3px rgba(255,255,255,.75);
-  animation:cell-ring 1.9s ease-in-out infinite}
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.9),
+             inset 0 0 0 3px #ffe100,
+             inset 0 0 0 4px rgba(0,0,0,.9),
+             inset 0 0 12px 3px rgba(255,225,0,.8)}
 .cell.current::before{filter:brightness(1.08) saturate(1.1)}
-@keyframes cell-ring{
-  50%{box-shadow:inset 0 0 0 3px #0a0e16, inset 0 0 0 5px rgba(255,255,255,.95)}}
-@media (prefers-reduced-motion: reduce){ .cell.current{animation:none} }
 
 .cell.revived{border-color:#c9a227}
 /* A fallen combo you can still buy back */
