@@ -410,12 +410,26 @@ body{
    93px-wide cell the icon's right edge is 34px inside the cell's, and the tag
    sat out in empty colour. 50% is the icon's centre, .37 of the row height is
    half its width, so that offset lands exactly on its edge -- and since the art
-   is square the same figure describes the vertical. */
+   is square the same figure describes the vertical.
+
+   Legibility does NOT come from placement, which was measured and cannot work.
+   The icons fill their canvas and are busy in every corner: ink under a
+   tag-sized patch runs 0-49% depending on weapon and corner, and no corner is
+   under 12% on all fourteen. Six of them have no corner below 20% at all, so
+   there is no position -- per row or otherwise -- that lands on empty art
+   everywhere, and moving it per weapon would scatter the letters across four
+   corners and make the board harder to read rather than easier.
+   So the letter carries its own contrast: near-black on a white halo, the same
+   four-way text-shadow .brow-label uses to survive a pale weapon colour. Dark
+   glyph reads against the light cell, white ring reads against the icon's black
+   linework, and it no longer matters what is underneath. */
 .stag{position:absolute;line-height:1;pointer-events:none;
   right:calc(50% - var(--cell-h, 34px) * .40);
   bottom:calc(var(--cell-h, 34px) * .09);
   font-size:clamp(7px, calc(var(--cell-h, 34px) * .3), 11px);
-  font-weight:700;letter-spacing:-.02em;color:rgba(0,0,0,.72);display:none}
+  font-weight:700;letter-spacing:-.02em;color:#0a0d14;display:none;
+  text-shadow:-1px 0 #fff, 1px 0 #fff, 0 -1px #fff, 0 1px #fff,
+              -1px -1px #fff, 1px -1px #fff, -1px 1px #fff, 1px 1px #fff}
 .cell.alive .stag{display:block}
 .cell.alive::before{display:block}
 .cell.alive{cursor:default;
