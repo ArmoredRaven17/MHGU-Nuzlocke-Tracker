@@ -397,6 +397,17 @@ body{
    pick up the theme behind it, which is the rule for everything in this grid.
    .cell.revived overrides this on purpose: gold outranks the weapon colour,
    because having bought a combo back is the more useful thing to know. */
+/* The style, tagged in the corner. The column header already says it, but the
+   header is a long way from a cell halfway down a fourteen-row board — this
+   answers "which style is this" without tracking back up the column.
+   Shown where the icon is, on cells still in play. A fallen or retired cell is
+   not something you are choosing between, and the tag would only crowd the bone.
+   Dark, because every available cell is a lightened weapon colour: black clears
+   7.8:1 against the darkest of them, Great Sword. */
+.stag{position:absolute;right:2px;bottom:1px;line-height:1;pointer-events:none;
+  font-size:clamp(7px, calc(var(--cell-h, 34px) * .3), 11px);
+  font-weight:700;letter-spacing:-.02em;color:rgba(0,0,0,.72);display:none}
+.cell.alive .stag{display:block}
 .cell.alive::before{display:block}
 .cell.alive{cursor:default;
   background:color-mix(in srgb, var(--wc, #ffffff) 82%, #ffffff);

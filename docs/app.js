@@ -28,6 +28,10 @@
   };
 
   const STYLES = ["Guild","Striker","Adept","Aerial","Valor","Alchemy"];
+  // Corner tags on the board. Three styles begin with A, so those take two
+  // letters and the rest take one — the shortest set that stays unambiguous.
+  const STYLE_TAG = { Guild: "G", Striker: "S", Adept: "Ad",
+                      Aerial: "Ae", Valor: "V", Alchemy: "Al" };
 
   const WEAPON_ABBREV = {
     "Great Sword":"GS","Long Sword":"LS","Sword & Shield":"SnS","Dual Blades":"DB",
@@ -1047,7 +1051,8 @@
       STYLES.forEach((s, j) => {
         html += `<div class="${cellClass(w, s)}" style="--wc:${WEAPON_COLORS[w]};` +
                 `--wi:url('${weaponIcon(w)}');grid-row:${i + 2};grid-column:${j + 2}"` +
-                `${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}"></div>`;
+                `${cellTitle(w, s)} data-w="${escapeHtml(w)}" data-s="${escapeHtml(s)}">` +
+                `<span class="stag">${STYLE_TAG[s] || s}</span></div>`;
       });
     });
 
