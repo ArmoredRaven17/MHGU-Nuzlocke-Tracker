@@ -176,8 +176,9 @@ problem — more levers shaped like cycling are what would populate the top.
 
 **The total can no longer go negative.** Under the additive scheme 28% of
 configurations scored as penalties; a product of positive ratios cannot. The only route
-below zero now is spending past your earnings on a buy-back, which `settle()` still
-permits deliberately.
+below zero now is spending past your earnings on a buy-back, which `settle()` permits
+deliberately: you wanted the combo, you paid the price, and now you hunt your way out
+of the hole. Do not add an affordability gate.
 
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.

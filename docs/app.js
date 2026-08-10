@@ -316,13 +316,15 @@
     !(cfg.reviveOnce && (run.revived[comboKey(w, s)] || 0) >= 1);
 
   // The only payment route: straight off the run's score. There is deliberately
-  // no affordability gate, so a buy-back can take the total negative.
+  // no affordability gate, so a buy-back can take the total negative — and
+  // since the multiplicative scheme cannot produce a negative multiplier, debt
+  // is now the only way a run ends below zero.
   //
-  // NOTE: that used to be justified by "same as a negative multiplier can" —
-  // which no longer holds. The multiplicative scheme cannot produce a negative
-  // multiplier, so going into debt for a revive is now the ONLY way a run ends
-  // below zero. Left as-is because it is a real cost honestly paid, but it is a
-  // design call rather than a consequence, and worth revisiting.
+  // That is intended, not an oversight. Buying a combo back you cannot afford
+  // means hunting your way out of the hole before the score means anything
+  // again; you wanted the combo, you paid the price, now go earn it. Do NOT
+  // add an affordability gate — it would quietly turn the hardest decision in
+  // the app into one the player is never allowed to make.
   function settle(option) {
     run.earned -= option.total;
     run.zennySpent += option.total;
