@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=79">
+<link rel="stylesheet" href="styles.css?v=80">
 </head>
 <body>
 <div id="app">
@@ -64,15 +64,18 @@
       <section class="panel" data-open="false">
         <button class="panel-head">Weapons/Styles <span class="chev">&#9662;</span></button>
         <div class="panel-body">
-          <p class="hint">How many styles per weapon you can use before it is removed
-            from the pool. Fewer combos means a shorter run, so this scales your whole
-            total rather than nudging it.</p>
-          <label class="chk"><input type="radio" name="cap" id="c_1">1 style &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
-          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles &mdash; <span class="cap-n"></span> combos<span class="w"></span></label>
+          <p class="hint">How many styles you are allowed per weapon before that weapon
+            is retired</p>
+          <label class="chk"><input type="radio" name="cap" id="c_1">1 style<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_2">2 styles<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_3" checked>3 styles<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_4">4 styles<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_5">5 styles<span class="w"></span></label>
+          <label class="chk"><input type="radio" name="cap" id="c_6">6 styles<span class="w"></span></label>
+          <div class="cap-total">
+            <div class="hl-label">Total Combos</div>
+            <div id="capTotal" class="cap-total-n">&mdash;</div>
+          </div>
         </div>
       </section>
 
@@ -360,6 +363,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=98"></script>
+<script src="app.js?v=99"></script>
 </body>
 </html>

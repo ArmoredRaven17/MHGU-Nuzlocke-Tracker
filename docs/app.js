@@ -557,13 +557,13 @@
   // same vocabulary as Attack Up (S/M/L), and unlike a number a letter is free
   // to report the option's MEASURED effect rather than the arithmetic behind it.
   // The cap labels used to spell out their own counts and went stale the moment
-  // the roster changed — they still read "15 combos" after Prowler left. Derived
-  // now, from the same function the ceiling uses.
-  function paintCapCounts() {
-    Object.entries(CFG_RADIOS.stylesPerWeapon).forEach(([cap, id]) => {
-      const el = $(id), out = el && el.closest("label").querySelector(".cap-n");
-      if (out) out.textContent = ceilingFor(+cap);
-    });
+  // the roster changed — they still read "15 combos" after Prowler left. The
+  // count is one readout for the chosen cap now rather than six repeated on the
+  // options, and it comes from the same function the ceiling uses, so it cannot
+  // disagree with the board it is describing.
+  function paintCapTotal() {
+    const out = $("capTotal");
+    if (out) out.textContent = ceilingFor(cfg.stylesPerWeapon);
   }
 
   function paintBadges() {
@@ -1150,6 +1150,7 @@
     $("multValue").textContent = ratingFor(d);
     $("bonusValue").textContent = bonusFor(d);
     paintBadgeState();
+    paintCapTotal();
     // Turning revives or rerolls off IS the selection — the price and cap below
     // them describe something that isn't happening, so they go rather than sit
     // there greyed.
@@ -1494,7 +1495,6 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   paintBadges();
-  paintCapCounts();
   buildSwatches();
   const DEFAULT_THEME = "#07143C";            // Nightcloak Malfestio
   let savedTheme = DEFAULT_THEME;

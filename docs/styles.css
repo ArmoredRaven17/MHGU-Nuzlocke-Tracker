@@ -177,6 +177,12 @@ body{
    revives are off, and contributes nothing. */
 .chk .w.on{opacity:1;color:var(--accent-hover);font-weight:600}
 
+/* The combo count used to be repeated on all six cap options. One readout for
+   the chosen cap says the same thing with one chance to be wrong instead of six,
+   and it reads as the consequence of the choice rather than part of the label. */
+.cap-total{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.cap-total-n{font-size:26px;font-weight:700;line-height:1.15;color:var(--accent-hover)}
+
 .hint{color:var(--text-dim);opacity:.75;font-size:12px;margin:4px 0;line-height:1.45}
 .row{display:flex;align-items:center}
 .row.gap{gap:8px}.row.end{justify-content:flex-end}
