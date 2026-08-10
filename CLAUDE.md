@@ -254,6 +254,16 @@ and leaves the select showing something Confirm must refuse), and `setPickedComb
 re-checks the pool, since a stale value reaching it would commit a forbidden combo and
 spend the swap on it.
 
+**The swap is opt-in under Hunter's choice.** The pickers used to open on their own
+whenever a swap was available, which left no way to say "keep it" — the only exits were
+committing a different combo or re-picking the one you had, and the pool correctly
+refuses to offer that. So holding a combo shows a `Swap…` button, and opening the
+pickers adds a `Cancel` beside Confirm. Nothing is spent by opening; only confirming a
+*different* combo sets `run.swapUsed`. `swapOpen` is UI state and deliberately not
+persisted — an abandoned half-choice should not survive a reload — and it is cleared
+both on commit and when a hunt resolves. A rolled swap keeps its single click, since
+there is nothing to review before it happens.
+
 **It resets when exhausted.** Once every surviving combo has been hunted with, `report()`
 clears `run.used`. Without that the swap silently disappears for the rest of the run,
 and "one you have yet to use" stops meaning anything once you have used them all.

@@ -175,8 +175,12 @@
             <div id="hlPick" class="hl-pick hidden">
               <select id="pickWeapon"></select>
               <select id="pickStyle"></select>
-              <button id="pickConfirm" class="btn tiny accent">Confirm</button>
+              <div class="row gap">
+                <button id="pickConfirm" class="btn tiny accent">Confirm</button>
+                <button id="pickCancel" class="btn tiny hidden">Cancel</button>
+              </div>
             </div>
+            <button id="swapBtn" class="btn tiny hidden">Swap&hellip;</button>
             <button id="rollBtn" class="btn tiny">Roll Combo</button>
             <button id="rerollBtn" class="btn tiny hidden">Reroll&hellip;</button>
           </div>
@@ -369,6 +373,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=113"></script>
+<script src="app.js?v=114"></script>
 </body>
 </html>

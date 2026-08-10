@@ -830,6 +830,7 @@
     // still means something once you have used them all.
     if (legalCombos().every(c => isUsed(c.weapon, c.style))) run.used = {};
     run.swapUsed = false;                       // a fresh swap for the next quest
+    swapOpen = false;                           // and it starts closed
     run.combo = (keepCombo && isAlive(combo.weapon, combo.style))
       ? { weapon: combo.weapon, style: combo.style } : null;
     run.quest = run.lockQuest || null;
@@ -1024,21 +1025,35 @@
     !(run.combo && c.weapon === run.combo.weapon && c.style === run.combo.style));
   const canSwap = () => cfg.loadout === "free" && !!run.combo && !run.swapUsed &&
                         swapPool().length > 0;
+  // Whether the swap pickers are showing. UI state only: it is never saved, and
+  // any change of combo or hunt closes it.
+  let swapOpen = false;
 
   function renderHuntBar() {
     const bar = $("huntBar");
     if (!run.active || runOver()) { bar.classList.add("hidden"); return; }
     bar.classList.remove("hidden");
 
-    // Holding a live combo: you can't swap, so the pickers would be a lie.
-    // Cycling holds you too — just only until the next clear. Under free the
-    // pickers stay open only while the quest's one swap is unspent.
-    const locked = !!run.combo && !canSwap();
-    const pickMode = cfg.assign === "pick" && !locked;
+    // Two different reasons the pickers can be open, and they are not the same
+    // interaction. With nothing in hand you MUST choose — no way out, no cancel.
+    // Holding a combo under `free` you MAY swap, and the pickers opening on
+    // their own left no way to say "keep it": the only exits were committing a
+    // different combo or re-picking the one you had, which the swap pool now
+    // (correctly) refuses to offer. So the swap is opt-in behind a button, and
+    // once open it can be cancelled. swapOpen is deliberately not persisted —
+    // an abandoned half-choice should not survive a reload.
+    const mustChoose = !run.combo;
+    const offerSwap  = canSwap() && !swapOpen;
+    const swapping   = canSwap() && swapOpen;
+    const pickMode = cfg.assign === "pick" && (mustChoose || swapping);
 
     $("hlPick").classList.toggle("hidden", !pickMode);
     $("hlRolled").classList.toggle("hidden", pickMode);
     $("rollBtn").classList.toggle("hidden", pickMode);
+    // Only Hunter's choice needs the extra step. A rolled swap is one click and
+    // has nothing to review, so rollBtn keeps doing it directly.
+    $("swapBtn").classList.toggle("hidden", !(cfg.assign === "pick" && offerSwap));
+    $("pickCancel").classList.toggle("hidden", !swapping);
 
     if (pickMode) {
       const wSel = $("pickWeapon"), sSel = $("pickStyle");
@@ -1590,6 +1605,7 @@
     if (run.combo && comboKey(run.combo.weapon, run.combo.style) !== comboKey(w, style))
       run.swapUsed = true;
     run.combo = { weapon: w, style };
+    swapOpen = false;
     save(); renderAll();
   };
   // Changing the weapon only refreshes which styles are on offer — it commits
@@ -1622,6 +1638,10 @@
   $("pickStyle").addEventListener("change", renderBoard);
   $("pickConfirm").addEventListener("click", () =>
     setPickedCombo($("pickWeapon").value, $("pickStyle").value));
+  // Opting in to the swap. Nothing is spent by opening it — the swap is only
+  // used up by confirming a different combo.
+  $("swapBtn").addEventListener("click", () => { swapOpen = true; renderAll(); });
+  $("pickCancel").addEventListener("click", () => { swapOpen = false; renderAll(); });
 
   $("questSearch").addEventListener("input", (e) => renderQuestResults(e.target.value));
   $("questResults").addEventListener("click", (e) => {
