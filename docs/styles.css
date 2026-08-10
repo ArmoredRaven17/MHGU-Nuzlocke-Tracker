@@ -374,7 +374,12 @@ body{
   background:var(--wc, #232a3c);position:relative;
   min-height:var(--cell-h, 34px);display:flex;align-items:center;justify-content:center;
   font-size:11px;transition:background .12s,border-color .12s}
-.cell::before{content:"";position:absolute;inset:0;
+/* The icon is OFF on an ordinary cell. A board of eighty-four weapon icons said
+   the same thing fourteen times over — every cell in a row carries the same
+   weapon, which the row label and the row's colour already tell you. Turning it
+   on for exactly one cell makes it information again: the icon means "this is
+   the one you are on". */
+.cell::before{content:"";position:absolute;inset:0;display:none;
   background-image:var(--wi);background-repeat:no-repeat;background-position:center;
   background-size:auto calc(var(--cell-h, 34px) * .74);
   transition:filter .12s}
@@ -395,9 +400,11 @@ body{
    frame do work the contents already do: bone versus dulled icon separates the
    two states on its own, and a second signal only competed with it. Dashed is
    left to mean one thing — this one can be bought back. */
-.cell.dead::before{display:none}
-.cell.dead{background:color-mix(in srgb, var(--wc, #ffffff) 45%, #000000);
-  border-color:rgba(0,0,0,.5)}
+/* Fallen goes to a flat charcoal. Losing the hue is the point: every other
+   state is some shade of the weapon's own colour, so the one that is out of the
+   run for good is the one with no colour left in it. The bone stays weapon
+   tinted, which is what says WHICH combo fell. */
+.cell.dead{background:#32363d;border-color:rgba(0,0,0,.5)}
 /* The bone takes the weapon's colour without losing its linework.
    The asset is a black-outlined white bone — 1124 black pixels to 677 white —
    so masking it flattened every opaque pixel to one colour and the outlines
@@ -421,8 +428,7 @@ body{
    Grayscale is doing most of the separating, since every live icon is coloured,
    so the dimming only has to be enough to read as out-of-play — pushed too far
    and the slot looks empty, which is the fallen reading. */
-.cell.retired::before{filter:grayscale(1) brightness(.42)}
-.cell.retired{background:color-mix(in srgb, var(--wc, #ffffff) 76%, #000000);
+.cell.retired{background:color-mix(in srgb, var(--wc, #ffffff) 45%, #000000);
   border-color:rgba(0,0,0,.5)}
 
 /* The crosshair. A weapon lights its row, a style lights its column, and the
@@ -496,7 +502,7 @@ body{
              inset 0 0 0 3px #b429f0,
              inset 0 0 0 4px rgba(0,0,0,.9),
              inset 0 0 12px 3px rgba(180,41,240,.85)}
-.cell.current::before{filter:brightness(1.08) saturate(1.1)}
+.cell.current::before{display:block}
 
 .cell.revived{border-color:#c9a227}
 /* A fallen combo you can still buy back */
