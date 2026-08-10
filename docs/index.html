@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=105">
+<link rel="stylesheet" href="styles.css?v=106">
 </head>
 <body>
 <div id="app">
@@ -151,6 +151,11 @@
 
     <!-- ── Content: board + hunt ───────────────────────────────────────── -->
     <section class="content">
+
+      <div id="viewTabs" class="view-tabs hidden">
+        <button id="tabBoard" class="view-tab" type="button">Board</button>
+        <button id="tabResult" class="view-tab" type="button">Result</button>
+      </div>
 
       <div id="statusStrip" class="status-strip hidden"></div>
 
@@ -369,6 +374,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=125"></script>
+<script src="app.js?v=127"></script>
 </body>
 </html>

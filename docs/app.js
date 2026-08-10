@@ -345,6 +345,11 @@
     cfg: null,             // the whole lever set, for the summary's Rules panel
   });
   let run = emptyRun();
+  // The previous run, kept for its summary. Persisted, so it survives a reload.
+  let prevRun = null;
+  // Which page the content column is showing. null follows the run: the board
+  // while one is going, the result once it ends. Set explicitly by the tabs.
+  let view = null;
 
   // Derived index over run.deaths — O(1) lookups when building the pool.
   // Never persisted; rebuilt on load.
@@ -537,12 +542,24 @@
   const runOver = () => run.active &&
     (run.finished || clearCapHit() || legalCombos().length === 0);
 
+  // Which run the result page is showing: the current one once it is over,
+  // otherwise the one before it. So a finished run's result stays reachable
+  // after the next one starts.
+  const summaryRun = () => runOver() ? run : (prevRun && prevRun.active ? prevRun : null);
+  // Tabs only earn their space when both pages have something on them.
+  const canSwitch = () => !!summaryRun() && (run.active || !!prevRun);
+  const shownView = () => {
+    if (view === "summary" && summaryRun()) return "summary";
+    if (view === "board") return "board";
+    return runOver() ? "summary" : "board";     // null follows the run
+  };
+
   // ── Persistence ──────────────────────────────────────────────────────────
   const STORE_KEY = "mhgu-zenny-gauntlet";
 
   function save() {
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, cfg, run }));
+      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, cfg, run, prevRun }));
     } catch (e) {}
   }
   // lockLoadout was a boolean before cycling existed. Anything saved or exported
@@ -584,6 +601,10 @@
       run = Object.assign(emptyRun(), d.run);
       if (run.cfg) migrateLoadout(run.cfg, run.cfg);
     }
+    if (d && d.prevRun) {
+      prevRun = Object.assign(emptyRun(), d.prevRun);
+      if (prevRun.cfg) migrateLoadout(prevRun.cfg, prevRun.cfg);
+    }
     rebuildDeadKeys();
     // A run saved before run.cfg existed has no rules snapshot. If it is still
     // going, the live cfg IS its snapshot — the rules are frozen for the
@@ -596,6 +617,12 @@
       run.cfg = Object.assign({}, cfg);
       save();
     }
+    // A run that was already over when it was saved has never been through
+    // afterMutation since, so stamp it now. Without this the latch only applies
+    // to runs that end while the tab is open.
+    const wasFinished = run.finished;
+    settleRunEnd();
+    if (run.finished !== wasFinished) save();
   }
 
   // ── Config <-> DOM ───────────────────────────────────────────────────────
@@ -853,7 +880,21 @@
     afterMutation();
   }
 
+  // A run ends once and stays ended. runOver() is still derived, but the moment
+  // it becomes true the result is written down, so nothing computed afterwards
+  // can undo it — a run begins when Start Run is pressed and at no other time.
+  // Latching also settles what a revive may do: it can save a run that is still
+  // going, and cannot resurrect one that is not.
+  function settleRunEnd() {
+    if (!run.active || run.finished) return;
+    if (clearCapHit() || legalCombos().length === 0) {
+      run.finished = true;
+      run.endedAt = Date.now();
+    }
+  }
+
   function afterMutation() {
+    settleRunEnd();
     maybeAutoRoll();
     save();
     renderAll();
@@ -875,6 +916,10 @@
 
   // ── Run lifecycle ────────────────────────────────────────────────────────
   function startRun() {
+    // The outgoing run is kept so its result stays reachable from the next one.
+    // Only a run that actually happened is worth keeping.
+    if (run.active && run.deaths.length + (run.hunts || 0) > 0) prevRun = run;
+    view = null;
     run = emptyRun();
     run.active = true;
     run.startedAt = Date.now();
@@ -936,7 +981,7 @@
     // pool functions already answer "all 92 alive", so the idle state is the
     // board rather than a page of prose describing it. Only the end-of-run
     // summary displaces it.
-    if (runOver()) { board.classList.add("hidden"); return; }
+    if (shownView() !== "board") { board.classList.add("hidden"); return; }
     board.classList.remove("hidden");
 
     // A crosshair rather than one marked cell. Selecting a weapon lights its
@@ -1188,8 +1233,25 @@
 
   function renderSummary() {
     const el = $("summary");
-    if (!runOver()) { el.classList.add("hidden"); return; }
+    const target = summaryRun();
+    if (!target || shownView() !== "summary") { el.classList.add("hidden"); return; }
     el.classList.remove("hidden");
+    // The body below, and every helper it leans on (survivorRate, finalScore,
+    // runMax, legalCombos), reads the module-level `run`. Rather than thread a
+    // parameter through all of it, point `run` at the run being shown and put it
+    // back afterwards. The swap is synchronous and nothing else can observe it.
+    const liveRun = run;
+    run = target;
+    rebuildDeadKeys();          // the index is derived from run.deaths, so it swaps too
+    try {
+      renderSummaryBody(el, target);
+    } finally {
+      run = liveRun;
+      rebuildDeadKeys();
+    }
+  }
+
+  function renderSummaryBody(el, target) {
 
     const exhausted = legalCombos().length === 0;
     // Report the same quantity the survivor bonus is paid on — unspent
@@ -1288,6 +1350,16 @@
 
   function renderAll() {
     const running = run.active && !runOver();
+    const tabs = $("viewTabs"), showTabs = canSwitch();
+    tabs.classList.toggle("hidden", !showTabs);
+    if (showTabs) {
+      const v = shownView();
+      $("tabBoard").classList.toggle("on", v === "board");
+      $("tabResult").classList.toggle("on", v === "summary");
+      // Says whose result you are about to read, which matters most in the one
+      // case where it is not the obvious one: mid-run, looking back.
+      $("tabResult").textContent = runOver() ? "Result" : "Last Result";
+    }
     // The controls column only exists while there is a hunt to act on; hiding it
     // also hands its 320px back to the result screen, which wants the width.
     $("controlsPanel").classList.toggle("hidden", !running);
@@ -1623,6 +1695,8 @@
     cfg.autoRoll = e.target.checked;
     afterMutation();      // saves, and deals a combo straight away if one is due
   });
+  $("tabBoard").addEventListener("click", () => { view = "board"; renderAll(); });
+  $("tabResult").addEventListener("click", () => { view = "summary"; renderAll(); });
   $("themeClose").addEventListener("click", () => $("themeModal").classList.add("hidden"));
   $("linksBtn").addEventListener("click", () => $("linksModal").classList.remove("hidden"));
   $("linksClose").addEventListener("click", () => $("linksModal").classList.add("hidden"));

@@ -221,6 +221,29 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
+**A run ends once and stays ended.** `runOver()` is still derived, but `settleRunEnd()`
+writes the result down the moment it becomes true — from `afterMutation()` and again on
+`load()`, so a run saved in an exhausted state gets stamped rather than waiting for the
+next mutation. Nothing computed afterwards can undo it, so a run begins when Start Run is
+pressed and at no other time. It also settles what a revive may do: save a run that is
+still going, never resurrect one that is not.
+
+**Ending a run resets nothing by hand.** `startRun()` replaces the whole object with
+`emptyRun()` and rebuilds `deadKeys`, so every counter, log and lock is new. The only
+state outliving a run is `cfg`, the theme, and two transient UI variables — there is no
+per-field reset to keep in sync, and adding one would be a liability.
+
+**The previous run is kept** in `prevRun`, archived by `startRun()` and persisted beside
+`cfg` and `run`. `view` picks which page the content column shows: `null` follows the run
+— board while one is going, result once it ends — and the tabs set it explicitly.
+`summaryRun()` resolves to the current run once it is over, otherwise `prevRun`, so a
+result stays reachable after the next run starts.
+
+`renderSummary()` points the module-level `run` at whichever run it is drawing and puts it
+back in a `finally`, rebuilding `deadKeys` both ways. Every helper the summary leans on
+(`survivorRate`, `finalScore`, `runMax`, `legalCombos`) reads that global, and threading a
+parameter through all of them would have been a much larger change for no gain.
+
 **Retirement is judged against the cap the RUN started with**, via `runCap()`, not
 against live `cfg`. Reading live cfg let a finished run be brought back to life from the
 sidebar: the rules unlock the moment a run ends, and raising the styles cap un-retired
