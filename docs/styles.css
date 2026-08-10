@@ -438,43 +438,56 @@ body{
    around each of six cells does not add up to a row, and the column got away
    with it only because fourteen stacked segments happen to look like a line.
    A 2px bar along the top and bottom of the row, and down the left and right of
-   the column, reads as one continuous rail instead — which is what makes it a
-   crosshair rather than nineteen highlighted squares. Done with inset shadows
-   so it costs no layout and cannot shift the grid.
-   box-shadow does not merge across rules, so the combinations are spelled out:
-   a cell on both arms needs all four sides in one declaration. */
-.cell.row-on:not(.col-on){box-shadow:inset 0 2px 0 0 #ffe100, inset 0 -2px 0 0 #ffe100}
-.cell.col-on:not(.row-on){box-shadow:inset 2px 0 0 0 #ffe100, inset -2px 0 0 0 #ffe100}
+   the column, reads as one continuous rail instead. Inset shadows, so it costs
+   no layout and cannot shift the grid.
+
+   The row is RED, the column is BLUE, and where they cross is PURPLE — the
+   crossing looks like the two arms producing it rather than a third thing.
+   It is declared, not blended. True mixing would need mix-blend-mode and
+   translucent arms, and translucent will not work here: the cells are opaque
+   weapon colours, so a see-through red bar reads orange over Sword & Shield and
+   pink over Insect Glaive, and the row would never read as red at all.
+
+   Vivid hues rather than the dark ones that would clear 3:1 unaided — a maroon
+   does not read as "red", which is the entire point of the colour. They stay
+   legible because the crosshair also darkens the cell BORDER, backing every
+   rail with a dark line at no extra thickness. Without that, red-on-red hits
+   2.1:1 on Great Sword and Charge Blade, the two red-orange weapons.
+
+   box-shadow does not merge across rules, so the combinations are spelled out. */
+.cell.row-on,.cell.col-on{border-color:rgba(0,0,0,.75)}
+.cell.row-on:not(.col-on){box-shadow:inset 0 2px 0 0 #e10000, inset 0 -2px 0 0 #e10000}
+.cell.col-on:not(.row-on){box-shadow:inset 2px 0 0 0 #1a3ce8, inset -2px 0 0 0 #1a3ce8}
 /* :not(.current) matters. This selector is 0,3,0 and .cell.current is only
    0,2,0, so without it the crossing rule outranks the selected marker whatever
    order they sit in, and the committed combo silently loses its outline and
    glow. This form only dresses the crossing while it is still a PREVIEW. */
 .cell.row-on.col-on:not(.current){
-  box-shadow:inset 0 2px 0 0 #ffe100, inset 0 -2px 0 0 #ffe100,
-             inset 2px 0 0 0 #ffe100, inset -2px 0 0 0 #ffe100}
-/* The headers light too, so the crosshair reads even where the grid is scrolled
-   or the eye starts at the edge. */
-.bh.col-on{opacity:1;color:#ffe100;font-weight:700}
-.brow-label.row-on .bl-t{color:#ffe100}
+  box-shadow:inset 0 2px 0 0 #a020e0, inset 0 -2px 0 0 #a020e0,
+             inset 2px 0 0 0 #a020e0, inset -2px 0 0 0 #a020e0}
+/* The headers take the arm's colour too, so each arm is identifiable from the
+   edge of the board rather than only where it crosses. */
+.bh.col-on{opacity:1;color:#6f8cff;font-weight:700}
+.brow-label.row-on .bl-t{color:#ff5a5a}
 
-/* Selected: a bright yellow outline, and no glow. The glow went through two
-   failures worth remembering. In var(--wc) it was invisible once cells took the
-   weapon colour — 1.02:1 on Insect Glaive, never better than 1.19:1 anywhere,
-   because a colour cannot separate from itself.
-   Yellow alone would repeat that on the yellow weapons: bare #ffe100 measures
-   1.09:1 against an available Sword & Shield cell. So the yellow is SANDWICHED
-   between two dark lines. The dark does the separating on every hue and the
-   yellow does the identifying, which is the same trick .brow-label uses to keep
-   a pale weapon name legible.
-   The glow is back, but INSET — a blur radius on an inset shadow lights the cell
-   inward from its own edges. That is what the old outer glow could never do: it
-   bled across the 1px gap onto the neighbouring cells, and on a full row of them
-   it merged into a band. Contained inside the cell, it reads as one lit square. */
+/* Selected: the crossing, committed. Purple, because that is what the red row
+   and the blue column make where they meet — the marker is the arms arriving
+   rather than a separate idea.
+   The purple is SANDWICHED between two dark lines. Bare, it would repeat the
+   failure this replaced: the old glow was drawn in var(--wc) and measured
+   1.02:1 against its own cell, and a bare purple runs 2.44:1 on Charge Blade
+   for the same reason — a colour cannot separate from a cell of similar
+   lightness. The dark does the separating on every hue, the purple does the
+   identifying. Same trick .brow-label uses to keep a pale weapon name legible.
+   The glow is INSET. A blur radius on an inset shadow lights the cell inward
+   from its own edges, which the old outer glow could never do: that one bled
+   across the 1px gap onto neighbouring cells and merged into a band down a row.
+   Contained, it reads as one lit square. */
 .cell.current{z-index:1;
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.9),
-             inset 0 0 0 3px #ffe100,
+             inset 0 0 0 3px #b429f0,
              inset 0 0 0 4px rgba(0,0,0,.9),
-             inset 0 0 12px 3px rgba(255,225,0,.8)}
+             inset 0 0 12px 3px rgba(180,41,240,.85)}
 .cell.current::before{filter:brightness(1.08) saturate(1.1)}
 
 .cell.revived{border-color:#c9a227}
