@@ -942,18 +942,7 @@
     const hlS = cur ? cur.style  : (picking ? $("pickStyle").value  : null);
     // The arms of the crosshair. Applied to every cell, alive or not, so the
     // line does not break where a combo has fallen.
-    //
-    // Each arm closes into a full rectangle, which needs to know where it ends.
-    // Both arms always span the whole grid, so the caps are fixed positions --
-    // the first and last style for a row, the first and last weapon for a
-    // column -- and no measuring is involved.
-    const S0 = STYLES[0], SZ = STYLES[STYLES.length - 1];
-    const W0 = WEAPONS[0], WZ = WEAPONS[WEAPONS.length - 1];
-    const cross = (w, s) =>
-      (w === hlW ? " row-on" + (s === S0 ? " row-first" : "") +
-                              (s === SZ ? " row-last" : "") : "") +
-      (s === hlS ? " col-on" + (w === W0 ? " col-first" : "") +
-                              (w === WZ ? " col-last" : "") : "");
+    const cross = (w, s) => (w === hlW ? " row-on" : "") + (s === hlS ? " col-on" : "");
     const isCurrent = (w, s) => cur && cur.weapon === w && cur.style === s;
     const cellClass = (w, s) => {
       if (!isAlive(w, s)) {
