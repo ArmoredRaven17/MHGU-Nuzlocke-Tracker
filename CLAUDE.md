@@ -235,9 +235,18 @@ where before the constraint they lost nothing.
 
 `run.used` records what you have hunted with, marked when a hunt resolves rather than
 when a combo is set, so establishing a combo you then swap away does not burn it.
-`swapPool()` is the alive-and-unused set, and it gates three places — the roll button,
-`renderHuntBar`'s selects, and the `pickWeapon` change handler. Miss that last one and
-changing weapon mid-swap re-offers used styles, walking straight around the rule.
+`swapPool()` is alive, unused, **and not the combo currently held** — that last clause
+is what stops Confirm looking broken. Because `used` is only marked on resolve, straight
+after choosing a combo nothing was excluded, the picker still offered the style you were
+already on, and confirming it changed nothing and explained nothing.
+
+The pool gates three places — the roll button, `renderHuntBar`'s selects, and the
+`pickWeapon` change handler. Miss that last one and changing weapon mid-swap re-offers
+used styles, walking straight around the rule.
+
+**It resets when exhausted.** Once every surviving combo has been hunted with, `report()`
+clears `run.used`. Without that the swap silently disappears for the rest of the run,
+and "one you have yet to use" stops meaning anything once you have used them all.
 
 Weights step evenly (1.00 / 1.15 / 1.30 / 0.85) because these are priced by the
 restriction accepted, not by measured outcome — the simulator treats every combo as

@@ -823,6 +823,12 @@
                     : cfg.loadout === "cycle" ? outcome !== "clear"
                     : false;
     run.used[comboKey(combo.weapon, combo.style)] = true;   // you have now hunted with it
+    // Once every surviving combo has been hunted with, the rule has nothing
+    // left to point at and the swap would silently disappear for the rest of
+    // the run. Reset instead: the cycle starts again and the whole board is
+    // available, which is the only reading of "one you have yet to use" that
+    // still means something once you have used them all.
+    if (legalCombos().every(c => isUsed(c.weapon, c.style))) run.used = {};
     run.swapUsed = false;                       // a fresh swap for the next quest
     run.combo = (keepCombo && isAlive(combo.weapon, combo.style))
       ? { weapon: combo.weapon, style: combo.style } : null;
@@ -1007,7 +1013,15 @@
   // Without the constraint a rational player just holds their best combo and
   // never swaps, which made this rule measure identical to "until it falls".
   const isUsed = (w, s) => !!run.used[comboKey(w, s)];
-  const swapPool = () => legalCombos().filter(c => !isUsed(c.weapon, c.style));
+  // A swap target must be alive, never hunted with, and NOT the combo you are
+  // already holding. That last one is easy to forget and it is what made the
+  // Confirm button look broken: run.used is only marked when a hunt RESOLVES,
+  // so straight after choosing a combo nothing was excluded, the picker still
+  // offered the style you were on, and confirming it changed nothing and said
+  // nothing. You cannot swap to what you already have.
+  const swapPool = () => legalCombos().filter(c =>
+    !isUsed(c.weapon, c.style) &&
+    !(run.combo && c.weapon === run.combo.weapon && c.style === run.combo.style));
   const canSwap = () => cfg.loadout === "free" && !!run.combo && !run.swapUsed &&
                         swapPool().length > 0;
 
