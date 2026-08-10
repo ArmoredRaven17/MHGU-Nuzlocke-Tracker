@@ -378,7 +378,13 @@ body{
   background-image:var(--wi);background-repeat:no-repeat;background-position:center;
   background-size:auto calc(var(--cell-h, 34px) * .74);
   transition:filter .12s}
-.cell.alive{cursor:default}
+/* Available: the border carries the weapon's own colour, so a row reads as a
+   run of coloured frames and the ones you have spent read as dark ones. Mixed
+   down toward a fixed dark rather than given an alpha — an opaque border cannot
+   pick up the theme behind it, which is the rule for everything in this grid.
+   .cell.revived overrides this on purpose: gold outranks the weapon colour,
+   because having bought a combo back is the more useful thing to know. */
+.cell.alive{cursor:default;border-color:color-mix(in srgb, var(--wc, #ffffff) 62%, #0b0f18)}
 
 /* Fallen: the icon is gone and a bone sits in its place. Removing the weapon
    entirely is the point — the slot reads empty-and-marked rather than dimmed,
