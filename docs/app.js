@@ -730,11 +730,11 @@
   function applyCfgLockState() {
     const locked = cfgLocked();
     CFG_INPUTS().forEach(el => { el.disabled = locked; });
-    // Auto-roll is a preference, not one of the run's rules, so the run lock
-    // does not touch it — only whether there is anything to automate. Its own
-    // handler writes cfg directly for the same reason: readCfgFromDom bails out
-    // while a run is on, and this must stay changeable mid-run.
-    $("s_autoroll").disabled = cfg.assign !== "roll";
+    // Frozen for the run like the rules are, and additionally off whenever there
+    // is nothing to automate. It sits outside CFG_BOXES anyway: those are read
+    // back by readCfgFromDom, which bails out while a run is on, so this keeps
+    // its own handler and its own line in writeCfgToDom.
+    $("s_autoroll").disabled = locked || cfg.assign !== "roll";
     if (!locked) syncDependentBoxes();
     $("cfgLockNote").classList.toggle("hidden", !locked);
   }

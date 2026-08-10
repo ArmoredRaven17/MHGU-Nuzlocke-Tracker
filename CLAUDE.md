@@ -226,12 +226,19 @@ the moment one is needed or waits for the button, and it is deliberately absent 
 `LEVERS` — it changes how many clicks a run costs, never what the run is worth. It lives
 in the gear modal beside the theme, not in the sidebar, because the sidebar is rules.
 
-It is also deliberately **not** in `CFG_BOXES`. Everything in there is a run rule and is
-frozen for the duration by `applyCfgLockState`, and `readCfgFromDom` bails out entirely
-while a run is on — a preference must stay changeable mid-run, so it has its own change
-handler writing `cfg.autoRoll` directly, its own line in `writeCfgToDom`, and a disabled
-state driven only by `cfg.assign !== "roll"`. It still persists, since `save()`
-serialises the whole of `cfg`.
+It is frozen for the duration of a run all the same, and additionally off whenever there
+is nothing to automate: `disabled = locked || cfg.assign !== "roll"`.
+
+It sits outside `CFG_BOXES` even so. Those are read back by `readCfgFromDom`, which bails
+out entirely while a run is on, so anything living there needs no separate wiring — this
+does: its own change handler writing `cfg.autoRoll`, its own line in `writeCfgToDom`, and
+its own disabled expression. It still persists, since `save()` serialises the whole of
+`cfg`.
+
+**The gear modal is where settings go.** It is titled Settings, with `<h3>` sections —
+Theme, Hunting — and any new preference belongs there rather than in the sidebar. The
+sidebar is the run's rules: everything in it is scored, badged, and frozen once a run
+starts. A setting that is none of those things does not belong beside them.
 
 `maybeAutoRoll()` runs from `afterMutation()` rather than from a render, so state is
 never mutated while drawing. It is idempotent — it returns early once `run.combo` is set
