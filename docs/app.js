@@ -325,6 +325,7 @@
     questsDone: {},        // "Type|Name" -> true once CLEARED; see clearedQuest()
     lockQuest: null,       // the quest you owe a retry on
     combo: null,           // the loadout for the hunt in progress
+    swapUsed: false,       // free only: the one swap this quest allows, spent
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
     hunts: 0,              // resolved hunts; carts don't end one so don't count
@@ -810,13 +811,17 @@
     //          quest lock is asking you to do)
     // rotate — every quest hands it in, win or lose. Harsher than cycle: cycle
     //          at least lets you keep a combo through the retry you are owed.
-    // free   — pick again every hunt, and you may change it mid-quest
+    // free   — KEEP it, but you may swap once per quest if you want to. May,
+    //          not must: declining is always allowed, which is what makes this
+    //          the easy option rather than a differently-shaped restriction.
     //
-    // rotate and free agree here and differ in renderHuntBar: both hand the
-    // combo in every hunt, but only free leaves the pickers live during one.
-    const keepCombo = cfg.loadout === "hold" ? true
+    // free used to hand the combo in like rotate, which forced the swap and
+    // made the two identical under random assignment — one behaviour wearing
+    // two names, and the simulator duly measured them the same.
+    const keepCombo = cfg.loadout === "hold" || cfg.loadout === "free" ? true
                     : cfg.loadout === "cycle" ? outcome !== "clear"
                     : false;
+    run.swapUsed = false;                       // a fresh swap for the next quest
     run.combo = (keepCombo && isAlive(combo.weapon, combo.style))
       ? { weapon: combo.weapon, style: combo.style } : null;
     run.quest = run.lockQuest || null;
@@ -971,14 +976,20 @@
     strip.innerHTML = html;
   }
 
+  // You may swap once per quest under `free`, and only when you already have a
+  // combo — establishing one after a death is not a swap, it is the roll you
+  // were owed anyway.
+  const canSwap = () => cfg.loadout === "free" && !!run.combo && !run.swapUsed;
+
   function renderHuntBar() {
     const bar = $("huntBar");
     if (!run.active || runOver()) { bar.classList.add("hidden"); return; }
     bar.classList.remove("hidden");
 
     // Holding a live combo: you can't swap, so the pickers would be a lie.
-    // Cycling holds you too — just only until the next clear.
-    const locked = cfg.loadout !== "free" && !!run.combo;
+    // Cycling holds you too — just only until the next clear. Under free the
+    // pickers stay open only while the quest's one swap is unspent.
+    const locked = !!run.combo && !canSwap();
     const pickMode = cfg.assign === "pick" && !locked;
 
     $("hlPick").classList.toggle("hidden", !pickMode);
@@ -1030,8 +1041,9 @@
       else icon.classList.add("hidden");
       // Blocked while a hunt is outstanding — otherwise the mode is opt-out per
       // roll and the locks mean nothing.
-      $("rollBtn").disabled = !!run.combo;
-      $("rollBtn").textContent = run.combo ? "Combo set" : "Roll Combo";
+      $("rollBtn").disabled = !!run.combo && !canSwap();
+      $("rollBtn").textContent = !run.combo ? "Roll Combo"
+                              : canSwap()  ? "Swap (once)" : "Combo set";
       const rr = canReroll();
       $("rerollBtn").classList.toggle("hidden", !rr);
       if (rr) $("rerollBtn").textContent = "Reroll — " + zenny(rerollCost(run.rerolls));
@@ -1482,9 +1494,10 @@
   });
 
   $("rollBtn").addEventListener("click", () => {
-    if (run.combo) return;
+    if (run.combo && !canSwap()) return;
     const c = rollCombo();
     if (!c) { renderAll(); return; }
+    if (run.combo) run.swapUsed = true;         // replacing one spends the swap
     run.combo = c; save(); renderAll();
   });
 
@@ -1497,6 +1510,8 @@
     const styles = legalStyles(w);
     const style = styles.includes(s) ? s : styles[0];
     if (!style) return;
+    if (run.combo && comboKey(run.combo.weapon, run.combo.style) !== comboKey(w, style))
+      run.swapUsed = true;
     run.combo = { weapon: w, style };
     save(); renderAll();
   };

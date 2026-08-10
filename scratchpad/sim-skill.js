@@ -56,21 +56,37 @@ function makeProfile(breadth, cap, rng) {
 
 // One run. `assign` and `loadout` decide which combo you are on each hunt, which
 // is the whole point — everything else matches the reference configuration.
+//
+// `free` is the subtle one and the first version of this got it wrong. It is MAY
+// swap, not must: you keep your combo across quests and may change it once per
+// quest if you want to. So the policy has to be a decision, not a reset — swap
+// only when what you are holding is worse than what a swap is expected to get
+// you. Under Hunter's choice that means your best surviving combo; under a roll
+// it means the average of the survivors, since the draw is uniform.
+//
+// Modelled as a forced re-selection (as it was, and as the app itself used to
+// behave) `free` is identical to `rotate` and comes out HARDER than holding.
+// Modelled as an option it can never be worse than holding, because declining is
+// always available.
 function simulate(profile, assign, loadout, kill, rng) {
   const alive = profile.map(() => true);
   const ceiling = profile.length;
   let losses=0, earned=0, hunts=0, clears=0, streak=0, owed=-1, cur=-1;
   const spent = new Uint8Array(QUESTS.length); let live = QUESTS.length;
   const liveIdx = () => { const o=[]; for(let i=0;i<alive.length;i++) if(alive[i]) o.push(i); return o; };
+  const bestOf = (o) => o.reduce((b,i) => profile[i].p > profile[b].p ? i : b, o[0]);
+  const drawFor = (o) => assign === "pick" ? bestOf(o) : o[(rng()*o.length)|0];
 
   while (losses < ceiling && clears < CLEAR_LIMIT && hunts < 4000) {
-    if (cur < 0 || !alive[cur]) {
-      const opts = liveIdx();
-      if (!opts.length) break;
-      // Hunter's choice plays to win: the best surviving combo. Rolling does not.
-      cur = assign === "pick"
-        ? opts.reduce((b,i) => profile[i].p > profile[b].p ? i : b, opts[0])
-        : opts[(rng()*opts.length)|0];
+    const opts = liveIdx();
+    if (!opts.length) break;
+    if (cur < 0 || !alive[cur]) cur = drawFor(opts);
+    else if (loadout === "free") {
+      // The one swap this quest allows, taken only when it should pay.
+      const expected = assign === "pick"
+        ? profile[bestOf(opts)].p
+        : opts.reduce((t,i) => t + profile[i].p, 0) / opts.length;
+      if (profile[cur].p < expected) cur = drawFor(opts);
     }
     hunts++;
     let qi;
@@ -90,10 +106,9 @@ function simulate(profile, assign, loadout, kill, rng) {
       else if (kill === "streak") died = streak >= 2; }
 
     if (died) { alive[cur] = false; losses++; cur = -1; }
-    else if (loadout === "rotate") cur = -1;                       // always hands in
-    else if (loadout === "cycle" && cleared) cur = -1;             // clears hand in
-    else if (loadout === "free") cur = -1;                         // re-picked each hunt
-    // hold: keep it
+    else if (loadout === "rotate") cur = -1;                 // hands it in, win or lose
+    else if (loadout === "cycle" && cleared) cur = -1;        // clears hand it in
+    // hold and free keep it; free may choose to swap at the top of the next hunt
   }
   const rate = Math.max(0, Math.min(1, (ceiling-losses)/ceiling));
   return { earned, clears, losses, L: clears * (1 + rate) };
