@@ -425,6 +425,21 @@ body{
 .cell.retired{background:color-mix(in srgb, var(--wc, #ffffff) 76%, #000000);
   border-color:rgba(0,0,0,.5)}
 
+/* The crosshair. A weapon lights its row, a style lights its column, and the
+   selection is wherever they cross — which is the reading a 14x6 grid can
+   actually deliver. Every single-cell marker before this failed for the same
+   reason: one cell in eighty-four is hard to find no matter how it is dressed.
+   The arms are deliberately quieter than the intersection. They only have to
+   say "this row" and "this column"; the crossing says "here", and it is the
+   only thing carrying the full yellow outline. Tinted borders rather than a
+   wash, so a lit row still shows which combos in it have fallen. */
+.cell.row-on,.cell.col-on{border-color:color-mix(in srgb, #ffe100 62%, #0b0f18)}
+.cell.row-on.col-on{border-color:#ffe100}
+/* The headers light too, so the crosshair reads even where the grid is scrolled
+   or the eye starts at the edge. */
+.bh.col-on{opacity:1;color:#ffe100;font-weight:700}
+.brow-label.row-on .bl-t{color:#ffe100}
+
 /* Selected: a bright yellow outline, and no glow. The glow went through two
    failures worth remembering. In var(--wc) it was invisible once cells took the
    weapon colour — 1.02:1 on Insect Glaive, never better than 1.19:1 anywhere,

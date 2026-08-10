@@ -901,18 +901,35 @@
     if (runOver()) { board.classList.add("hidden"); return; }
     board.classList.remove("hidden");
 
+    // A crosshair rather than one marked cell. Selecting a weapon lights its
+    // ROW, selecting a style lights its COLUMN, and the two converge on the
+    // combo. One cell in eighty-four is a hard thing to spot however it is
+    // marked -- which is why every attempt at a single-cell marker read as
+    // "off" -- but a lit row and a lit column are visible from anywhere on the
+    // board, and the reading is free: the answer is wherever they cross.
+    //
+    // Reads the pickers while a choice is in progress, so under Hunter's
+    // choice the crosshair assembles as you go: pick the weapon and the row
+    // lights, pick the style and the column joins it.
     const cur = run.combo;
+    const picking = !cur && !$("hlPick").classList.contains("hidden");
+    const hlW = cur ? cur.weapon : (picking ? $("pickWeapon").value : null);
+    const hlS = cur ? cur.style  : (picking ? $("pickStyle").value  : null);
+    // The arms of the crosshair. Applied to every cell, alive or not, so the
+    // line does not break where a combo has fallen.
+    const cross = (w, s) => (w === hlW ? " row-on" : "") + (s === hlS ? " col-on" : "");
     const isCurrent = (w, s) => cur && cur.weapon === w && cur.style === s;
     const cellClass = (w, s) => {
       if (!isAlive(w, s)) {
-        return "cell dead" + (canRevive(w, s) ? " revivable" : "");
+        return "cell dead" + (canRevive(w, s) ? " revivable" : "") + cross(w, s);
       }
       // Alive, but its weapon spent its style allowance — out of the pool
       // without ever having been lost. A different thing from fallen.
-      if (isRetired(w)) return "cell retired";
+      if (isRetired(w)) return "cell retired" + cross(w, s);
       // Back from the dead — worth marking, it cost something.
       const back = (run.revived[comboKey(w, s)] || 0) > 0;
-      return "cell alive" + (back ? " revived" : "") + (isCurrent(w, s) ? " current" : "");
+      return "cell alive" + (back ? " revived" : "") + cross(w, s) +
+             (isCurrent(w, s) ? " current" : "");
     };
     // The row label doubles as the weapon's status. Retired and Selected are the
     // two states you cannot read off a single cell — retired is a property of the
@@ -930,12 +947,14 @@
     // help modal covers. A key nobody needs is just height the grid wanted.
     let html = '<div class="board-grid">';
     html += '<div class="bh corner"></div>';
-    STYLES.forEach(s => { html += `<div class="bh">${escapeHtml(s)}</div>`; });
+    STYLES.forEach(s => {
+      html += `<div class="bh${s === hlS ? ' col-on' : ''}">${escapeHtml(s)}</div>`;
+    });
     WEAPONS.forEach(w => {
       // The text is wrapped so it can reserve the width of the widest label it
       // will ever hold — see .bl-t. Without that the column grows the moment
       // something is selected and the whole grid shifts under the cursor.
-      html += `<div class="brow-label" style="color:${WEAPON_COLORS[w]}">` +
+      html += `<div class="brow-label${w === hlW ? ' row-on' : ''}" style="color:${WEAPON_COLORS[w]}">` +
               `<img src="${weaponIcon(w)}" alt="">` +
               `<span class="bl-t">${escapeHtml(rowLabel(w))}</span></div>`;
       STYLES.forEach(s => {
@@ -1551,7 +1570,11 @@
       : legalStyles(w);
     sSel.innerHTML = styles.map(st =>
       `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join("");
+    renderBoard();          // the row arm of the crosshair follows the picker
   });
+  // The column arm. Choosing a style commits nothing either, so this only
+  // redraws the board — the pair is committed by Confirm.
+  $("pickStyle").addEventListener("change", renderBoard);
   $("pickConfirm").addEventListener("click", () =>
     setPickedCombo($("pickWeapon").value, $("pickStyle").value));
 
