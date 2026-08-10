@@ -433,8 +433,25 @@ body{
    say "this row" and "this column"; the crossing says "here", and it is the
    only thing carrying the full yellow outline. Tinted borders rather than a
    wash, so a lit row still shows which combos in it have fallen. */
-.cell.row-on,.cell.col-on{border-color:color-mix(in srgb, #ffe100 62%, #0b0f18)}
-.cell.row-on.col-on{border-color:#ffe100}
+/* Drawn as RAILS, not as a tint on each cell's outline. Tinting the whole
+   border was the first attempt and it barely registered: a 1px muted line
+   around each of six cells does not add up to a row, and the column got away
+   with it only because fourteen stacked segments happen to look like a line.
+   A 2px bar along the top and bottom of the row, and down the left and right of
+   the column, reads as one continuous rail instead — which is what makes it a
+   crosshair rather than nineteen highlighted squares. Done with inset shadows
+   so it costs no layout and cannot shift the grid.
+   box-shadow does not merge across rules, so the combinations are spelled out:
+   a cell on both arms needs all four sides in one declaration. */
+.cell.row-on:not(.col-on){box-shadow:inset 0 2px 0 0 #ffe100, inset 0 -2px 0 0 #ffe100}
+.cell.col-on:not(.row-on){box-shadow:inset 2px 0 0 0 #ffe100, inset -2px 0 0 0 #ffe100}
+/* :not(.current) matters. This selector is 0,3,0 and .cell.current is only
+   0,2,0, so without it the crossing rule outranks the selected marker whatever
+   order they sit in, and the committed combo silently loses its outline and
+   glow. This form only dresses the crossing while it is still a PREVIEW. */
+.cell.row-on.col-on:not(.current){
+  box-shadow:inset 0 2px 0 0 #ffe100, inset 0 -2px 0 0 #ffe100,
+             inset 2px 0 0 0 #ffe100, inset -2px 0 0 0 #ffe100}
 /* The headers light too, so the crosshair reads even where the grid is scrolled
    or the eye starts at the edge. */
 .bh.col-on{opacity:1;color:#ffe100;font-weight:700}
