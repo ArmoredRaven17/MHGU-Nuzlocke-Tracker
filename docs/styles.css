@@ -41,10 +41,18 @@ body{
   cursor:pointer;padding:6px 9px;border-radius:6px;line-height:1}
 .icon-btn:hover{background:#ffffff1a}
 
-/* Layout */
+/* Layout
+   The two rails are FLUID, not fixed. They used to be a hard 300 + 320, which
+   meant the board — the one thing you are meant to be able to read at a glance —
+   got whatever was left over and then overflowed inside its own column. At 200%
+   zoom that left it 63px wide with a horizontal scrollbar under it, while the
+   chrome either side stayed full size. The clamp makes the rails give ground
+   first: they shrink with the viewport down to a floor that still fits their
+   longest control, and the board keeps its ~350px. */
 .layout{display:flex;flex:1;min-height:0}
 .sidebar{
-  width:300px;flex-shrink:0;padding:12px;overflow-y:scroll;scrollbar-gutter:stable;
+  width:clamp(220px, 20vw, 300px);
+  flex-shrink:0;padding:12px;overflow-y:scroll;scrollbar-gutter:stable;
   display:flex;flex-direction:column;gap:8px;
   background-image:
     linear-gradient(color-mix(in srgb,var(--accent) 90%,transparent),color-mix(in srgb,var(--accent) 90%,transparent)),
@@ -58,12 +66,25 @@ body{
    It hides entirely once the run is over: there is nothing to act on, and the
    result screen wants the width back for its three panels. */
 .controls{
-  width:320px;flex-shrink:0;padding:12px;overflow-y:auto;
+  width:clamp(235px, 21vw, 320px);
+  flex-shrink:0;padding:12px;overflow-y:auto;
   display:flex;flex-direction:column;gap:8px;
   background-image:
     linear-gradient(color-mix(in srgb,var(--accent) 90%,transparent),color-mix(in srgb,var(--accent) 90%,transparent)),
     url('assets/sidebar-background-texture1.png');
   background-size:auto 100%;background-position:left center;background-repeat:repeat;
+}
+/* Below this there is no width left to divide — 455px of rails at their floor
+   against a board that needs ~350 — so stop dividing it. The three columns
+   become one scrolling stack, each at full width and its natural height, with
+   the board first because that is what you came to look at. html/body stay
+   locked; .layout does the scrolling, which is where it was already happening. */
+@media (max-width:840px){
+  .layout{flex-direction:column;overflow-y:auto}
+  .sidebar,.content,.controls{
+    width:auto;flex:0 0 auto;overflow:visible;scrollbar-gutter:auto}
+  /* Board, then the controls you touch every hunt, then the levers you set once. */
+  .content{order:1} .controls{order:2} .sidebar{order:3}
 }
 
 /* Buttons */
@@ -92,10 +113,16 @@ body{
 .btn.accent:hover{background:var(--bg2)}
 
 /* Collapsible panels */
-.panel{border:1px solid var(--line);border-radius:8px;overflow:clip;background:var(--bg2)}
-/* The banner texture sits at the left edge, so the label is inset past it. */
+.panel{border:1px solid var(--line);border-radius:8px;overflow:clip;background:var(--bg2);
+  container-type:inline-size}
+/* The banner texture sits at the left edge, so the label is inset past it.
+   Sized against the PANEL rather than the window: the sidebar is fluid now, and
+   at its narrow floor a fixed 22px "Kill Conditions" ran past the edge and was
+   silently clipped. cqi means the header shrinks with the rail it lives in,
+   which is also what makes it survive the stacked layout unchanged. */
 .panel-head{width:100%;text-align:left;background:transparent;border:none;color:var(--text);
-  padding:8px 16px 8px 30px;font-size:22px;font-weight:600;cursor:pointer;
+  padding:8px clamp(9px,6.1cqi,16px) 8px clamp(12px,11.5cqi,30px);
+  font-size:clamp(15px,8.5cqi,22px);font-weight:600;cursor:pointer;
   display:flex;justify-content:space-between;align-items:center;
   background-image:
     linear-gradient(color-mix(in srgb,var(--bg2) 80%,transparent),color-mix(in srgb,var(--bg2) 80%,transparent)),
@@ -175,6 +202,11 @@ body{
   padding:12px;border:1px solid var(--line);
   border-radius:8px;background:var(--card)}
 .hunt-loadout,.hunt-quest,.hunt-outcome{display:flex;flex-direction:column;gap:6px}
+/* Cleared / Carted / Failed sit on one line and overran the rail at its floor.
+   They wrap to a second line rather than being clipped — the outcome buttons are
+   the last thing that should ever be half off-screen. */
+.hunt-outcome .row.gap{flex-wrap:wrap}
+.hunt-outcome .row.gap .btn{flex:1 1 auto}
 /* Loadout and result stack in one column, quest beside them: the two things you
    act on are the combo and then the outcome for it, so they belong together. */
 .hunt-col{display:flex;flex-direction:column;gap:12px}
