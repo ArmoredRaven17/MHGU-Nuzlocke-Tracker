@@ -169,3 +169,37 @@ for (const a of ["roll","pick"]) for (const l of ["hold","cycle","rotate"]) {
   console.log("   " + a.padEnd(7) + l.padEnd(9) + m.L.toFixed(1).padStart(6) +
     ("  " + (baseL/m.L).toFixed(3)).padStart(10) + ("  " + pay.toFixed(3)).padStart(8));
 }
+
+// ── Paste-ready weights ─────────────────────────────────────────────────────
+// `effect` is a design choice -- what an option should be worth -- and stays as
+// it is. `factor` is solved so the score actually lands there:
+//
+//     effect = (run length relative to baseline) x factor
+//     factor = effect / relative length
+//
+// assign and loadout used to carry factor === effect because they were
+// unmeasurable. They are measurable now, so they get solved like everything else.
+{
+  console.log("");
+  console.log("── Solved weights ──────────────────────────────────────────────");
+  const EFFECT = { both:1.00, cart:0.75, fail:0.50, streak:0.38 };
+  const base = measure("roll","hold","both").L;
+  const kf = {};
+  for (const k of ["both","cart","fail","streak"])
+    kf[k] = EFFECT[k] / (measure("roll","hold",k).L / base);
+  const f = n => n.toFixed(3);
+  console.log("    kill: {");
+  console.log("      both:   [" + f(kf.both)   + ", 1.00],");
+  console.log("      cart:   [" + f(kf.cart)   + ", 0.75],");
+  console.log("      fail:   [" + f(kf.fail)   + ", 0.50],");
+  console.log("      streak: [" + f(kf.streak) + ", 0.38],");
+  console.log("    },");
+  const LE = { hold:1.00, cycle:1.04, rotate:1.03 }, AE = 0.93;
+  const rel = (a,l) => measure(a,l,"both").L / base;
+  const lf = {};
+  for (const l of ["hold","cycle","rotate"]) lf[l] = LE[l] / rel("roll",l);
+  const af = AE / rel("pick","hold");
+  console.log("    assign:  { roll: [1, 1], pick: [" + f(af) + ", 0.93] },");
+  console.log("    loadout: { hold: [1, 1], cycle: [" + f(lf.cycle) +
+              ", 1.04], rotate: [" + f(lf.rotate) + ", 1.03] },");
+}

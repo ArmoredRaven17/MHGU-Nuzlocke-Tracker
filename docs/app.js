@@ -114,9 +114,9 @@
   const LEVERS = {
     kill: {
       both:   [1.000, 1.00],   // a cart OR a failure takes it — nothing forgiven
-      cart:   [0.709, 0.75],   // carts only; you can lose a quest and keep it
-      fail:   [0.400, 0.50],   // failures only; carting to a clear costs nothing
-      streak: [0.250, 0.38],   // the first failure is forgiven
+      cart:   [0.711, 0.75],   // carts only; you can lose a quest and keep it
+      fail:   [0.366, 0.50],   // failures only; carting to a clear costs nothing
+      streak: [0.246, 0.38],   // the first failure is forgiven
     },
     // The styles cap swings hardest because it decides how much of the board you
     // ever get to spend. Its effects carry ~17% on top of the honest pool ratio,
@@ -125,10 +125,18 @@
       1: [4.717, 1.60], 2: [1.944, 1.35], 3: [1.000, 1.00],
       4: [0.737, 0.85], 5: [0.578, 0.72], 6: [0.459, 0.60],
     },
-    // assign and loadout are measured now, not judged. sim-skill.js gives each
-    // player a win rate per combo — without that there is no such thing as a
+    // assign and loadout are measured now, not judged. sim-player.js gives each
+    // player a CART CHANCE per combo — without that there is no such thing as a
     // good combo, so there was nothing for hold to protect or Hunter's choice to
     // choose, and both sat in LEVER PLACEHOLDER on judgement alone.
+    //
+    // Cart chance is the only primitive in that model. A hunt runs until you
+    // clear, cart out three times, or fail some other way, so the clear rate is
+    // (1 - q^3)(1 - t) per combo rather than a number anyone asserts — which is
+    // what finally let the kill conditions be solved against how carting really
+    // works. Skill is how MANY combos you are comfortable on (0 of 42 for a weak
+    // generalist, 30 for a strong specialist); breadth is how unevenly that
+    // comfort is spread.
     //
     // Two results shape the table below.
     //
@@ -144,8 +152,8 @@
     // exposure for which rule governs your combo to move the outcome. If that
     // group should be a real difficulty lever, the fix is a bigger difference
     // between the RULES, not a bigger number here.
-    assign:  { roll: [1, 1], pick: [0.930, 0.93] },
-    loadout: { hold: [1, 1], cycle: [1.040, 1.04], rotate: [1.030, 1.03] },
+    assign:  { roll: [1, 1], pick: [0.835, 0.93] },
+    loadout: { hold: [1, 1], cycle: [1.107, 1.04], rotate: [1.097, 1.03] },
     quest:   { on: [1, 1], off: [0.850, 0.85] },
 
     reviveOn:    [0.775, 0.82],   // a safety net at all
