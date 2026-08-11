@@ -267,6 +267,13 @@ body{
 .quest-chosen .qc-note{font-size:11px;font-weight:400;opacity:.85;
   color:var(--accent-hover);margin-left:8px;white-space:nowrap}
 .quest-chosen .qc-note.off{visibility:hidden}
+/* Pushed to the far end by margin-left:auto so it holds the same spot whatever
+   the quest is called, rather than trailing a name of unpredictable length. */
+.quest-chosen .qc-clear{margin-left:auto;flex-shrink:0;
+  background:transparent;border:1px solid var(--line);border-radius:5px;
+  color:var(--text);opacity:.55;cursor:pointer;
+  font-size:15px;line-height:1;padding:1px 7px 3px}
+.quest-chosen .qc-clear:hover{opacity:1;background:#ffffff1a;border-color:var(--accent)}
 
 /* Difficulty multiplier */
 .mult-box{display:flex;flex-direction:column;gap:2px;

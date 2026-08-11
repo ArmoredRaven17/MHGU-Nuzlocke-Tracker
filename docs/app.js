@@ -971,6 +971,16 @@
     }
     box.classList.remove("hidden");
   }
+  // Nothing is committed by naming a quest, so clearing it is not an undo of
+  // anything -- it just puts the hunt back to needing one. The outcome buttons
+  // already require run.quest, so they disable themselves and nothing can be
+  // reported into the gap.
+  function clearQuest() {
+    if (run.lockQuest) return;
+    run.quest = null;
+    save(); renderAll();
+  }
+
   function chooseQuest(q) {
     run.quest = q;
     $("questSearch").value = "";
@@ -1193,7 +1203,13 @@
         (isArena(q)
           ? ' <span class="qc-arena">Arena &mdash; nothing at stake</span>'
           : ` <span class="qc-worth">${zenny(q.r || 0)}</span>`) +
-        `<span class="qc-note${qLocked ? "" : " off"}">${LOCK_ICON} Retry Enforced</span>`;
+        `<span class="qc-note${qLocked ? "" : " off"}">${LOCK_ICON} Retry Enforced</span>` +
+        // Naming the wrong quest costs real score -- the reward is read straight
+        // off it -- and searching again to replace it is not something the card
+        // advertises. This says plainly that the choice is not yet binding.
+        // Absent while the lock holds, because then it genuinely is.
+        (qLocked ? "" : '<button type="button" class="qc-clear" ' +
+          'title="Wrong quest? Clear it and choose again">&times;</button>');
     }
     // Disabled rather than hidden while the quest is locked: it stays visible so
     // you can see the control exists and is simply unavailable, it holds its own
@@ -1681,6 +1697,11 @@
   // used up by confirming a different combo.
 
   $("questSearch").addEventListener("input", (e) => renderQuestResults(e.target.value));
+  // Delegated: the card's innerHTML is rebuilt on every render, so a listener
+  // bound to the button itself would not survive one.
+  $("questChosen").addEventListener("click", (e) => {
+    if (e.target.closest(".qc-clear")) clearQuest();
+  });
   $("questResults").addEventListener("click", (e) => {
     const row = e.target.closest("[data-i]");
     if (row) chooseQuest(searchResults[+row.dataset.i]);
