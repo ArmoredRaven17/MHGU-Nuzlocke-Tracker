@@ -269,79 +269,54 @@
     <h2>How it works</h2>
 
     <h3>Each hunt</h3>
-    <ol>
-      <li><strong>Get a combo.</strong> Either the app hands you a surviving weapon and
-          style, or you pick one yourself. Fallen combos are never offered.</li>
-      <li><strong>Name the quest</strong> you&rsquo;re about to hunt. Named the wrong one?
-          The &times; on the card clears it &mdash; nothing is committed until you report a
-          result.</li>
-      <li><strong>Report the result</strong> &mdash; Cleared, Carted, or Failed. Carted can
-          be pressed more than once; it doesn&rsquo;t end the attempt.</li>
-    </ol>
-    <p>The kill condition you chose is checked against that result. When it fires, the
-       combo you were using is struck off the board.</p>
+    <p>A Weapon/Style combo is rolled or selected depending on your selected settings.
+       Combos that have fallen (you cart/fail with the combo) are removed from the pool.</p>
+    <p>Select a quest, then update the cart count and the result of the hunt.</p>
+    <p>If you clear the quest, then your earned Zenny is increased by the Quest Reward and
+       your selected Difficulty&rsquo;s Bonus. The progress counter is incremented.</p>
+    <p>If you cart or fail the quest, your combo may be considered Fallen, you may need to
+       Retry the quest. The progress counter is not incremented on failures.</p>
+    <p>Depending on the settings, you may be forced to switch Combos after a cleared
+       quest.</p>
 
     <h3>Reading the board</h3>
-    <p>The grid is every weapon against every style. Each row is its weapon&rsquo;s colour,
-       and each cell is tagged with its style &mdash; G, S and V for Guild, Striker and
-       Valor, Ad, Ae and Al for Adept, Aerial and Alchemy.</p>
-    <ul>
-      <li><strong>The weapon&rsquo;s icon</strong> &mdash; available, you can be handed it
-          or pick it.</li>
-      <li><strong>A bone on charcoal</strong> &mdash; fallen. Gone for the rest of the run.</li>
-      <li><strong>Darkened and empty</strong> &mdash; the weapon retired, so this one is
-          non-selectable. It was never lost: the weapon spent its style allowance and took
-          its survivors out of the pool with it.</li>
-    </ul>
-    <p>The combo you&rsquo;re on is found by the <strong>crosshair</strong> &mdash; a blue
-       band across its row, a red band down its column, and a purple box where they cross.
-       The row label and the style header light with them.</p>
-    <p>The name at the start of each row says what has happened to that weapon:
-       <strong>Selected</strong> while you&rsquo;re on one of its styles, and
-       <strong>Retired</strong> once it&rsquo;s out of the pool.</p>
-    <p>With revives on, a fallen combo can be clicked to buy it back.</p>
+    <p>The grid is every weapon against every style.</p>
+    <p>Rows are weapons, the columns are Styles.</p>
+    <p>When a weapon is selected, the row will have a Blue highlight and its name will be
+       Selected.</p>
+    <p>When a style is selected, the column will have a Red highlight and its name will be
+       in Red.</p>
+    <p>The intersection where both meet will be Purple to show you the currently selected
+       Weapon/Style Combo, this is also displayed in the right panel.</p>
+    <p>The Grid is simply a means to see the current state of the pool of combos you may be
+       assigned or select.</p>
+
+    <h3>Weapons in the pool</h3>
+    <p>Available Weapons are weapons that can be selected or rolled into and are displayed
+       as a weapon icon with a letter to show the style.</p>
+    <p>Fallen Weapons will be a weapon colored bone icon with a charcoal background to show
+       they are &lsquo;dead&rsquo;.</p>
+    <p>Retired Weapons are weapons that are removed from the pool after enough fallen
+       combos for a specific weapon occur and are displayed by removing the icon and
+       dimming the background.</p>
 
     <h3>Reading the result</h3>
-    <p>The result screen shows three things side by side. <strong>Rules</strong> is the set
-       of choices the run was played under, kept as it was when you pressed Start Run
-       &mdash; changing the settings afterwards won&rsquo;t rewrite it. <strong>Quest
-       Log</strong> lists every combo that fell, in order, with the quest it fell on.</p>
-    <p>In the middle is your <strong>score</strong>: everything you earned, plus the bonus
-       for combos still standing, with the difficulty you played at. Below that is how the
-       run actually went &mdash; hunts taken, clears, failures, carts, and any rerolls or
-       revives you paid for.</p>
-    <p>Once a run is over you can move between the <strong>Board</strong> and the
-       <strong>Result</strong> with the tabs above them, and the last run&rsquo;s result
-       stays reachable after the next one starts.</p>
-
-    <h3>Reading the difficulty</h3>
-    <p>Every setting carries a size &mdash; <strong>XS</strong> through <strong>XL</strong>,
-       or <strong>&plusmn;0</strong> for the baseline. A <strong>+</strong> pays more than
-       the baseline and a <strong>&minus;</strong> pays less; the letter is how much. They
-       light up when the option they sit on is the one in play, and the box at the top of
-       the sidebar totals them into a rating from Very Easy to Very Hard.</p>
+    <p>The result screen will be an overview of your run&rsquo;s rules, stats and your
+       earnings.</p>
+    <p>Things like carts, quests failures and quest clears will be tallied throughout the
+       run.</p>
+    <p>The screen will also show how many weapon/style combos survived and how much of a
+       bonus you earned if you complete 50 quests.</p>
 
     <h3>The settings</h3>
-    <p><strong>Only one kill condition is ever in play.</strong> Carting and failing a
-       quest are separate things &mdash; you can time out or slay a capture target without
-       carting, and you can cart twice and still clear &mdash; so the harshest setting
-       covers both explicitly. Below that, each rule already covers the gentler ones
-       beneath it.</p>
-    <p><strong>How long you hold a weapon/style.</strong> <em>Until it falls</em> is the
-       baseline: you keep it through clears as well as failures, until it dies.
-       <em>Until you clear a quest</em> hands it in every time you succeed, but a failure
-       keeps it, so you can take the quest that beat you again with the same combo.
-       <em>Changes each quest</em> is harsher still, because it hands the combo in win or
-       lose &mdash; you never get to keep one, not even for the retry you are owed. Both of
-       those pay <em>more</em> than the baseline.</p>
-    <p><strong>The quest lock</strong> means a quest that beat you is owed one retry
-       &mdash; your next hunt has to be that quest, win or lose. It&rsquo;s on by default;
-       turning it off makes the run easier and pays less.</p>
-    <p><strong>Revives and rerolls</strong> are both off by default. A revive buys a fallen
-       combo back; a reroll refuses the combo you were handed and draws another. Both come
-       out of your earned zenny, and <strong>both double in price each time you use
-       them</strong> &mdash; so they&rsquo;re there to rescue a run, not to run on.</p>
-    <p>The settings are frozen for the length of a run and unlock once it ends.</p>
+    <p>Kill Condition is the condition that &lsquo;kills&rsquo; off a weapon/style combo
+       turning it into a Fallen combo.</p>
+    <p>Weapon/Style Combos is the amount of Styles you can have per weapon before that
+       weapon is retired.</p>
+    <p>Locks impact when a weapon/style combo are swapped out and how they are selected, if
+       you have to retry a quest or not after failing.</p>
+    <p>Rerolls/Revives can be enabled in the next two panels for reduction in bonus and
+       using this requires a deduction in your point total.</p>
     <div class="row end"><button id="helpClose" class="btn tiny">Close</button></div>
   </div>
 </div>
