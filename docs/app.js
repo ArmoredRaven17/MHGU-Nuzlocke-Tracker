@@ -1737,6 +1737,10 @@
   $("oCart").addEventListener("click",  () => report("cart"));
   $("oFail").addEventListener("click",  () => report("fail"));
 
+  // Two docs, split by the question they answer. About is what a run IS and what
+  // it costs you; Help is how to drive the thing.
+  $("aboutBtn").addEventListener("click", () => $("aboutModal").classList.remove("hidden"));
+  $("aboutClose").addEventListener("click", () => $("aboutModal").classList.add("hidden"));
   $("helpBtn").addEventListener("click", () => $("helpModal").classList.remove("hidden"));
   $("helpClose").addEventListener("click", () => $("helpModal").classList.add("hidden"));
   $("themeBtn").addEventListener("click", () => $("themeModal").classList.remove("hidden"));
@@ -1749,7 +1753,7 @@
   $("themeClose").addEventListener("click", () => $("themeModal").classList.add("hidden"));
   $("linksBtn").addEventListener("click", () => $("linksModal").classList.remove("hidden"));
   $("linksClose").addEventListener("click", () => $("linksModal").classList.add("hidden"));
-  [["helpModal"], ["themeModal"], ["linksModal"], ["confirmModal"]].forEach(([id]) => {
+  [["aboutModal"], ["helpModal"], ["themeModal"], ["linksModal"], ["confirmModal"]].forEach(([id]) => {
     $(id).addEventListener("click", (e) => { if (e.target.id === id) $(id).classList.add("hidden"); });
   });
   // Board is rebuilt on every render, so delegate rather than binding cells.

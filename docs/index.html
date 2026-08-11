@@ -14,9 +14,10 @@
   <header class="titlebar titlebar-header">
     <img class="title-icon" src="assets/MonsterIcons/MHGU-Question_Mark_Icon.webp" alt="">
     <h1>MHGU Zenny Gauntlet</h1>
+    <button id="aboutBtn" class="icon-btn" title="About" aria-label="About">&#8505;</button>
     <button id="helpBtn" class="icon-btn" title="How it works">?</button>
     <button id="linksBtn" class="icon-btn" title="Other MHGU apps" aria-label="Other MHGU apps">&#128279;</button>
-    <button id="themeBtn" class="icon-btn" title="Theme">&#9881;</button>
+    <button id="themeBtn" class="icon-btn" title="Settings" aria-label="Settings">&#9881;</button>
   </header>
 
   <main class="layout">
@@ -208,73 +209,108 @@
 </div>
 
 <!-- ── Modals ─────────────────────────────────────────────────────────── -->
+<div id="aboutModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>About</h2>
+    <p>A scored challenge run for MHGU. It doesn&rsquo;t roll quests and it has no filters
+       &mdash; you hunt whatever you like, then come back and say what happened. What it
+       tracks is what that costs you.</p>
+
+    <h3>What&rsquo;s at stake</h3>
+    <p>Your stock is every <strong>weapon and style</strong> pairing &mdash; 14 weapons
+       across 6 styles, <strong>84 combos</strong>. When a hunt goes badly on the terms
+       you set, the combo you were using is struck off for the rest of the run.</p>
+    <p>Combos cost nothing to own, so nothing you ground for is ever at risk. What a run
+       takes is your <em>options</em>, and it takes the comfortable ones first, because
+       those are the ones you reach for.</p>
+
+    <h3>How far it goes</h3>
+    <p>A run is <strong>50 successful hunts</strong>, or however far you get before nothing
+       is left standing. Only clears count towards the 50 &mdash; a failure costs you a
+       combo, it doesn&rsquo;t spend your run.</p>
+    <p><strong>Clearing a quest spends it.</strong> Fifty clears means fifty different
+       quests, so a run is a route through the quest list rather than the same hunt fifty
+       times. Failing leaves it on the board, which is what lets the quest lock send you
+       back to it.</p>
+
+    <h3>What you&rsquo;re playing for</h3>
+    <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>, and every
+       combo still standing at the end pays a bonus on top. Harsher rules multiply what you
+       earn, so the score is a statement about how you played rather than how long you
+       lasted &mdash; a careful run under gentle rules and a brutal one cut short can land
+       in the same place.</p>
+
+    <h3>Not part of a run</h3>
+    <p><strong>Arena quests.</strong> They hand you a fixed set of five weapons, so there
+       is no combo of yours to put at stake &mdash; and a rule that ties you to one combo
+       could not be honoured on them anyway. They aren&rsquo;t listed.</p>
+    <p><strong>Prowler quests.</strong> You hunt those as a Palico, so again none of your
+       84 combos is on the line. Also not listed.</p>
+
+    <h3>Where it came from</h3>
+    <p>This started as a Nuzlocke-inspired challenge idea and ended up rather less
+       traditional than one &mdash; out of curiosity about how to balance different levels
+       of difficulty against each other.</p>
+    <div class="row end"><button id="aboutClose" class="btn tiny">Close</button></div>
+  </div>
+</div>
+
 <div id="helpModal" class="modal hidden">
   <div class="modal-card">
     <h2>How it works</h2>
-    <p>This tracks a scored challenge run. It doesn't roll quests &mdash; hunt whatever
-       you like, then come back and say what happened.</p>
+
+    <h3>Each hunt</h3>
     <ol>
       <li><strong>Get a combo.</strong> Either the app hands you a surviving weapon and
           style, or you pick one yourself. Fallen combos are never offered.</li>
-      <li><strong>Name the quest</strong> you're about to hunt.</li>
+      <li><strong>Name the quest</strong> you&rsquo;re about to hunt. Named the wrong one?
+          The &times; on the card clears it &mdash; nothing is committed until you report a
+          result.</li>
       <li><strong>Report the result</strong> &mdash; Cleared, Carted, or Failed. Carted can
-          be pressed more than once; it doesn't end the attempt.</li>
+          be pressed more than once; it doesn&rsquo;t end the attempt.</li>
     </ol>
     <p>The kill condition you chose is checked against that result. When it fires, the
-       weapon/style combo you were using is struck off the board permanently. There are
-       <strong>84</strong> of them &mdash; 14 weapons across 6 styles.</p>
-
-    <h3>The run</h3>
-    <p>A run is <strong>50 successful hunts</strong>, or however far you get before nothing
-       is left standing. Only clears count towards the 50 &mdash; a failure costs you a
-       combo, it doesn't spend your run.</p>
-    <p><strong>Clear a quest and it's spent.</strong> Fifty clears means fifty different
-       quests, so a run is a route rather than the same quest fifty times. Only clearing
-       spends one; fail and it stays on the board, which is what lets the quest lock send
-       you back to it.</p>
-    <p><strong>Arena quests aren't part of a run.</strong> They come with fixed sets.
-       Some conditions force you to use a weapon/style combo, and Arena would interfere
-       with that &mdash; the app would also have to make sure you can use at least one of
-       the five sets offered before you could enter the quest. They were dropped since
-       people tend to care more about non-Arena quests.</p>
-    <p><strong>Prowler quests aren't either.</strong> You hunt those as a Palico, so none
-       of your weapon/style combos is at stake on one. They aren't listed.</p>
-    <p>Clearing a quest earns its <strong>real in-game zenny reward</strong>. Combos
-       you're still holding at the end pay a bonus on top of what you earned.</p>
+       combo you were using is struck off the board.</p>
 
     <h3>Reading the board</h3>
-    <p>The grid is every weapon against every style &mdash; 14 weapons across 6 styles.
-       Each row is its weapon's colour.</p>
+    <p>The grid is every weapon against every style. Each row is its weapon&rsquo;s colour,
+       and each cell is tagged with its style &mdash; G, S and V for Guild, Striker and
+       Valor, Ad, Ae and Al for Adept, Aerial and Alchemy.</p>
     <ul>
-      <li><strong>Full colour</strong> &mdash; available, you can be handed it or pick it.</li>
-      <li><strong>A bone</strong> &mdash; fallen. That combo is gone for the rest of the run.</li>
-      <li><strong>Darkened</strong> &mdash; the weapon retired, so this one is
-          non-selectable. It was never lost: the weapon spent its style allowance and
-          took its survivors out of the pool with it.</li>
-      <li><strong>The weapon's icon</strong> &mdash; the combo you're on right now.</li>
+      <li><strong>The weapon&rsquo;s icon</strong> &mdash; available, you can be handed it
+          or pick it.</li>
+      <li><strong>A bone on charcoal</strong> &mdash; fallen. Gone for the rest of the run.</li>
+      <li><strong>Darkened and empty</strong> &mdash; the weapon retired, so this one is
+          non-selectable. It was never lost: the weapon spent its style allowance and took
+          its survivors out of the pool with it.</li>
     </ul>
-    <p>The name at the start of each row says what's happened to that weapon: it shows
-       <strong>Selected</strong> while you're on one of its styles, and
-       <strong>Retired</strong> once it's out of the pool.</p>
+    <p>The combo you&rsquo;re on is found by the <strong>crosshair</strong> &mdash; a blue
+       band across its row, a red band down its column, and a purple box where they cross.
+       The row label and the style header light with them.</p>
+    <p>The name at the start of each row says what has happened to that weapon:
+       <strong>Selected</strong> while you&rsquo;re on one of its styles, and
+       <strong>Retired</strong> once it&rsquo;s out of the pool.</p>
     <p>With revives on, a fallen combo can be clicked to buy it back.</p>
 
-    <h3>When the run ends</h3>
-    <p>The result screen shows three things side by side. <strong>Rules</strong> is the
-       set of choices the run was played under, kept as it was when you pressed Start Run
-       &mdash; changing the settings afterwards won't rewrite it. <strong>Quest Log</strong>
-       lists every combo that fell, in order, with the quest it fell on.</p>
+    <h3>Reading the result</h3>
+    <p>The result screen shows three things side by side. <strong>Rules</strong> is the set
+       of choices the run was played under, kept as it was when you pressed Start Run
+       &mdash; changing the settings afterwards won&rsquo;t rewrite it. <strong>Quest
+       Log</strong> lists every combo that fell, in order, with the quest it fell on.</p>
     <p>In the middle is your <strong>score</strong>: everything you earned, plus the bonus
        for combos still standing, with the difficulty you played at. Below that is how the
        run actually went &mdash; hunts taken, clears, failures, carts, and any rerolls or
        revives you paid for.</p>
+    <p>Once a run is over you can move between the <strong>Board</strong> and the
+       <strong>Result</strong> with the tabs above them, and the last run&rsquo;s result
+       stays reachable after the next one starts.</p>
 
-    <h3>Difficulty and bonus</h3>
-    <p>Each choice you make impacts the Difficulty &mdash; Very Easy to Very Hard. Some
-       choices impact the difficulty greatly while others impact it less. Every setting
-       shows a size value &mdash; <strong>XS</strong> through <strong>XL</strong>. This is
-       the size of the bonus you receive by selecting the option. They will light up when
-       they are active in the selection. More difficult runs offer higher bonuses but make
-       failing more likely.</p>
+    <h3>Reading the difficulty</h3>
+    <p>Every setting carries a size &mdash; <strong>XS</strong> through <strong>XL</strong>,
+       or <strong>&plusmn;0</strong> for the baseline. A <strong>+</strong> pays more than
+       the baseline and a <strong>&minus;</strong> pays less; the letter is how much. They
+       light up when the option they sit on is the one in play, and the box at the top of
+       the sidebar totals them into a rating from Very Easy to Very Hard.</p>
 
     <h3>The settings</h3>
     <p><strong>Only one kill condition is ever in play.</strong> Carting and failing a
@@ -286,20 +322,17 @@
        baseline: you keep it through clears as well as failures, until it dies.
        <em>Until you clear a quest</em> hands it in every time you succeed, but a failure
        keeps it, so you can take the quest that beat you again with the same combo.
-       <em>Changes each quest</em> is harsher still, because it hands the combo in win
-       or lose &mdash; you never get to keep one, not even for the retry you are owed.
-       Both of those pay <em>more</em> than the baseline.</p>
+       <em>Changes each quest</em> is harsher still, because it hands the combo in win or
+       lose &mdash; you never get to keep one, not even for the retry you are owed. Both of
+       those pay <em>more</em> than the baseline.</p>
     <p><strong>The quest lock</strong> means a quest that beat you is owed one retry
-       &mdash; your next hunt has to be that quest, win or lose. It's on by default;
+       &mdash; your next hunt has to be that quest, win or lose. It&rsquo;s on by default;
        turning it off makes the run easier and pays less.</p>
-    <p><strong>Revives and rerolls</strong> are both off by default. A revive buys a
-       fallen combo back; a reroll refuses the combo you were handed and draws another.
-       Both come out of your earned zenny, and <strong>both double in price each time you
-       use them</strong> &mdash; so they're there to rescue a run, not to run on.</p>
-    <h3>About</h3>
-    <p>This started as a Nuzlocke-inspired challenge idea, and ended up rather less
-       traditional than one &mdash; out of curiosity about how to balance different
-       levels of difficulty against each other.</p>
+    <p><strong>Revives and rerolls</strong> are both off by default. A revive buys a fallen
+       combo back; a reroll refuses the combo you were handed and draws another. Both come
+       out of your earned zenny, and <strong>both double in price each time you use
+       them</strong> &mdash; so they&rsquo;re there to rescue a run, not to run on.</p>
+    <p>The settings are frozen for the length of a run and unlock once it ends.</p>
     <div class="row end"><button id="helpClose" class="btn tiny">Close</button></div>
   </div>
 </div>
@@ -380,6 +413,6 @@
 </div>
 
 <script src="data.js?v=2"></script>
-<script src="app.js?v=130"></script>
+<script src="app.js?v=131"></script>
 </body>
 </html>
