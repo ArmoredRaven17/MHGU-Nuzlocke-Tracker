@@ -221,6 +221,17 @@ of the hole. Do not add an affordability gate.
 `zenny` uses a typographic minus (−) rather than a hyphen, and so does `badge`, so a
 `−M` in the sidebar and a negative total read as the same character.
 
+**Clearing a named quest abandons the whole attempt**, not just the name. A cart under
+`cart` or `both` kills the combo immediately, so rolling back only the counter would
+leave a death on the board belonging to an attempt that no longer exists. `run.attemptStart`
+marks where `run.deaths` and `run.carts` stood when the attempt began — set at
+`startRun()` and at the roll-over in `report()` — and `abandonAttempt()` truncates back
+to it. Deaths are only ever appended, which is what makes truncating safe.
+
+`chooseQuest()` abandons too when a quest is already named, so it cannot matter whether
+you cleared first. Only the *current* attempt is rolled back; everything resolved before
+it is untouched.
+
 **A run ends once and stays ended.** `runOver()` is still derived, but `settleRunEnd()`
 writes the result down the moment it becomes true — from `afterMutation()` and again on
 `load()`, so a run saved in an exhausted state gets stamped rather than waiting for the

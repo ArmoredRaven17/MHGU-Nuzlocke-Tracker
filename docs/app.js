@@ -334,6 +334,10 @@
     combo: null,           // the loadout for the hunt in progress
     quest: null,           // the quest for the hunt in progress
     attemptCarts: 0,
+    // Where run.deaths and run.carts stood when this attempt began, so naming
+    // the wrong quest can be taken back in full. Deaths are only ever appended,
+    // which is what makes truncating back to a mark safe.
+    attemptStart: { deaths: 0, carts: 0 },
     hunts: 0,              // resolved hunts; carts don't end one so don't count
     cleared: 0,            // successful hunts; this is what CLEAR_LIMIT bounds
     failed: 0, carts: 0, revives: 0, rerolls: 0,
@@ -864,6 +868,7 @@
     // Roll over into the next hunt. The loadout lock means exactly one thing:
     // you keep the combo until it dies — through clears as well as failures.
     run.attemptCarts = 0;
+    run.attemptStart = { deaths: run.deaths.length, carts: run.carts };
     // hold   — keep it until it dies, through clears as well as failures
     // cycle  — a clear hands it in; a failure does not, so you can take the
     //          quest that beat you again with the same combo (which is what the
@@ -930,6 +935,7 @@
     run.mult = multiplier(cfg);
     run.diff = difficulty(cfg);      // the rating, snapshotted alongside it
     run.maxLosses = maxLosses();
+    run.attemptStart = { deaths: 0, carts: 0 };
     run.cfg = Object.assign({}, cfg);
     rebuildDeadKeys();
     afterMutation();     // hands out the first combo if auto-roll is on
@@ -975,13 +981,29 @@
   // anything -- it just puts the hunt back to needing one. The outcome buttons
   // already require run.quest, so they disable themselves and nothing can be
   // reported into the gap.
+  // Everything logged against the named quest goes with it: the attempt's carts,
+  // and any combo those carts killed. A cart under "cart" or "carts and quest
+  // failures" takes the combo immediately, so clearing without this would leave
+  // a death on the board caused by an attempt that no longer exists.
+  function abandonAttempt() {
+    const mark = run.attemptStart || { deaths: run.deaths.length, carts: run.carts };
+    run.deaths.length = Math.min(run.deaths.length, mark.deaths);
+    run.carts = mark.carts;
+    run.attemptCarts = 0;
+    rebuildDeadKeys();
+  }
+
   function clearQuest() {
     if (run.lockQuest) return;
+    abandonAttempt();
     run.quest = null;
     save(); renderAll();
   }
 
   function chooseQuest(q) {
+    // Naming a different quest over an existing one abandons the old attempt
+    // too, so it cannot matter whether you cleared first.
+    if (run.quest) abandonAttempt();
     run.quest = q;
     $("questSearch").value = "";
     $("questResults").classList.add("hidden");
@@ -1104,7 +1126,8 @@
       `<span class="stat">Failed <b>${run.failed}</b></span>` +
       `<span class="stat">Carts <b>${run.carts}</b></span>` +
       `<span class="stat earned">Earned <b>${zenny(run.earned)}</b></span>` +
-      `<span class="stat">Difficulty <b>${ratingFor(run.diff || difficulty(cfg))}</b></span>` +
+      // No Difficulty here: the sidebar's box carries it, and it cannot change
+      // mid-run anyway. The strip is for the numbers that move.
       (cfg.reviveEnabled
         ? `<span class="stat">Next revive <b>${zenny(reviveCost(run.revives))}</b></span>` : "");
     if (cfg.kill === "streak") html += `<span class="stat">Streak <b>${run.failStreak}</b></span>`;
