@@ -307,6 +307,23 @@ never mutated while drawing. It is idempotent — it returns early once `run.com
 — and every path that clears `run.combo` goes through `afterMutation`, including
 `startRun`, which is why starting a run deals the first combo too.
 
+**Allow rerolls is off under Hunter's choice — and cleared, not merely greyed.**
+`syncDependentBoxes` sets `cfg.rerollEnabled = false` and unchecks the box whenever
+`cfg.assign !== "roll"`. A reroll refuses the combo you were handed and Hunter's choice
+hands you nothing to refuse, so the *parent* switch comes off, not just its price radios
+the way the revive sub-options work. Clearing the flag is the part that matters:
+`canReroll()` already required `assign === "roll"`, so the button never appeared either
+way, but a set-but-unusable flag keeps `rerollOn`'s 0.86 in the difficulty and discounts
+the rating for a mechanic the run cannot reach.
+
+The dimming needs its own class, `.chk.na`. The disabled fade is deliberately
+radios-only — an unticked checkbox is still a decision ("off") and has to stay readable
+while a run freezes the rules — so unavailable is a third state, not a decision being
+frozen but an option that never applied, and it dims where a frozen checkbox does not.
+That vocabulary belongs to the sidebar and stays there: `s_autoroll` is disabled under
+the same condition and is deliberately *not* given it, because it is app behaviour
+rather than run behaviour and explains itself with a hint instead.
+
 **The loadout rule has three options.** `hold` keeps a combo until it dies; `cycle`
 hands it in on every clear but keeps it through a failure; `rotate` hands it in win or
 lose. `cycle` and `rotate` share the clear path and differ on failure, where `cycle`
