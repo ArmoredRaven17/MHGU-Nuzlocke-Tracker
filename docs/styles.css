@@ -158,6 +158,10 @@ body{
    Radios only. An unticked checkbox is still a decision ("off"), so fading it
    would hide half of what a checkbox is telling you. */
 .chk:has(input[type="radio"]:disabled:not(:checked)){opacity:.35}
+/* The third state, and the reason the rule above can stay radios-only: an option
+   that is not frozen but cannot apply at all. An unticked checkbox is a decision
+   and stays readable; this one was never offered, so it dims. */
+.chk.na{opacity:.35}
 .chk:has(input:disabled):hover{color:inherit}
 .chk:has(input:disabled):hover input{accent-color:var(--accent)}
 .chk:hover{color:var(--accent-hover)}

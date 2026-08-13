@@ -818,6 +818,17 @@
     $("r_once").disabled = off;
     Object.values(CFG_RADIOS.revivePrice).forEach(id => { $(id).disabled = off; });
     Object.values(CFG_RADIOS.reviveCap).forEach(id => { $(id).disabled = off; });
+    // Reroll goes a step further than the revive sub-options: it is the PARENT
+    // switch that comes off, because a reroll refuses the combo you were handed
+    // and Hunter's choice hands you nothing to refuse. Cleared in cfg and not
+    // merely greyed — a set-but-unusable flag would keep rerollOn's 0.86 in the
+    // difficulty, discounting the rating for a mechanic the run cannot reach.
+    // `na` rather than the disabled dimming, which is deliberately radios-only:
+    // this is not a decision being frozen, it is an option that never applied.
+    const noRoll = cfg.assign !== "roll";
+    if (noRoll && cfg.rerollEnabled) { cfg.rerollEnabled = false; $("rr_enabled").checked = false; }
+    $("rr_enabled").disabled = noRoll;
+    $("rr_enabled").closest("label").classList.toggle("na", noRoll);
     const rrOff = !cfg.rerollEnabled;
     Object.values(CFG_RADIOS.rerollPrice).forEach(id => { $(id).disabled = rrOff; });
   }
