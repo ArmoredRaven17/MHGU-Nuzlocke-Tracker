@@ -692,12 +692,12 @@ body{
   pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
 .swatch span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;
   line-height:1.5;color:#fff;background:rgba(0,0,0,.45)}
-/* Bloodbath is two themes on one tile — its navy and its bloodred — so it
-   carries a pip for each. They are painted from the theme constants in JS rather
-   than here, so they cannot drift from the colours they select, which also makes
-   the row a legend and not just a control. Nothing below is tied to there being
-   two: the row centres whatever it is given. Sat above the label bar (15px)
-   rather than over it. */
+/* Some monsters wear two colours — Bloodbath its navy and its bloodred,
+   Boltreaver an Astalos green under its lightning — so those tiles carry a pip
+   for each. The pips are painted from the VARIANTS table in JS rather than here,
+   so they cannot drift from the colours they select, which also makes the row a
+   legend and not just a control. Nothing below is tied to there being two: the
+   row centres whatever it is given. Sat above the label bar (15px), not over. */
 .pips{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:5px}
 .pip{width:11px;height:11px;padding:0;border-radius:50%;cursor:pointer;
   appearance:none;-webkit-appearance:none;
