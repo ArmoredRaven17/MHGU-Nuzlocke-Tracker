@@ -1603,6 +1603,23 @@
   const BLOOD_MS = 10 * 60 * 1000, BLOOD_KEY = "mhgu-zenny-gauntlet-bloodstart";
   let bloodTimer = null;
 
+  // Bloodbath is three themes wearing one tile: the navy it starts at, the red
+  // it ends at, and the walk between them. They share a single hex on purpose --
+  // the saved theme is "#1E2440" whichever state you are in -- because COLORS_HEX
+  // validates the stored theme and picks the title icon BY HEX, and two of the
+  // three states start on the same colour anyway, so a hex could never tell them
+  // apart. The state rides alongside in its own key.
+  const BLOOD_STATES = ["navy", "blood", "bleed"];
+  const BLOOD_STATE_NAME = { navy: "Navy", blood: "Bloodred", bleed: "Transition" };
+  const BLOOD_STATE_KEY = "mhgu-zenny-gauntlet-bloodstate";
+  // Defaults to the bleed, which is what the theme already did — adding the
+  // choice shouldn't silently take the gimmick away from anyone using it.
+  let bloodState = "bleed";
+  try {
+    const s = localStorage.getItem(BLOOD_STATE_KEY);
+    if (BLOOD_STATES.indexOf(s) >= 0) bloodState = s;
+  } catch (e) {}
+
   const bleedColor = (t) => {
     const a = rgbToHsl(hexRgb(BLOODBATH)), b = rgbToHsl(hexRgb(BLOOD_END));
     let dh = b[0] - a[0];
@@ -1629,12 +1646,37 @@
     bloodTimer = setInterval(tick, 2000);
   }
 
+  // What the tile itself shows: the colour that state lands you on, and for the
+  // bleed the two ends of the walk. Painted from the constants rather than from
+  // CSS so the pips cannot drift from the theme they are selecting.
+  const bloodPaint = (state) =>
+    state === "blood" ? BLOOD_END
+    : state === "bleed" ? "linear-gradient(135deg," + BLOODBATH + " 50%," + BLOOD_END + " 50%)"
+    : BLOODBATH;
+  function paintBloodTile() {
+    const tile = document.querySelector('.swatch[data-hex="' + BLOODBATH + '"]');
+    if (!tile) return;
+    tile.style.background = bloodPaint(bloodState);
+    tile.querySelectorAll(".pip").forEach(p =>
+      p.classList.toggle("on", p.dataset.state === bloodState));
+  }
+  function setBloodState(state) {
+    bloodState = state;
+    try { localStorage.setItem(BLOOD_STATE_KEY, state); } catch (e) {}
+    paintBloodTile();
+    // Picking a state is picking the theme. Not resumed: choosing the bleed is
+    // asking to watch it, so it starts over rather than dropping you wherever a
+    // previous ten minutes had got to.
+    applyTheme(BLOODBATH);
+  }
+
   function applyTheme(hex, resume) {
-    paintTheme(hexRgb(hex));
-    if (hex.toUpperCase() === BLOODBATH) startBleed(resume);
+    const isBlood = hex.toUpperCase() === BLOODBATH;
+    if (isBlood && bloodState === "bleed") startBleed(resume);
     else {
       stopBleed();
       try { localStorage.removeItem(BLOOD_KEY); } catch (e) {}
+      paintTheme(hexRgb(isBlood && bloodState === "blood" ? BLOOD_END : hex));
     }
     try { localStorage.setItem("mhgu-zenny-gauntlet-theme", hex); } catch (e) {}
     document.querySelectorAll(".swatch").forEach(s => s.classList.toggle("sel", s.dataset.hex === hex));
@@ -1654,8 +1696,29 @@
       d.innerHTML = `<img class="swatch-icon" src="${monsterIcon(full)}" alt=""><span>${escapeHtml(name)}</span>`;
       d.querySelector("img").onerror = function () { this.onerror = null; this.src = FALLBACK_ICON; };
       d.addEventListener("click", () => applyTheme(hex));
+      // One tile, three states. The pips are the indicator and the control at
+      // once: each is painted as the thing it selects, so the row reads as a
+      // legend even before you click it. stopPropagation keeps the tile's own
+      // handler from re-applying the theme underneath the pip's.
+      if (hex.toUpperCase() === BLOODBATH) {
+        const pips = document.createElement("div");
+        pips.className = "pips";
+        BLOOD_STATES.forEach(s => {
+          const p = document.createElement("button");
+          p.type = "button";
+          p.className = "pip";
+          p.dataset.state = s;
+          p.style.background = bloodPaint(s);
+          p.title = BLOOD_STATE_NAME[s];
+          p.setAttribute("aria-label", "Bloodbath Diablos — " + BLOOD_STATE_NAME[s]);
+          p.addEventListener("click", (e) => { e.stopPropagation(); setBloodState(s); });
+          pips.appendChild(p);
+        });
+        d.appendChild(pips);
+      }
       wrap.appendChild(d);
     });
+    paintBloodTile();
   }
 
   // ── Payment ──────────────────────────────────────────────────────────────

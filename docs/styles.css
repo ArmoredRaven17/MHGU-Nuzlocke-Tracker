@@ -692,3 +692,16 @@ body{
   pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
 .swatch span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;
   line-height:1.5;color:#fff;background:rgba(0,0,0,.45)}
+/* Bloodbath is three themes on one tile — the navy it starts at, the red it ends
+   at, and the ten-minute walk between them — so it carries three pips. Each pip
+   is painted from the theme constants in JS rather than here, so they cannot
+   drift from the colours they select, which also makes the row a legend and not
+   just a control. Sat above the label bar (15px) rather than over it. */
+.pips{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:5px}
+.pip{width:11px;height:11px;padding:0;border-radius:50%;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  border:1px solid rgba(0,0,0,.5);box-shadow:0 1px 2px rgba(0,0,0,.45)}
+.pip:hover{border-color:#ffffffb0}
+/* White ring for the live state, with a dark halo outside it so the ring reads
+   on the pale pips as well as the dark ones. */
+.pip.on{border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
