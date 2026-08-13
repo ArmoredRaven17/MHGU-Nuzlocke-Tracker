@@ -1630,6 +1630,11 @@
     // Two plates in the same family is a correct outcome here, not a collision.
     "#5E9CC8": [["rust", "#964C22", "Rust"],
                 ["blue", "#5E9CC8", "Blue"]],
+    // Author's hex. It is the palest colour in the table and so sets the app's
+    // new contrast floor -- white on its --hover is 5.05:1, still clear of 4.5
+    // but the tightest anything here runs.
+    "#C79A1C": [["green", "#64E98A", "Green"],
+                ["gold",  "#C79A1C", "Gold"]],
   };
   const VARIANT_KEY = "mhgu-zenny-gauntlet-variant";
   const variantsFor = (hex) => VARIANTS[hex.toUpperCase()] || null;

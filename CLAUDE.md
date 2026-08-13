@@ -121,15 +121,18 @@ is a correct outcome — don't push them apart to "fix" it. Colour choices are t
 owner's call.
 
 **The one hard constraint is readability: re-check contrast after changing a hex.**
-White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 18 currently do;
-worst case is Crystalbeard's `--hover` at 6.8:1.
+White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 28 paintable colours
+currently do — 18 palette hexes plus 10 `VARIANTS` entries, and variants count because
+they are painted, not decorative. Worst case is Thunderlord's green `#64E98A` on
+`--hover` at 5.05:1, then Boltreaver's cyan at 6.00.
 
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
 
 **A tile can carry more than one colour**, via the `VARIANTS` table — Bloodbath its navy
 and its bloodred, Boltreaver an Astalos green under its lightning, Soulseer an ash body
-and its soulfire, Rustrazor a rust beside its blue. Each entry is `[id, hex, label]` and
+and its soulfire, Rustrazor a rust beside its blue, Thunderlord a green beside its gold.
+Each entry is `[id, hex, label]` and
 renders as a pip on the tile, painted as the colour it selects so the row is a legend as
 well as a control.
 
