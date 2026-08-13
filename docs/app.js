@@ -1534,8 +1534,11 @@
   const css = (rgb) => `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
   const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
-  function applyTheme(hex) {
-    const c = hexRgb(hex), r = document.documentElement.style;
+  // Split out so the colour on screen does not have to be a swatch's colour.
+  // Everything below the split is about the CHOICE -- persisting it, marking the
+  // swatch, swapping the title icon -- and only runs when a theme is picked.
+  function paintTheme(c) {
+    const r = document.documentElement.style;
     r.setProperty("--bg",           css(shade(c, .10, .28)));
     r.setProperty("--bg1",          css(shade(c, .085, .23)));
     r.setProperty("--bg2",          css(shade(c, .07, .19)));
@@ -1557,6 +1560,54 @@
     r.setProperty("--text-dim", "#fffffff5");
     r.setProperty("--line", "rgba(11,8,8,0.12)");
     r.setProperty("--card", "rgba(255,255,255,0.05)");
+  }
+
+  // ── Bloodbath bleed ───────────────────────────────────────────────────────
+  // A gimmick, and self-contained on purpose: Bloodbath Diablos starts at its
+  // navy and reddens over ten minutes. Interpolated in HSL rather than RGB and
+  // taken the short way round the wheel, so it travels navy -> purple -> crimson
+  // instead of through the grey-brown an RGB lerp would cross.
+  //
+  // The start time is persisted, so a reload continues the bleed rather than
+  // restarting it -- ten minutes means ten minutes on the theme, not ten minutes
+  // with the tab open.
+  const BLOODBATH = "#1E2440", BLOOD_END = "#A0121C";
+  const BLOOD_MS = 10 * 60 * 1000, BLOOD_KEY = "mhgu-zenny-gauntlet-bloodstart";
+  let bloodTimer = null;
+
+  const bleedColor = (t) => {
+    const a = rgbToHsl(hexRgb(BLOODBATH)), b = rgbToHsl(hexRgb(BLOOD_END));
+    let dh = b[0] - a[0];
+    if (dh > 0.5) dh -= 1; else if (dh < -0.5) dh += 1;
+    return hslToRgb([(a[0] + dh * t + 1) % 1,
+                     a[1] + (b[1] - a[1]) * t,
+                     a[2] + (b[2] - a[2]) * t]);
+  };
+  const stopBleed = () => { if (bloodTimer) { clearInterval(bloodTimer); bloodTimer = null; } };
+  function startBleed(resume) {
+    stopBleed();
+    let t0 = 0;
+    try { t0 = +localStorage.getItem(BLOOD_KEY) || 0; } catch (e) {}
+    if (!resume || !t0) {
+      t0 = Date.now();
+      try { localStorage.setItem(BLOOD_KEY, String(t0)); } catch (e) {}
+    }
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - t0) / BLOOD_MS);
+      paintTheme(bleedColor(t));
+      if (t >= 1) stopBleed();          // fully bled; nothing left to animate
+    };
+    tick();
+    bloodTimer = setInterval(tick, 2000);
+  }
+
+  function applyTheme(hex, resume) {
+    paintTheme(hexRgb(hex));
+    if (hex.toUpperCase() === BLOODBATH) startBleed(resume);
+    else {
+      stopBleed();
+      try { localStorage.removeItem(BLOOD_KEY); } catch (e) {}
+    }
     try { localStorage.setItem("mhgu-zenny-gauntlet-theme", hex); } catch (e) {}
     document.querySelectorAll(".swatch").forEach(s => s.classList.toggle("sel", s.dataset.hex === hex));
     const ti = document.querySelector(".title-icon");
@@ -1797,7 +1848,7 @@
   // A stored hex that's no longer in the palette would leave no tile selected and
   // no title icon, so fall back rather than half-applying it.
   if (!COLORS_HEX[savedTheme.toUpperCase()]) savedTheme = DEFAULT_THEME;
-  applyTheme(savedTheme);
+  applyTheme(savedTheme, true);   // resume the bleed rather than restarting it
 
   load();
   writeCfgToDom();
