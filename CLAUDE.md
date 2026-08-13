@@ -129,8 +129,9 @@ half-applying (no tile selected, no title icon).
 
 **A tile can carry more than one colour**, via the `VARIANTS` table — Bloodbath its navy
 and its bloodred, Boltreaver an Astalos green under its lightning, Soulseer an ash body
-and its soulfire. Each entry is `[id, hex, label]` and renders as a pip on the tile,
-painted as the colour it selects so the row is a legend as well as a control.
+and its soulfire, Rustrazor a rust beside its blue. Each entry is `[id, hex, label]` and
+renders as a pip on the tile, painted as the colour it selects so the row is a legend as
+well as a control.
 
 All states share **one** palette hex, and that is not negotiable: `COLORS_HEX` validates
 the stored theme and picks the title icon *by hex*, so a second hex would need a second

@@ -1625,6 +1625,11 @@
     // existing Soulseer user sees.
     "#DC6F9E": [["ash",  "#8A7F79", "Ash"],
                 ["soul", "#B92D69", "Soulfire"]],
+    // hsl(22,63%,36%) sits a degree off Hellblade's hue but ten points darker and
+    // sixteen less saturated, which is what separates oxidised metal from flame.
+    // Two plates in the same family is a correct outcome here, not a collision.
+    "#5E9CC8": [["rust", "#964C22", "Rust"],
+                ["blue", "#5E9CC8", "Blue"]],
   };
   const VARIANT_KEY = "mhgu-zenny-gauntlet-variant";
   const variantsFor = (hex) => VARIANTS[hex.toUpperCase()] || null;
