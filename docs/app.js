@@ -1616,6 +1616,15 @@
     // the same discipline shade() applies to everything else in the theme.
     "#22D3DB": [["green", "#22DB4A", "Green"],
                 ["bolt",  "#22D3DB", "Cyan"]],
+    // The only tile whose own hex is NEITHER state: #DC6F9E is the identity the
+    // save and the icon are keyed to, and both colours here replace it. The pink
+    // is that hex with lightness alone dropped, 65% to 45% — the same hue and
+    // saturation — so it reads as the theme darkened rather than a new colour.
+    // With no entry matching the tile hex the unset default falls to the first,
+    // the ash, which is the one case in the table where choosing changes what an
+    // existing Soulseer user sees.
+    "#DC6F9E": [["ash",  "#8A7F79", "Ash"],
+                ["soul", "#B92D69", "Soulfire"]],
   };
   const VARIANT_KEY = "mhgu-zenny-gauntlet-variant";
   const variantsFor = (hex) => VARIANTS[hex.toUpperCase()] || null;

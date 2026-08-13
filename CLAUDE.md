@@ -127,10 +127,10 @@ worst case is Crystalbeard's `--hover` at 6.8:1.
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
 
-**A tile can carry more than one colour**, via the `VARIANTS` table — Bloodbath its
-navy and its bloodred, Boltreaver an Astalos green under its lightning. Each entry is
-`[id, hex, label]` and renders as a pip on the tile, painted as the colour it selects
-so the row is a legend as well as a control.
+**A tile can carry more than one colour**, via the `VARIANTS` table — Bloodbath its navy
+and its bloodred, Boltreaver an Astalos green under its lightning, Soulseer an ash body
+and its soulfire. Each entry is `[id, hex, label]` and renders as a pip on the tile,
+painted as the colour it selects so the row is a legend as well as a control.
 
 All states share **one** palette hex, and that is not negotiable: `COLORS_HEX` validates
 the stored theme and picks the title icon *by hex*, so a second hex would need a second
@@ -138,10 +138,16 @@ tile with a second monster name on it. The saved theme stays the palette hex in 
 state and the choice persists separately, keyed by hex, in `mhgu-zenny-gauntlet-variant`.
 
 **The base is whichever entry matches the tile's own hex, and an unset state means the
-base** — so adding a variant never moves anyone off the theme they already had. The base
-is not always first: Boltreaver's green leads the pips while its cyan is the base, which
-is why entries carry their colour rather than deriving it from position. A stored id that
-no longer exists in the table falls back to the base the same way.
+base** — so adding a variant normally moves nobody off the theme they already had. The
+base is not always first: Boltreaver's green leads the pips while its cyan is the base,
+which is why entries carry their colour rather than deriving it from position. A stored
+id that no longer exists in the table falls back to the base the same way.
+
+**Soulseer is the exception, deliberately.** Neither of its colours is `#DC6F9E` — both
+replace it — so there is no base to fall back to and the unset default lands on the first
+entry, the ash. It is the one tile where adding variants changed what an existing user
+sees. The palette hex stays `#DC6F9E` regardless, because that is what the save and the
+icon are keyed to; changing it in `COLORS` would invalidate every stored Soulseer theme.
 
 Everything downstream goes through `themeColor(hex)`, which is the tile's own hex unless
 a variant says otherwise. Nothing is tied to there being exactly two — `buildSwatches`
