@@ -250,14 +250,30 @@
   // Note the sizes are relative to the other settings, not to zero: a Normal run
   // rates around 0.55, so it earns rather less than the quests' face value. It is
   // "Medium" because it sits in the middle of what is reachable.
+  // "Max" tops the bonus because Extra Large had stopped meaning anything at the
+  // top: one style per weapon peaks at 1.664 and TWO styles still reaches 1.404,
+  // so the two harshest caps read identically. 1.60 is not an arbitrary line —
+  // it is exactly the weight of one style per weapon, and every other lever that
+  // eases a run multiplies by less than 1. So Max means precisely "nothing is
+  // softened anywhere": kill on carts and failures, one style, rolled combos,
+  // quest lock on, no revives, no rerolls. Enable a safety net or unlock a single
+  // quest and it drops back to Extra Large. Three of the 59,040 configurations
+  // qualify (the loadout rule is free to vary — it spans 1.00 to 1.04).
+  //
+  // The rating stays "Very Hard" across both bands: the top band is a statement
+  // about maxing the levers out, not a sixth level of difficulty.
   const RATINGS = [
+    [1.60, "Very Hard", "Max"],
     [1.10, "Very Hard", "Extra Large"],
     [0.70, "Hard",      "Large"],
     [0.40, "Normal",    "Medium"],
     [0.20, "Easy",      "Small"],
     [0,    "Very Easy", "Extra Small"],
   ];
-  const bandFor = (d) => RATINGS.find(([min]) => d >= min) || RATINGS[RATINGS.length - 1];
+  // Epsilon for the same reason SIZE_STEPS needs one, and it matters more here:
+  // the 1.60 boundary is a value a real configuration lands on exactly, so a
+  // stray ulp from the product would silently cost someone the top band.
+  const bandFor = (d) => RATINGS.find(([min]) => d >= min - 1e-9) || RATINGS[RATINGS.length - 1];
   const ratingFor = (d) => bandFor(d)[1];
   const bonusFor  = (d) => bandFor(d)[2];
 
