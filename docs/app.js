@@ -1592,21 +1592,23 @@
 
   // ── Bloodbath bleed ───────────────────────────────────────────────────────
   // A gimmick, and self-contained on purpose: Bloodbath Diablos walks from its
-  // navy to a bloodred over ten minutes, holds there a moment, and walks back.
-  // Interpolated in HSL rather than RGB and taken the short way round the wheel,
-  // so it travels navy -> purple -> crimson instead of through the grey-brown an
-  // RGB lerp would cross.
+  // navy to a bloodred, holds there a moment, and walks back. Interpolated in
+  // HSL rather than RGB and taken the short way round the wheel, so it travels
+  // navy -> purple -> crimson instead of through the grey-brown an RGB lerp
+  // would cross.
   //
   // It runs both ways rather than ending on the red, because a one-way bleed is
-  // only a gimmick once: ten minutes in it has arrived and there is nothing left
-  // to notice. The holds are what make the ends legible -- without them the
-  // theme merely turns around at the exact moment it gets somewhere.
+  // only a gimmick once: a leg in, it has arrived and there is nothing left to
+  // notice. The holds are what make the ends legible -- without them the theme
+  // merely turns around at the exact moment it gets somewhere.
   //
   // The start time is persisted, so a reload continues the cycle rather than
-  // restarting it -- ten minutes means ten minutes on the theme, not ten minutes
-  // with the tab open.
+  // restarting it -- a leg means a leg on the theme, not a leg with the tab open.
+  // Durations are stated once, below, and the prose deliberately does not repeat
+  // them: the leg is being tuned by eye and comments that quote a figure go
+  // stale the first time it moves.
   const BLOODBATH = "#1E2440", BLOOD_END = "#A0121C";
-  const BLOOD_LEG_MS = 10 * 60 * 1000;        // one crossing, either direction
+  const BLOOD_LEG_MS = 2 * 60 * 1000;         // TEST VALUE — 10 * 60 * 1000 ships
   const BLOOD_HOLD_MS = 30 * 1000;            // the pause at each end
   const BLOOD_CYCLE_MS = 2 * (BLOOD_LEG_MS + BLOOD_HOLD_MS);
   const BLOOD_KEY = "mhgu-zenny-gauntlet-bloodstart";
