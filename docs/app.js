@@ -1635,6 +1635,12 @@
     // but the tightest anything here runs.
     "#C79A1C": [["green", "#64E98A", "Green"],
                 ["gold",  "#C79A1C", "Gold"]],
+    // Author's hex, and the first variant that leads with the tile's own colour
+    // rather than the new one -- so the pip order is base-then-alternate here and
+    // alternate-then-base everywhere else. Nothing depends on the order; the base
+    // is found by matching the hex, not by position.
+    "#D25A18": [["orange",   "#D25A18", "Orange"],
+                ["charcoal", "#2C2119", "Charcoal"]],
   };
   const VARIANT_KEY = "mhgu-zenny-gauntlet-variant";
   const variantsFor = (hex) => VARIANTS[hex.toUpperCase()] || null;
