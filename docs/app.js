@@ -260,10 +260,11 @@
   // quest and it drops back to Extra Large. Three of the 59,040 configurations
   // qualify (the loadout rule is free to vary — it spans 1.00 to 1.04).
   //
-  // The rating stays "Very Hard" across both bands: the top band is a statement
-  // about maxing the levers out, not a sixth level of difficulty.
+  // The rating moves with it — "Extreme" rather than a second Very Hard — because
+  // the pairing is load-bearing: these two lines are the same fact said twice, and
+  // a run that pays differently has to read differently.
   const RATINGS = [
-    [1.60, "Very Hard", "Max"],
+    [1.60, "Extreme",   "Max"],
     [1.10, "Very Hard", "Extra Large"],
     [0.70, "Hard",      "Large"],
     [0.40, "Normal",    "Medium"],
