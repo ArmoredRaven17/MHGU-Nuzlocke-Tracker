@@ -1590,90 +1590,35 @@
     r.setProperty("--card", "rgba(255,255,255,0.05)");
   }
 
-  // ── Bloodbath bleed ───────────────────────────────────────────────────────
-  // A gimmick, and self-contained on purpose: Bloodbath Diablos walks from its
-  // navy to a bloodred, holds there a moment, and walks back. Interpolated in
-  // HSL rather than RGB and taken the short way round the wheel, so it travels
-  // navy -> purple -> crimson instead of through the grey-brown an RGB lerp
-  // would cross.
+  // ── Bloodbath's two colours ───────────────────────────────────────────────
+  // Bloodbath Diablos is two themes wearing one tile: its navy, and the bloodred
+  // it turns in the fight. They share a single hex on purpose -- the saved theme
+  // is "#1E2440" in either state -- because COLORS_HEX validates the stored theme
+  // and picks the title icon BY HEX, so a second hex would need a second tile and
+  // a second monster name to go on it. The state rides alongside in its own key.
   //
-  // It runs both ways rather than ending on the red, because a one-way bleed is
-  // only a gimmick once: a leg in, it has arrived and there is nothing left to
-  // notice. The holds are what make the ends legible -- without them the theme
-  // merely turns around at the exact moment it gets somewhere.
-  //
-  // The start time is persisted, so a reload continues the cycle rather than
-  // restarting it -- a leg means a leg on the theme, not a leg with the tab open.
-  // Durations are stated once, below, and the prose deliberately does not repeat
-  // them: the leg is being tuned by eye and comments that quote a figure go
-  // stale the first time it moves.
+  // There was a third state: an animated walk from the navy to the red and back,
+  // ten minutes each way. It is out for now, not abandoned -- see the commits
+  // around "Give Bloodbath three states" for the phase function, which was the
+  // interesting part. Everything it needed is still here except the timer: the
+  // two colours, HSL interpolation the short way round the wheel, and the state
+  // machinery that lets one tile mean more than one thing.
   const BLOODBATH = "#1E2440", BLOOD_END = "#A0121C";
-  const BLOOD_LEG_MS = 2 * 60 * 1000;         // TEST VALUE — 10 * 60 * 1000 ships
-  const BLOOD_HOLD_MS = 30 * 1000;            // the pause at each end
-  const BLOOD_CYCLE_MS = 2 * (BLOOD_LEG_MS + BLOOD_HOLD_MS);
-  const BLOOD_KEY = "mhgu-zenny-gauntlet-bloodstart";
-  let bloodTimer = null;
-
-  // Bloodbath is three themes wearing one tile: the navy it starts at, the red
-  // it ends at, and the walk between them. They share a single hex on purpose --
-  // the saved theme is "#1E2440" whichever state you are in -- because COLORS_HEX
-  // validates the stored theme and picks the title icon BY HEX, and two of the
-  // three states start on the same colour anyway, so a hex could never tell them
-  // apart. The state rides alongside in its own key.
-  const BLOOD_STATES = ["navy", "blood", "bleed"];
-  const BLOOD_STATE_NAME = { navy: "Navy", blood: "Bloodred", bleed: "Transition" };
+  const BLOOD_STATES = ["navy", "blood"];
+  const BLOOD_STATE_NAME = { navy: "Navy", blood: "Bloodred" };
   const BLOOD_STATE_KEY = "mhgu-zenny-gauntlet-bloodstate";
-  // Navy is the theme proper; the other two are things it does. So an unset
-  // state means the plain colour, and the gimmick is opted into.
+  // Navy is the theme proper and the red is a thing it does, so an unset state
+  // means the plain colour.
   let bloodState = "navy";
   try {
     const s = localStorage.getItem(BLOOD_STATE_KEY);
     if (BLOOD_STATES.indexOf(s) >= 0) bloodState = s;
   } catch (e) {}
 
-  const bleedColor = (t) => {
-    const a = rgbToHsl(hexRgb(BLOODBATH)), b = rgbToHsl(hexRgb(BLOOD_END));
-    let dh = b[0] - a[0];
-    if (dh > 0.5) dh -= 1; else if (dh < -0.5) dh += 1;
-    return hslToRgb([(a[0] + dh * t + 1) % 1,
-                     a[1] + (b[1] - a[1]) * t,
-                     a[2] + (b[2] - a[2]) * t]);
-  };
-  // How far along the walk we are, for a given age. Out, hold, back, hold, and
-  // round again — so the cycle is a triangle wave with flats on it rather than a
-  // ramp that ends. Modulo is taken on the elapsed time, which is why a reload
-  // resumes mid-cycle for free: the phase is a pure function of the age.
-  const bleedT = (age) => {
-    const p = ((age % BLOOD_CYCLE_MS) + BLOOD_CYCLE_MS) % BLOOD_CYCLE_MS;
-    if (p < BLOOD_LEG_MS) return p / BLOOD_LEG_MS;                  // navy -> red
-    if (p < BLOOD_LEG_MS + BLOOD_HOLD_MS) return 1;                 // held on red
-    const q = p - BLOOD_LEG_MS - BLOOD_HOLD_MS;
-    if (q < BLOOD_LEG_MS) return 1 - q / BLOOD_LEG_MS;              // red -> navy
-    return 0;                                                       // held on navy
-  };
-  const stopBleed = () => { if (bloodTimer) { clearInterval(bloodTimer); bloodTimer = null; } };
-  function startBleed(resume) {
-    stopBleed();
-    let t0 = 0;
-    try { t0 = +localStorage.getItem(BLOOD_KEY) || 0; } catch (e) {}
-    if (!resume || !t0) {
-      t0 = Date.now();
-      try { localStorage.setItem(BLOOD_KEY, String(t0)); } catch (e) {}
-    }
-    // No stop condition any more: the cycle has no end, so the only things that
-    // halt it are leaving the theme or choosing another of its states.
-    const tick = () => paintTheme(bleedColor(bleedT(Date.now() - t0)));
-    tick();
-    bloodTimer = setInterval(tick, 2000);
-  }
-
-  // What the tile itself shows: the colour that state lands you on, and for the
-  // bleed the two ends of the walk. Painted from the constants rather than from
-  // CSS so the pips cannot drift from the theme they are selecting.
-  const bloodPaint = (state) =>
-    state === "blood" ? BLOOD_END
-    : state === "bleed" ? "linear-gradient(135deg," + BLOODBATH + " 50%," + BLOOD_END + " 50%)"
-    : BLOODBATH;
+  // What the tile itself shows: the colour that state lands you on. Painted from
+  // the constants rather than from CSS so the pips cannot drift from the theme
+  // they are selecting.
+  const bloodPaint = (state) => state === "blood" ? BLOOD_END : BLOODBATH;
   function paintBloodTile() {
     const tile = document.querySelector('.swatch[data-hex="' + BLOODBATH + '"]');
     if (!tile) return;
@@ -1685,20 +1630,12 @@
     bloodState = state;
     try { localStorage.setItem(BLOOD_STATE_KEY, state); } catch (e) {}
     paintBloodTile();
-    // Picking a state is picking the theme. Not resumed: choosing the bleed is
-    // asking to watch it, so it starts over rather than dropping you wherever a
-    // previous ten minutes had got to.
-    applyTheme(BLOODBATH);
+    applyTheme(BLOODBATH);              // picking a state is picking the theme
   }
 
-  function applyTheme(hex, resume) {
+  function applyTheme(hex) {
     const isBlood = hex.toUpperCase() === BLOODBATH;
-    if (isBlood && bloodState === "bleed") startBleed(resume);
-    else {
-      stopBleed();
-      try { localStorage.removeItem(BLOOD_KEY); } catch (e) {}
-      paintTheme(hexRgb(isBlood && bloodState === "blood" ? BLOOD_END : hex));
-    }
+    paintTheme(hexRgb(isBlood && bloodState === "blood" ? BLOOD_END : hex));
     try { localStorage.setItem("mhgu-zenny-gauntlet-theme", hex); } catch (e) {}
     document.querySelectorAll(".swatch").forEach(s => s.classList.toggle("sel", s.dataset.hex === hex));
     const ti = document.querySelector(".title-icon");
@@ -1717,10 +1654,12 @@
       d.innerHTML = `<img class="swatch-icon" src="${monsterIcon(full)}" alt=""><span>${escapeHtml(name)}</span>`;
       d.querySelector("img").onerror = function () { this.onerror = null; this.src = FALLBACK_ICON; };
       d.addEventListener("click", () => applyTheme(hex));
-      // One tile, three states. The pips are the indicator and the control at
+      // One tile, two colours. The pips are the indicator and the control at
       // once: each is painted as the thing it selects, so the row reads as a
-      // legend even before you click it. stopPropagation keeps the tile's own
-      // handler from re-applying the theme underneath the pip's.
+      // legend even before you click it. Driven off BLOOD_STATES rather than
+      // written out, so restoring the third state is a one-line change here.
+      // stopPropagation keeps the tile's own handler from re-applying the theme
+      // underneath the pip's.
       if (hex.toUpperCase() === BLOODBATH) {
         const pips = document.createElement("div");
         pips.className = "pips";
@@ -1960,7 +1899,7 @@
   // A stored hex that's no longer in the palette would leave no tile selected and
   // no title icon, so fall back rather than half-applying it.
   if (!COLORS_HEX[savedTheme.toUpperCase()]) savedTheme = DEFAULT_THEME;
-  applyTheme(savedTheme, true);   // resume the bleed rather than restarting it
+  applyTheme(savedTheme);
 
   load();
   writeCfgToDom();
