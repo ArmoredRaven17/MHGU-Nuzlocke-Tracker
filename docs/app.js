@@ -1591,16 +1591,25 @@
   }
 
   // ── Bloodbath bleed ───────────────────────────────────────────────────────
-  // A gimmick, and self-contained on purpose: Bloodbath Diablos starts at its
-  // navy and reddens over ten minutes. Interpolated in HSL rather than RGB and
-  // taken the short way round the wheel, so it travels navy -> purple -> crimson
-  // instead of through the grey-brown an RGB lerp would cross.
+  // A gimmick, and self-contained on purpose: Bloodbath Diablos walks from its
+  // navy to a bloodred over ten minutes, holds there a moment, and walks back.
+  // Interpolated in HSL rather than RGB and taken the short way round the wheel,
+  // so it travels navy -> purple -> crimson instead of through the grey-brown an
+  // RGB lerp would cross.
   //
-  // The start time is persisted, so a reload continues the bleed rather than
+  // It runs both ways rather than ending on the red, because a one-way bleed is
+  // only a gimmick once: ten minutes in it has arrived and there is nothing left
+  // to notice. The holds are what make the ends legible -- without them the
+  // theme merely turns around at the exact moment it gets somewhere.
+  //
+  // The start time is persisted, so a reload continues the cycle rather than
   // restarting it -- ten minutes means ten minutes on the theme, not ten minutes
   // with the tab open.
   const BLOODBATH = "#1E2440", BLOOD_END = "#A0121C";
-  const BLOOD_MS = 10 * 60 * 1000, BLOOD_KEY = "mhgu-zenny-gauntlet-bloodstart";
+  const BLOOD_LEG_MS = 10 * 60 * 1000;        // one crossing, either direction
+  const BLOOD_HOLD_MS = 30 * 1000;            // the pause at each end
+  const BLOOD_CYCLE_MS = 2 * (BLOOD_LEG_MS + BLOOD_HOLD_MS);
+  const BLOOD_KEY = "mhgu-zenny-gauntlet-bloodstart";
   let bloodTimer = null;
 
   // Bloodbath is three themes wearing one tile: the navy it starts at, the red
@@ -1612,9 +1621,9 @@
   const BLOOD_STATES = ["navy", "blood", "bleed"];
   const BLOOD_STATE_NAME = { navy: "Navy", blood: "Bloodred", bleed: "Transition" };
   const BLOOD_STATE_KEY = "mhgu-zenny-gauntlet-bloodstate";
-  // Defaults to the bleed, which is what the theme already did — adding the
-  // choice shouldn't silently take the gimmick away from anyone using it.
-  let bloodState = "bleed";
+  // Navy is the theme proper; the other two are things it does. So an unset
+  // state means the plain colour, and the gimmick is opted into.
+  let bloodState = "navy";
   try {
     const s = localStorage.getItem(BLOOD_STATE_KEY);
     if (BLOOD_STATES.indexOf(s) >= 0) bloodState = s;
@@ -1628,6 +1637,18 @@
                      a[1] + (b[1] - a[1]) * t,
                      a[2] + (b[2] - a[2]) * t]);
   };
+  // How far along the walk we are, for a given age. Out, hold, back, hold, and
+  // round again — so the cycle is a triangle wave with flats on it rather than a
+  // ramp that ends. Modulo is taken on the elapsed time, which is why a reload
+  // resumes mid-cycle for free: the phase is a pure function of the age.
+  const bleedT = (age) => {
+    const p = ((age % BLOOD_CYCLE_MS) + BLOOD_CYCLE_MS) % BLOOD_CYCLE_MS;
+    if (p < BLOOD_LEG_MS) return p / BLOOD_LEG_MS;                  // navy -> red
+    if (p < BLOOD_LEG_MS + BLOOD_HOLD_MS) return 1;                 // held on red
+    const q = p - BLOOD_LEG_MS - BLOOD_HOLD_MS;
+    if (q < BLOOD_LEG_MS) return 1 - q / BLOOD_LEG_MS;              // red -> navy
+    return 0;                                                       // held on navy
+  };
   const stopBleed = () => { if (bloodTimer) { clearInterval(bloodTimer); bloodTimer = null; } };
   function startBleed(resume) {
     stopBleed();
@@ -1637,11 +1658,9 @@
       t0 = Date.now();
       try { localStorage.setItem(BLOOD_KEY, String(t0)); } catch (e) {}
     }
-    const tick = () => {
-      const t = Math.min(1, (Date.now() - t0) / BLOOD_MS);
-      paintTheme(bleedColor(t));
-      if (t >= 1) stopBleed();          // fully bled; nothing left to animate
-    };
+    // No stop condition any more: the cycle has no end, so the only things that
+    // halt it are leaving the theme or choosing another of its states.
+    const tick = () => paintTheme(bleedColor(bleedT(Date.now() - t0)));
     tick();
     bloodTimer = setInterval(tick, 2000);
   }
