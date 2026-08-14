@@ -1649,33 +1649,52 @@
     "#CE2A20": [["red",  "#CE2A20", "Red"],
                 ["blue", "#2020CE", "Blue"]],
 
-    // ── The lighter batch ───────────────────────────────────────────────────
+    // ── The brighter batch ──────────────────────────────────────────────────
     // Every remaining Deviant except Elderfrost, which is already the palest
-    // plate in the app and has nowhere to go. Each second colour is lighten(c,
-    // 0.35) — l + (1-l)*0.35 with hue and saturation untouched — so it is the
-    // theme raised rather than a different colour, the same discipline shade()
-    // uses for the derived backgrounds.
+    // plate in the app and has nowhere to go.
+    //
+    // Bright is not the same move as light, and the first attempt at these got
+    // that wrong. Raising lightness alone walks a colour toward WHITE, so past
+    // ~70% it reads pastel rather than vivid — lighten(c, 0.35) gave a row of
+    // washed-out tints. Vivid needs SATURATION, so the rule is a smaller lift
+    // with the chroma pushed up: hue held, s x 1.4 clamped at 1, l + (1-l)*0.30.
+    //
+    // That also fixed two collisions rather than making them worse, which is why
+    // this exact pair of numbers: at the old rule Dreadking's second colour sat
+    // dE 6.1 from Redhelm's plate and Silverwind's dE 8.0 from Elderfrost, both
+    // under the ~10 where two swatches stop being tellable apart. Saturating
+    // instead of lightening pulls them to 10.2 and 10.1. See scratchpad/
+    // brighter-sweep.js for the sweep, and palette-audit.js for the check.
     //
     // These share ids ("base"/"light") where the seven above use bespoke ones,
     // because they ARE one systematic pass rather than seven separate decisions.
     // Ids only have to be unique within a tile: variantState is keyed by hex.
     //
     // Base first throughout, so every default is the colour the tile already had.
-    "#8E6BC4": [["base", "#8E6BC4", "Purple"], ["light", "#B69FD9", "Light purple"]],
-    "#E8776E": [["base", "#E8776E", "Coral"],  ["light", "#F0A7A1", "Light coral"]],
-    "#4A2A66": [["base", "#4A2A66", "Violet"], ["light", "#8B56BA", "Light violet"]],
-    "#D07A20": [["base", "#D07A20", "Orange"], ["light", "#E8A967", "Light orange"]],
-    "#7A858E": [["base", "#7A858E", "Grey"],   ["light", "#A9B0B6", "Light grey"]],
-    "#CFAE44": [["base", "#CFAE44", "Gold"],   ["light", "#E0CA85", "Light gold"]],
-    "#3F7A2E": [["base", "#3F7A2E", "Green"],  ["light", "#74C25E", "Light green"]],
-    "#3070D0": [["base", "#3070D0", "Blue"],   ["light", "#78A2E0", "Light blue"]],
-    // The two that start near black, at 13% lightness. A proportional lift more
-    // than triples them, so these are not tints of themselves the way the eight
-    // above are — Dreadking goes from near-black crimson to a bright red and
-    // Nightcloak from near-black navy to a strong blue. Labelled for what they
-    // are rather than as "light", since calling them that would be a lie.
-    "#3E0C05": [["base", "#3E0C05", "Dark red"], ["light", "#CD2811", "Red"]],
-    "#07143C": [["base", "#07143C", "Navy"],     ["light", "#1742C7", "Blue"]],
+    "#8E6BC4": [["base", "#8E6BC4", "Purple"], ["light", "#AD8BE2", "Bright purple"]],
+    // Stonefist is the exception the audit caught: at hsl(4,73%,67%) it is
+    // already light AND saturated, so x1.4 clamps immediately and the shared
+    // lift left the two pips dE 9.8 apart — a variant you cannot tell from its
+    // own base is not a choice. Saturation has nowhere to go, so the lift has to
+    // carry it alone at 0.45, which lands at dE 20.8. Honestly "light" rather
+    // than "bright", for the same reason as Silverwind below.
+    "#E8776E": [["base", "#E8776E", "Coral"],  ["light", "#FFA9A3", "Light coral"]],
+    "#4A2A66": [["base", "#4A2A66", "Violet"], ["light", "#8435C9", "Bright violet"]],
+    "#D07A20": [["base", "#D07A20", "Orange"], ["light", "#FFA342", "Bright orange"]],
+    "#CFAE44": [["base", "#CFAE44", "Gold"],   ["light", "#F1D169", "Bright gold"]],
+    "#3F7A2E": [["base", "#3F7A2E", "Green"],  ["light", "#5DD33B", "Bright green"]],
+    "#3070D0": [["base", "#3070D0", "Blue"],   ["light", "#5896F4", "Bright blue"]],
+    // Silverwind is 8% saturated, so there is almost no chroma for x1.4 to work
+    // on — 12% is still grey. The lift alone carries it, which is why this one
+    // is honestly "light" where the eight above are "bright".
+    "#7A858E": [["base", "#7A858E", "Grey"],   ["light", "#9FAAB3", "Light grey"]],
+    // The two that start near black, at 13% lightness. Even the smaller lift
+    // triples them, so these are not tints of themselves the way the others are
+    // — near-black crimson becomes a true red, near-black navy a true blue.
+    // Labelled for what they are rather than as "bright", which would undersell
+    // how far they move.
+    "#3E0C05": [["base", "#3E0C05", "Dark red"], ["light", "#C81900", "Red"]],
+    "#07143C": [["base", "#07143C", "Navy"],     ["light", "#0031C8", "Blue"]],
   };
   const VARIANT_KEY = "mhgu-zenny-gauntlet-variant";
   const variantsFor = (hex) => VARIANTS[hex.toUpperCase()] || null;

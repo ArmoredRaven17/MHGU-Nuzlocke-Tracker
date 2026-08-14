@@ -123,8 +123,8 @@ owner's call.
 **The one hard constraint is readability: re-check contrast after changing a hex.**
 White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 36 paintable colours
 currently do — 18 palette hexes plus 18 distinct `VARIANTS` colours, and variants count
-because they are painted, not decorative. Worst case is Thunderlord's green `#64E98A` on
-`--hover` at 5.05:1, then Crystalbeard's light gold at 5.83.
+because they are painted, not decorative. Worst case is a tie at 5.05:1 on `--hover` —
+Thunderlord's green `#64E98A` and Crystalbeard's bright gold `#F1D169`.
 
 **Contrast is not the only check a new colour needs — distinctness is the other.** The
 blue band is crowded (Grimclaw 216°, Rustrazor's blue 205°), so a hue picked by eye can
@@ -133,12 +133,15 @@ how alike two mid blues look: under dE ~10 reads as the same colour at swatch si
 similar plates are still a correct outcome when the monsters really are similar — the
 rule is to know which case you are in, not to always spread out.
 
-Two pairs currently sit under that line, both **accepted rather than missed**: Dreadking's
-light red `#CD2811` against Redhelm's `#CE2A20` at dE 6.1, and Silverwind's light grey
-`#A9B0B6` against Elderfrost `#B8C6CE` at dE 8.0. Both come from the systematic lighter
-pass, where the colour is derived rather than chosen, so a landing is possible — and both
-only bite when the two tiles are on their colliding states at once. `scratchpad/` has the
-audit that finds them; run it after touching the table.
+**Check within-tile separation too, not just against other plates.** A variant you cannot
+tell from its own base is not a choice — it is a pip that does nothing. That is exactly how
+Stonefist failed: `#E8776E` is already light and saturated, so the shared rule left its two
+pips dE 9.8 apart. Nothing is under dE 10 now; the closest are Elderfrost against
+Silverwind's light grey at 10.1 and Redhelm against Dreadking's red at 10.2.
+
+`scratchpad/palette-audit.js` runs both checks over every paintable colour — 36 of them,
+630 pairs — and `brighter-sweep.js` is how the current rule was chosen. Run the audit after
+touching the table; the two failures it has caught so far were both invisible to inspection.
 
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
@@ -151,9 +154,20 @@ selects so the row is a legend as well as a control.
 The table is two kinds of entry. **Seven are bespoke**, one decision each and each with its
 reason in a comment above it — Bloodbath's bloodred, Boltreaver's Astalos green, Soulseer's
 ash and soulfire, Rustrazor's rust, Thunderlord's green, Hellblade's charcoal, Redhelm's
-blue. **Ten are one systematic pass**: `lighten(c, 0.35)` of the base, hue and saturation
-untouched. Those share the ids `base`/`light` precisely because they are not seven separate
-judgements; ids only have to be unique within a tile, since `variantState` is keyed by hex.
+blue. **Ten are one systematic pass**: hue held, saturation × 1.4 clamped at 1, lightness
+`l + (1-l) × 0.30`. Those share the ids `base`/`light` precisely because they are not ten
+separate judgements; ids only have to be unique within a tile, since `variantState` is keyed
+by hex.
+
+**Bright is not the same move as light**, and the first version of that pass got it wrong by
+raising lightness alone (`lighten(c, 0.35)`). Lightness walks a colour toward *white*, so
+past ~70% it reads pastel rather than vivid. Saturation is what makes it bright. Pushing
+chroma instead of lightness also *widened* two collisions that the lighter rule had created,
+rather than trading one problem for another.
+
+Two tiles can't follow it and say so in their labels: Silverwind at 8% saturation has almost
+no chroma to multiply, and Stonefist is already light and saturated, so for both the lift has
+to carry the whole difference and the result is honestly "light", not "bright".
 
 All states share **one** palette hex, and that is not negotiable: `COLORS_HEX` validates
 the stored theme and picks the title icon *by hex*, so a second hex would need a second
