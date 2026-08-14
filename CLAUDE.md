@@ -121,10 +121,10 @@ is a correct outcome — don't push them apart to "fix" it. Colour choices are t
 owner's call.
 
 **The one hard constraint is readability: re-check contrast after changing a hex.**
-White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 32 paintable colours
-currently do — 18 palette hexes plus 14 `VARIANTS` entries, and variants count because
-they are painted, not decorative. Worst case is Thunderlord's green `#64E98A` on
-`--hover` at 5.05:1, then Boltreaver's cyan at 6.00.
+White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 36 paintable colours
+currently do — 18 palette hexes plus 18 distinct `VARIANTS` colours, and variants count
+because they are painted, not decorative. Worst case is Thunderlord's green `#64E98A` on
+`--hover` at 5.05:1, then Crystalbeard's light gold at 5.83.
 
 **Contrast is not the only check a new colour needs — distinctness is the other.** The
 blue band is crowded (Grimclaw 216°, Rustrazor's blue 205°), so a hue picked by eye can
@@ -133,16 +133,27 @@ how alike two mid blues look: under dE ~10 reads as the same colour at swatch si
 similar plates are still a correct outcome when the monsters really are similar — the
 rule is to know which case you are in, not to always spread out.
 
+Two pairs currently sit under that line, both **accepted rather than missed**: Dreadking's
+light red `#CD2811` against Redhelm's `#CE2A20` at dE 6.1, and Silverwind's light grey
+`#A9B0B6` against Elderfrost `#B8C6CE` at dE 8.0. Both come from the systematic lighter
+pass, where the colour is derived rather than chosen, so a landing is possible — and both
+only bite when the two tiles are on their colliding states at once. `scratchpad/` has the
+audit that finds them; run it after touching the table.
+
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
 
-**A tile can carry more than one colour**, via the `VARIANTS` table — Bloodbath its navy
-and its bloodred, Boltreaver an Astalos green under its lightning, Soulseer an ash body
-and its soulfire, Rustrazor a rust beside its blue, Thunderlord a green beside its gold,
-Hellblade a charcoal beside its orange, Redhelm the blue Arzuros under the helm. Each
-entry is `[id, hex, label]` and
-renders as a pip on the tile, painted as the colour it selects so the row is a legend as
-well as a control.
+**A tile can carry more than one colour**, via the `VARIANTS` table. Every Deviant except
+Elderfrost does — it is already the palest plate in the app and has nowhere lighter to go.
+Each entry is `[id, hex, label]` and renders as a pip on the tile, painted as the colour it
+selects so the row is a legend as well as a control.
+
+The table is two kinds of entry. **Seven are bespoke**, one decision each and each with its
+reason in a comment above it — Bloodbath's bloodred, Boltreaver's Astalos green, Soulseer's
+ash and soulfire, Rustrazor's rust, Thunderlord's green, Hellblade's charcoal, Redhelm's
+blue. **Ten are one systematic pass**: `lighten(c, 0.35)` of the base, hue and saturation
+untouched. Those share the ids `base`/`light` precisely because they are not seven separate
+judgements; ids only have to be unique within a tile, since `variantState` is keyed by hex.
 
 All states share **one** palette hex, and that is not negotiable: `COLORS_HEX` validates
 the stored theme and picks the title icon *by hex*, so a second hex would need a second
