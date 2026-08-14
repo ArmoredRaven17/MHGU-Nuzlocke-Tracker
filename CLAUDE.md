@@ -121,10 +121,10 @@ is a correct outcome — don't push them apart to "fix" it. Colour choices are t
 owner's call.
 
 **The one hard constraint is readability: re-check contrast after changing a hex.**
-White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 36 paintable colours
-currently do — 18 palette hexes plus 18 distinct `VARIANTS` colours, and variants count
-because they are painted, not decorative. Worst case is a tie at 5.05:1 on `--hover` —
-Thunderlord's green `#64E98A` and Crystalbeard's bright gold `#F1D169`.
+White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 25 paintable colours
+currently do — 18 palette hexes plus 7 distinct `VARIANTS` colours, and variants count
+because they are painted, not decorative. Worst case is Thunderlord's green `#64E98A` on
+`--hover` at 5.05:1, then Boltreaver's cyan at 6.00.
 
 **Contrast is not the only check a new colour needs — distinctness is the other.** The
 blue band is crowded (Grimclaw 216°, Rustrazor's blue 205°), so a hue picked by eye can
@@ -134,40 +134,34 @@ similar plates are still a correct outcome when the monsters really are similar 
 rule is to know which case you are in, not to always spread out.
 
 **Check within-tile separation too, not just against other plates.** A variant you cannot
-tell from its own base is not a choice — it is a pip that does nothing. That is exactly how
-Stonefist failed: `#E8776E` is already light and saturated, so the shared rule left its two
-pips dE 9.8 apart. Nothing is under dE 10 now; the closest are Elderfrost against
-Silverwind's light grey at 10.1 and Redhelm against Dreadking's red at 10.2.
+tell from its own base is not a choice — it is a pip that does nothing. Nothing currently
+sits under dE 10; the closest pair is Crystalbeard against Thunderlord at 11.7.
 
-`scratchpad/palette-audit.js` runs both checks over every paintable colour — 36 of them,
-630 pairs — and `brighter-sweep.js` is how the current rule was chosen. Run the audit after
-touching the table; the two failures it has caught so far were both invisible to inspection.
+`scratchpad/palette-audit.js` runs both checks over every paintable colour. Run it after
+touching the table — every failure it has caught was invisible to inspection, and each one
+came from a colour that was *derived* rather than chosen. That is the pattern: a hex you
+pick, you look at; a hex a formula produces, nobody has ever seen.
 
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
 
-**A tile can carry more than one colour**, via the `VARIANTS` table. Every Deviant except
-Elderfrost does — it is already the palest plate in the app and has nowhere lighter to go.
-Each entry is `[id, hex, label]` and renders as a pip on the tile, painted as the colour it
-selects so the row is a legend as well as a control.
+**A tile can carry more than one colour**, via the `VARIANTS` table. Six do — Bloodbath's
+bloodred, Boltreaver's Astalos green, Soulseer's ash and soulfire, Rustrazor's rust,
+Thunderlord's green, Hellblade's charcoal. Each entry is `[id, hex, label]` and renders as a
+pip on the tile, painted as the colour it selects so the row is a legend as well as a control.
 
-The table is two kinds of entry. **Seven are bespoke**, one decision each and each with its
-reason in a comment above it — Bloodbath's bloodred, Boltreaver's Astalos green, Soulseer's
-ash and soulfire, Rustrazor's rust, Thunderlord's green, Hellblade's charcoal, Redhelm's
-blue. **Ten are one systematic pass**: hue held, saturation × 1.4 clamped at 1, lightness
-`l + (1-l) × 0.30`. Those share the ids `base`/`light` precisely because they are not ten
-separate judgements; ids only have to be unique within a tile, since `variantState` is keyed
-by hex.
+**Every one is a decision about the monster, not a formula applied to a hex** — and that is
+the surviving rule, not an accident of which happened to be done first. A systematic second
+colour for all the remaining Deviants was built twice, first as `lighten(c, 0.35)` and then
+as a saturation push when the first read pastel, and removed both times. Redhelm's blue went
+with the second removal. The commits around "Apply the lighter second colour" and "Make the
+second colours brighter" hold the working if the idea comes back.
 
-**Bright is not the same move as light**, and the first version of that pass got it wrong by
-raising lightness alone (`lighten(c, 0.35)`). Lightness walks a colour toward *white*, so
-past ~70% it reads pastel rather than vivid. Saturation is what makes it bright. Pushing
-chroma instead of lightness also *widened* two collisions that the lighter rule had created,
-rather than trading one problem for another.
-
-Two tiles can't follow it and say so in their labels: Silverwind at 8% saturation has almost
-no chroma to multiply, and Stonefist is already light and saturated, so for both the lift has
-to carry the whole difference and the result is honestly "light", not "bright".
+Worth keeping from those attempts: **bright is not the same move as light.** Lightness walks
+a colour toward *white*, so past ~70% it reads pastel rather than vivid — saturation is what
+makes a colour bright. And a formula cannot know when it has nowhere to go: Silverwind at 8%
+saturation had no chroma to multiply, and Stonefist was already light *and* saturated, so its
+two pips came out dE 9.8 apart — a variant indistinguishable from its own base.
 
 All states share **one** palette hex, and that is not negotiable: `COLORS_HEX` validates
 the stored theme and picks the title icon *by hex*, so a second hex would need a second
