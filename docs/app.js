@@ -1641,6 +1641,13 @@
     // is found by matching the hex, not by position.
     "#D25A18": [["orange",   "#D25A18", "Orange"],
                 ["charcoal", "#2C2119", "Charcoal"]],
+    // The red with its hue rotated and nothing else touched: hsl(3,73%,47%) to
+    // hsl(240,73%,47%), red's own primary to blue's. 240 rather than a mid blue
+    // because the mid blues are taken -- at the red's saturation and lightness a
+    // hue of 210-216 lands within dE 7 of Grimclaw, which is the same colour at
+    // swatch size. 240 is dE 56 from its nearest neighbour.
+    "#CE2A20": [["red",  "#CE2A20", "Red"],
+                ["blue", "#2020CE", "Blue"]],
   };
   const VARIANT_KEY = "mhgu-zenny-gauntlet-variant";
   const variantsFor = (hex) => VARIANTS[hex.toUpperCase()] || null;

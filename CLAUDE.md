@@ -121,10 +121,17 @@ is a correct outcome — don't push them apart to "fix" it. Colour choices are t
 owner's call.
 
 **The one hard constraint is readability: re-check contrast after changing a hex.**
-White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 30 paintable colours
-currently do — 18 palette hexes plus 12 `VARIANTS` entries, and variants count because
+White text must clear 4.5:1 on `--bg`, `--bg2` and `--hover`. All 32 paintable colours
+currently do — 18 palette hexes plus 14 `VARIANTS` entries, and variants count because
 they are painted, not decorative. Worst case is Thunderlord's green `#64E98A` on
 `--hover` at 5.05:1, then Boltreaver's cyan at 6.00.
+
+**Contrast is not the only check a new colour needs — distinctness is the other.** The
+blue band is crowded (Grimclaw 216°, Rustrazor's blue 205°), so a hue picked by eye can
+land on top of an existing plate. Measure it in CIE Lab, not RGB, which badly underrates
+how alike two mid blues look: under dE ~10 reads as the same colour at swatch size. Two
+similar plates are still a correct outcome when the monsters really are similar — the
+rule is to know which case you are in, not to always spread out.
 
 A stored hex that's no longer in `COLORS` falls back to the default rather than
 half-applying (no tile selected, no title icon).
@@ -132,7 +139,8 @@ half-applying (no tile selected, no title icon).
 **A tile can carry more than one colour**, via the `VARIANTS` table — Bloodbath its navy
 and its bloodred, Boltreaver an Astalos green under its lightning, Soulseer an ash body
 and its soulfire, Rustrazor a rust beside its blue, Thunderlord a green beside its gold,
-Hellblade a charcoal beside its orange. Each entry is `[id, hex, label]` and
+Hellblade a charcoal beside its orange, Redhelm the blue Arzuros under the helm. Each
+entry is `[id, hex, label]` and
 renders as a pip on the tile, painted as the colour it selects so the row is a legend as
 well as a control.
 
