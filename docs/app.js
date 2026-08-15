@@ -1335,15 +1335,22 @@
     if (!run.combo) hint = "Get a weapon/style first.";
     else if (!run.quest) hint = "Name the quest you're hunting.";
     else if (isArena(run.quest)) hint = "Arena quest — reporting here won't cost you anything.";
-    else if (run.combo && !isAlive(run.combo.weapon, run.combo.style))
-      hint = "This combo has already fallen — report the hunt to draw a new one.";
-    // The limit is shown from the moment a quest is named, not once you have
-    // already carted — a one-faint quest is exactly the thing you want to know
-    // about BEFORE you take it.
     else {
+      // The count leads and is never displaced. It used to be an `else if` after
+      // the fallen notice, which meant it vanished at exactly the moment it was
+      // most needed: under `cart` or `both` the combo dies on the FIRST cart, so
+      // the notice fired immediately and hid the tally for the whole rest of the
+      // attempt — while the quest was still live and still counting toward the
+      // limit that would end it. The two facts are independent, so both show.
+      //
+      // The limit itself is shown from the moment a quest is named rather than
+      // once you have carted, since a one-faint quest is the thing you want to
+      // know about BEFORE you take it.
       const lim = cartLimit(run.quest);
       hint = run.attemptCarts + " of " + lim + " cart" + (lim === 1 ? "" : "s") +
         (run.quest.f ? " — one-faint quest." : ".");
+      if (!isAlive(run.combo.weapon, run.combo.style))
+        hint += " This combo has already fallen — report the hunt to draw a new one.";
     }
     $("outcomeHint").textContent = hint;
   }
