@@ -6,7 +6,7 @@
 <title>MHGU Zenny Gauntlet</title>
 <!-- Hyper Hunter VI ticket. WebP despite the save editor naming these .png. -->
 <link rel="icon" type="image/webp" href="assets/ItemIcons/FourthGen-Ticket_Icon_Dark_Red.webp?v=1">
-<link rel="stylesheet" href="styles.css?v=116">
+<link rel="stylesheet" href="styles.css?v=117">
 </head>
 <body>
 <div id="app">
@@ -56,8 +56,12 @@
           <label class="chk"><input type="radio" name="kill" id="k_cart">Cart<span class="w"></span></label>
           <label class="chk"><input type="radio" name="kill" id="k_fail">Quest failed<span class="w"></span></label>
           <label class="chk"><input type="radio" name="kill" id="k_streak">Two quest failures in a row<span class="w"></span></label>
-          <p class="hint" style="margin-top:8px">The tracker was designed to count all
-            carts, so Insurance doesn't change the fact you carted still.</p>
+          <p class="hint" style="margin-top:8px">Three carts loses the quest, and the
+            tracker reports it for you. A few Deviant permits allow only one.</p>
+          <label class="chk"><input type="checkbox" id="k_insurance">Running Insurance<span class="w"></span></label>
+          <p class="hint" style="margin-top:8px">One more cart before the quest is lost.
+            The tracker was designed to count all carts, so Insurance doesn't change the
+            fact you carted still.</p>
         </div>
       </section>
 
@@ -403,7 +407,7 @@
   </div>
 </div>
 
-<script src="data.js?v=2"></script>
-<script src="app.js?v=149"></script>
+<script src="data.js?v=3"></script>
+<script src="app.js?v=150"></script>
 </body>
 </html>

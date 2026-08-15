@@ -73,6 +73,7 @@
     // It changes how many clicks a run costs, never what the run is worth.
     autoRoll: false,
     lockQuest: true,
+    insurance: false,                    // the skill: one more cart before the quest is lost
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
     reviveCap: 5,                        // buy-backs allowed per run; see LEVERS.reviveCap
@@ -504,6 +505,21 @@
     : ((run.cfg && run.cfg.stylesPerWeapon) || capForCeiling(runMax()) || cfg.stylesPerWeapon);
   const isRetired  = (w) => stylesLost(w) >= runCap();
 
+  // ── Carting out ──────────────────────────────────────────────────────────
+  // Three carts loses the quest, which is the game's rule rather than one of
+  // ours, so it is not a lever and does not appear in LEVERS. A handful of
+  // quests allow only one: `f` on the quest record, carried over from the
+  // Randomizer's OneFaint flag — the top Special Permit hunt for each of the 18
+  // Deviants, at G2, G3 or G4 depending on the monster.
+  //
+  // Insurance IS a lever, but a strange one: it buys a cart back, and whether
+  // that is worth anything depends entirely on the kill condition. Under `cart`
+  // or `both` the combo is already dead from the first cart, so the extra cart
+  // only buys the quest, never the weapon. See the note beside cfg.insurance.
+  const CART_LIMIT = 3, ONE_FAINT_LIMIT = 1;
+  const cartLimit = (q) =>
+    ((q && q.f) ? ONE_FAINT_LIMIT : CART_LIMIT) + (cfg.insurance ? 1 : 0);
+
   const legalStyles  = (w) => isRetired(w) ? [] : stylesFor(w).filter(s => isAlive(w, s));
   const legalWeapons = () => ALL_WEAPONS.filter(w => legalStyles(w).length > 0);
   function legalCombos() {
@@ -661,6 +677,7 @@
   // ── Config <-> DOM ───────────────────────────────────────────────────────
   const CFG_BOXES = {
     lockQuest: "l_quest",
+    insurance: "k_insurance",
     reviveEnabled: "r_enabled", reviveOnce: "r_once",
     rerollEnabled: "rr_enabled",
   };
@@ -861,12 +878,17 @@
     // played on the understanding it counted for nothing.
     const counts = !isArena(run.quest);
 
+    let cartedOut = false;
     if (outcome === "cart") {
       run.carts++; run.attemptCarts++;
       if (counts && (cfg.kill === "cart" || cfg.kill === "both")) kill(combo, "Carted");
-      // Deliberately does not end the attempt — Cleared/Failed stay available.
-      afterMutation();
-      return;
+      // Carting out is the game's own failure condition, so the app applies it
+      // rather than waiting to be told: at the limit the attempt resolves as a
+      // failure and falls through to the path below. Below the limit it does NOT
+      // end the attempt — Cleared and Failed both stay available.
+      if (run.attemptCarts < cartLimit(run.quest)) { afterMutation(); return; }
+      outcome = "fail";
+      cartedOut = true;
     }
 
     // The quest lock is a single-retry obligation. Reaching any resolution on
@@ -894,7 +916,12 @@
       run.failed++;
       if (counts) {
         run.failStreak++;                           // before the streak check
-        if      (cfg.kill === "fail" || cfg.kill === "both")   kill(combo, "Quest failed");
+        // "Carted out" rather than "Quest failed" when the carts ended it, so the
+        // fallen list says what actually happened. Under `cart` or `both` the
+        // combo already died on the first cart and kill() is idempotent, so this
+        // only ever names the death under `fail`.
+        const reason = cartedOut ? "Carted out" : "Quest failed";
+        if      (cfg.kill === "fail" || cfg.kill === "both")   kill(combo, reason);
         else if (cfg.kill === "streak" && run.failStreak >= 2) kill(combo, "Two failures in a row");
 
         if (cfg.lockQuest && !wasRetry) run.lockQuest = run.quest;
@@ -1008,6 +1035,10 @@
       box.innerHTML = searchResults.map((q, i) =>
         `<button type="button" data-i="${i}">${escapeHtml(q.n)}` +
         `<span class="qr-type"> &middot; ${escapeHtml(q.t)}${q.m ? " &middot; " + escapeHtml(q.m) : ""}</span>` +
+        // Flagged in the list rather than only after you have taken it: a
+        // one-faint permit is a different proposition from the quest above it
+        // at the same reward, and that has to be visible while choosing.
+        (q.f ? `<span class="qr-faint" title="One faint only">1&#9760;</span>` : "") +
         `<span class="qr-worth">${zenny(q.r || 0)}</span></button>`
       ).join("");
     }
@@ -1292,7 +1323,14 @@
     else if (isArena(run.quest)) hint = "Arena quest — reporting here won't cost you anything.";
     else if (run.combo && !isAlive(run.combo.weapon, run.combo.style))
       hint = "This combo has already fallen — report the hunt to draw a new one.";
-    else if (run.attemptCarts) hint = run.attemptCarts + " cart(s) this attempt.";
+    // The limit is shown from the moment a quest is named, not once you have
+    // already carted — a one-faint quest is exactly the thing you want to know
+    // about BEFORE you take it.
+    else {
+      const lim = cartLimit(run.quest);
+      hint = run.attemptCarts + " of " + lim + " cart" + (lim === 1 ? "" : "s") +
+        (run.quest.f ? " — one-faint quest." : ".");
+    }
     $("outcomeHint").textContent = hint;
   }
 
@@ -1386,6 +1424,7 @@
       ["Loadout",           ruleLabel("assign", rcfg.assign)],
       ["Weapon/Style hold", ruleLabel("loadout", rcfg.loadout)],
       ["Quest Retry Lock",  rcfg.lockQuest ? "On" : "Off"],
+      ["Insurance",         rcfg.insurance ? "On — 4 carts" : "Off — 3 carts"],
       ["Revives",           rcfg.reviveEnabled
         ? [zenny(rcfg.revivePrice), rcfg.reviveCap + " max",
            rcfg.reviveOnce ? "one per combo" : "repeatable"].join(" · ")
