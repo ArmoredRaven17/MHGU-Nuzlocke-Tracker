@@ -251,6 +251,11 @@ body{
 .quest-results .qr-type{opacity:.55;font-size:11px;flex:1;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 .quest-results .qr-worth{font-size:11px;color:var(--accent-hover);white-space:nowrap}
+/* Sits under the outcome buttons, so it wants to be smaller than a sidebar rule
+   and to stop short of the full row width — it is a note about this hunt, not
+   another control competing with Cleared/Carted/Failed. */
+.hunt-ins{font-size:12px;gap:6px;padding:6px 0 2px;align-self:flex-start}
+.hunt-ins input{width:14px;height:14px}
 /* One-faint permits. Deliberately not themed: this is a property of the quest,
    not of the run, and it has to read the same on every palette. */
 .quest-results .qr-faint{font-size:10px;font-weight:600;white-space:nowrap;

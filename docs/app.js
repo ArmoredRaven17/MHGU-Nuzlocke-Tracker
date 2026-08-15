@@ -73,7 +73,10 @@
     // It changes how many clicks a run costs, never what the run is worth.
     autoRoll: false,
     lockQuest: true,
-    insurance: false,                    // the skill: one more cart before the quest is lost
+    // The Insurance skill: one more cart before the quest is lost. It lives in
+    // cfg only so it is remembered between hunts and runs — it is NOT a rule, is
+    // not frozen while a run is on, and has no entry in LEVERS. See cartLimit.
+    insurance: false,
     stylesPerWeapon: 3,                  // 1-6; styles a weapon may lose before it retires
     reviveEnabled: false, reviveOnce: true,
     reviveCap: 5,                        // buy-backs allowed per run; see LEVERS.reviveCap
@@ -512,10 +515,16 @@
   // Randomizer's OneFaint flag — the top Special Permit hunt for each of the 18
   // Deviants, at G2, G3 or G4 depending on the monster.
   //
-  // Insurance IS a lever, but a strange one: it buys a cart back, and whether
-  // that is worth anything depends entirely on the kill condition. Under `cart`
-  // or `both` the combo is already dead from the first cart, so the extra cart
-  // only buys the quest, never the weapon. See the note beside cfg.insurance.
+  // Insurance is NOT a lever either, and that is why it lives beside the outcome
+  // buttons rather than in the sidebar. It is a skill on the set you are wearing,
+  // so it can differ hunt to hunt — it describes THIS hunt the way the cart count
+  // does, not the rules of the run. So it is not frozen while a run is on, it
+  // carries no badge, and it is absent from LEVERS.
+  //
+  // (What it would be worth if it were a lever is in scratchpad/sim-insurance.js:
+  // 1.02x to 1.06x of run length, and dependent on the kill condition, because
+  // under `cart` or `both` the combo is already dead from the first cart and the
+  // extra one buys the quest but never the weapon.)
   const CART_LIMIT = 3, ONE_FAINT_LIMIT = 1;
   const cartLimit = (q) =>
     ((q && q.f) ? ONE_FAINT_LIMIT : CART_LIMIT) + (cfg.insurance ? 1 : 0);
@@ -677,7 +686,6 @@
   // ── Config <-> DOM ───────────────────────────────────────────────────────
   const CFG_BOXES = {
     lockQuest: "l_quest",
-    insurance: "k_insurance",
     reviveEnabled: "r_enabled", reviveOnce: "r_once",
     rerollEnabled: "rr_enabled",
   };
@@ -789,7 +797,13 @@
 
   function writeCfgToDom() {
     Object.entries(CFG_BOXES).forEach(([k, id]) => { $(id).checked = !!cfg[k]; });
+    // Both of these live outside CFG_BOXES, and for opposite reasons: autoRoll is
+    // a preference rather than a rule, and Insurance describes the hunt rather
+    // than the run. CFG_BOXES is read back by readCfgFromDom, which bails out
+    // while a run is on — right for rules, wrong for a box you must be able to
+    // tick mid-run. So each keeps its own handler and its own line here.
     $("s_autoroll").checked = !!cfg.autoRoll;
+    $("h_insurance").checked = !!cfg.insurance;
     // Object keys are strings, but some cfg values are numbers (stylesPerWeapon),
     // so compare as strings and convert back on the way in.
     Object.entries(CFG_RADIOS).forEach(([k, maping]) => {
@@ -1424,7 +1438,6 @@
       ["Loadout",           ruleLabel("assign", rcfg.assign)],
       ["Weapon/Style hold", ruleLabel("loadout", rcfg.loadout)],
       ["Quest Retry Lock",  rcfg.lockQuest ? "On" : "Off"],
-      ["Insurance",         rcfg.insurance ? "On — 4 carts" : "Off — 3 carts"],
       ["Revives",           rcfg.reviveEnabled
         ? [zenny(rcfg.revivePrice), rcfg.reviveCap + " max",
            rcfg.reviveOnce ? "one per combo" : "repeatable"].join(" · ")
@@ -1951,6 +1964,15 @@
   $("s_autoroll").addEventListener("change", (e) => {
     cfg.autoRoll = e.target.checked;
     afterMutation();      // saves, and deals a combo straight away if one is due
+  });
+  // Deliberately live during a run: the set you are wearing is a fact about this
+  // hunt, and a hunt you have already carted on is exactly when you would notice
+  // you are wearing it. Ticking it mid-attempt raises the limit for the attempt
+  // in progress -- which is correct, since the limit has not been reached yet or
+  // the attempt would already be over.
+  $("h_insurance").addEventListener("change", (e) => {
+    cfg.insurance = e.target.checked;
+    save(); renderAll();
   });
   $("tabBoard").addEventListener("click", () => { view = "board"; renderAll(); });
   $("tabResult").addEventListener("click", () => { view = "summary"; renderAll(); });
